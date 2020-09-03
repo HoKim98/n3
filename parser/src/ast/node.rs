@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::fmt;
 
 use super::fmt::FmtGuard;
@@ -7,7 +7,7 @@ use super::variable::{NodeLet, Value};
 
 pub struct With {
     pub name: String,
-    pub graph: HashMap<String, Value>,
+    pub graph: BTreeMap<String, Value>,
 }
 
 impl<'a> fmt::Debug for FmtGuard<'a, With> {
@@ -15,10 +15,22 @@ impl<'a> fmt::Debug for FmtGuard<'a, With> {
         let indent = self.indent();
         write!(f, "{}with {}:\n", &indent, &self.name)?;
 
-        for value in self.graph.values() {
-            self.resolve(value).fmt(f)?;
+        for (name, value) in &self.graph {
+            self.resolve(&FmtWithSet { name, value }).fmt(f)?;
         }
         Ok(())
+    }
+}
+
+struct FmtWithSet<'a> {
+    name: &'a str,
+    value: &'a Value,
+}
+
+impl<'a> fmt::Debug for FmtGuard<'a, FmtWithSet<'a>> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let indent = self.indent();
+        write!(f, "{}set {} = {:?}\n", &indent, &self.name, &self.value)
     }
 }
 
@@ -46,10 +58,10 @@ pub struct Node {
     pub name: String,
     pub ty: NodeType,
 
-    pub graph: HashMap<String, NodeLet>,
-    pub withs: HashMap<String, With>,
-    pub children: HashMap<String, Node>,
-    pub tensor_graph: HashMap<u64, GraphNode>,
+    pub graph: BTreeMap<String, NodeLet>,
+    pub withs: BTreeMap<String, With>,
+    pub children: BTreeMap<String, Node>,
+    pub tensor_graph: BTreeMap<u64, GraphNode>,
 }
 
 impl<'a> fmt::Debug for FmtGuard<'a, Node> {

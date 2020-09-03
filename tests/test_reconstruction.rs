@@ -4,14 +4,10 @@ fn recon(source: &str) {
     let parser = n3_parser::Parser::new();
 
     let source_recon1 = format!("{:?}", parser.parse_file(source).unwrap());
+    println!("{}", &source_recon1);
+    let source_recon2 = format!("{:?}", parser.parse_file(&source_recon1).unwrap());
 
-    println!("{:?}", source_recon1);
-    /*let source_recon2 = format!(
-        "{:?}",
-        parser.parse_file(source_recon1).unwrap()
-    );
-
-    assert_eq!(source_recon1, source_recon2);*/
+    assert_eq!(source_recon1, source_recon2);
 }
 
 #[test]

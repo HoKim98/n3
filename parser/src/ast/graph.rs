@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::fmt;
 
 use super::fmt::FmtGuard;
@@ -11,12 +11,12 @@ pub struct Out {
 
 impl fmt::Debug for Out {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if let Some(id) = &self.id {
-            write!(f, "{}", id)?;
-        }
-        write!(f, "$")?;
         if let Some(name) = &self.name {
             write!(f, "{}", name)?;
+        }
+        write!(f, "$")?;
+        if let Some(id) = &self.id {
+            write!(f, "{}", id)?;
         }
         Ok(())
     }
@@ -43,7 +43,7 @@ impl Shape {
 }
 
 pub enum Shapes {
-    Dict(HashMap<String, Shape>),
+    Dict(BTreeMap<String, Shape>),
     Single(Shape),
 }
 
@@ -55,17 +55,17 @@ impl<'a> fmt::Debug for FmtGuard<'a, Shapes> {
                 write!(f, ":\n")?;
 
                 for (name, shape) in dict {
-                    write!(f, "{}{}{:?}", &indent, name, shape)?;
+                    write!(f, "{}{}{:?}\n", &indent, name, shape)?;
                 }
                 Ok(())
             }
-            Shapes::Single(shape) => shape.fmt(f),
+            Shapes::Single(shape) => write!(f, "{:?}\n", shape),
         }
     }
 }
 
 pub enum GraphInputs {
-    Dict(HashMap<String, Out>),
+    Dict(BTreeMap<String, Out>),
     List(Vec<Out>),
 }
 
@@ -93,7 +93,7 @@ impl fmt::Debug for GraphInputs {
 pub struct GraphCall {
     pub name: String,
     pub inputs: Option<GraphInputs>,
-    pub args: Option<HashMap<String, Value>>,
+    pub args: Option<BTreeMap<String, Value>>,
 }
 
 impl fmt::Debug for GraphCall {
@@ -104,7 +104,11 @@ impl fmt::Debug for GraphCall {
             inputs.fmt(f)?;
         }
         if let Some(args) = &self.args {
-            args.fmt(f)?;
+            write!(f, "(")?;
+            for (name, value) in args {
+                write!(f, "{}={:?}, ", name, value)?;
+            }
+            write!(f, ")")?;
         }
         Ok(())
     }
@@ -126,8 +130,9 @@ impl<'a> fmt::Debug for FmtGuard<'a, GraphNode> {
         }
 
         if let Some(shapes) = &self.shapes {
-            self.resolve(shapes).fmt(f)?;
+            self.resolve(shapes).fmt(f)
+        } else {
+            write!(f, "\n")
         }
-        Ok(())
     }
 }

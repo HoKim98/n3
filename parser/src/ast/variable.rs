@@ -18,6 +18,8 @@ pub struct Variable {
     pub value: Option<Value>,
 }
 
+struct FmtVariable<'a>(&'a RefVariable);
+
 impl Variable {
     pub fn with_name(name: String) -> Self {
         Self {
@@ -33,11 +35,12 @@ impl Into<RefVariable> for Variable {
     }
 }
 
-impl fmt::Debug for Variable {
+impl<'a> fmt::Debug for FmtVariable<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}=", &self.name)?;
-        if let Some(value) = &self.value {
-            value.fmt(f)?;
+        let inner = self.0.borrow();
+        write!(f, "{}", &inner.name)?;
+        if let Some(value) = &inner.value {
+            write!(f, "={:?}", value)?;
         }
         Ok(())
     }
@@ -100,11 +103,11 @@ impl<'a> fmt::Debug for FmtGuard<'a, NodeLet> {
 
         if self.ty != LetType::Dim {
             match &self.value {
-                Some(value) => value.fmt(f)?,
-                None => write!(f, "*")?,
+                Some(value) => write!(f, " {:?}", value)?,
+                None => write!(f, " *")?,
             }
         }
-        Ok(())
+        write!(f, "\n")
     }
 }
 
@@ -134,7 +137,7 @@ impl fmt::Debug for Value {
             Self::Int(value) => write!(f, "{}", value),
             Self::Real(value) => write!(f, "{}", value),
             Self::Node(value) => write!(f, "{}", value),
-            Self::Variable(value) => write!(f, "{:?}", value),
+            Self::Variable(value) => write!(f, "{:?}", FmtVariable(value)),
             Self::Expr { op, lhs, rhs } => match rhs {
                 Some(rhs) => write!(f, "({:?} {:?} {:?})", lhs, op, rhs),
                 None => write!(f, "{:?}{:?}", op, lhs),

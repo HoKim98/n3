@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use crate::ast;
 use crate::error::LexicalError;
@@ -24,7 +24,7 @@ nodeType: ast::NodeType = {
     => ast::NodeType::Default,
 }
 
-Uses: HashMap<String, ast::Use> = <v:MaybeNull<Use, NewLine>*>
+Uses: BTreeMap<String, ast::Use> = <v:MaybeNull<Use, NewLine>*>
     => v.into_iter().filter_map(|x| x).map(|x| (x.name.clone(), x)).collect();
 Use: ast::Use = "use" <name:name> <by:useBy> NewLine => ast::Use { name, by };
 useBy: ast::UseBy = {
@@ -45,10 +45,10 @@ NodeDef: ast::Node = "node" <n:name> ":" NewLine Indent
     children: s_c,
     tensor_graph: s_g,
 };
-nodeSuiteLet: HashMap<String, ast::NodeLet> = <v:NodeLet*> => v.into_iter().map(|v| (v.name.clone(), v)).collect();
-nodeSuiteWith: HashMap<String, ast::With> = <v:WithDef*> => v.into_iter().map(|v| (v.name.clone(), v)).collect();
-nodeSuiteChildren: HashMap<String, ast::Node> = <v:NodeDef*> => v.into_iter().map(|v| (v.name.clone(), v)).collect();
-nodeSuiteGraph: HashMap<u64, ast::GraphNode> = <v:GraphNode*> => v.into_iter().map(|v| (v.id, v)).collect();
+nodeSuiteLet: BTreeMap<String, ast::NodeLet> = <v:NodeLet*> => v.into_iter().map(|v| (v.name.clone(), v)).collect();
+nodeSuiteWith: BTreeMap<String, ast::With> = <v:WithDef*> => v.into_iter().map(|v| (v.name.clone(), v)).collect();
+nodeSuiteChildren: BTreeMap<String, ast::Node> = <v:NodeDef*> => v.into_iter().map(|v| (v.name.clone(), v)).collect();
+nodeSuiteGraph: BTreeMap<u64, ast::GraphNode> = <v:GraphNode*> => v.into_iter().map(|v| (v.id, v)).collect();
 
 NodeLet: ast::NodeLet = "let" <s:(name ":")?> <n:fullname> "=" <v:nodeLetValue> NewLine => ast::NodeLet {
     name: n,
@@ -82,7 +82,7 @@ graphInputs: ast::GraphInputs = {
     "[" <v:OneOrMore<Out, commaSep>> "]" => ast::GraphInputs::List(v),
 }
 graphInputKw: (String, ast::Out) = <k:name> "=" <v:Out> => (k, v);
-graphArgs: HashMap<String, ast::Value> = "(" <v:OneOrMore<graphArg, commaSep>> ")" => v.into_iter().collect();
+graphArgs: BTreeMap<String, ast::Value> = "(" <v:OneOrMore<graphArg, commaSep>> ")" => v.into_iter().collect();
 graphArg: (String, ast::Value) = <k:name> "=" <v:Expr> => (k, v);
 graphShapes: Option<ast::Shapes> = {
     <v:graphShape> NewLine => Some(ast::Shapes::Single(v)),
@@ -100,7 +100,7 @@ WithDef: ast::With = "with" <n:name> ":" <v:WithSuite> => ast::With {
     name: n,
     graph: v,
 };
-WithSuite: HashMap<String, ast::Value> = NewLine Indent <v:WithSet+> Dedent => v.into_iter().collect();
+WithSuite: BTreeMap<String, ast::Value> = NewLine Indent <v:WithSet+> Dedent => v.into_iter().collect();
 
 WithSet: (String, ast::Value) = "set" <k:fullname> "=" <v:Expr> NewLine => (k, v);
 

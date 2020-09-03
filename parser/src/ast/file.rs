@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::fmt;
 
 use super::fmt::FmtGuard;
@@ -6,7 +6,7 @@ use super::node::Node;
 use super::uses::Use;
 
 pub struct File {
-    pub uses: HashMap<String, Use>,
+    pub uses: BTreeMap<String, Use>,
     pub node: Node,
 }
 
