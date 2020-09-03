@@ -1,0 +1,249 @@
+use std::collections::HashMap;
+
+use crate::ast;
+use crate::error::LexicalError;
+use crate::lexer;
+use crate::location;
+
+grammar;
+
+pub FileInput: ast::File = StartFile <u:Uses> <v:RootDef> => ast::File {
+    uses: u,
+    node: v,
+};
+
+RootDef: ast::Node = <ty:nodeType> <mut v:NodeDef> => {
+    v.ty = ty;
+    v
+};
+nodeType: ast::NodeType = {
+    "extern" => ast::NodeType::Extern,
+    "data" => ast::NodeType::Data,
+    "optim" => ast::NodeType::Optim,
+    "exec" => ast::NodeType::Exec,
+    => ast::NodeType::Default,
+}
+
+Uses: HashMap<String, ast::Use> = <v:MaybeNull<Use, NewLine>*>
+    => v.into_iter().filter_map(|x| x).map(|x| (x.name.clone(), x)).collect();
+Use: ast::Use = "use" <name:name> <by:useBy> NewLine => ast::Use { name, by };
+useBy: ast::UseBy = {
+    "by" <n:name> => ast::UseBy::Repo { author: n },
+    "by" <s:string> => ast::UseBy::Web { source: s },
+    => ast::UseBy::Local,
+}
+
+NodeDef: ast::Node = "node" <n:name> ":" NewLine Indent
+        <s_l:nodeSuiteLet> <s_w:nodeSuiteWith>
+        <s_c:nodeSuiteChildren> <s_g:nodeSuiteGraph>
+        Dedent => ast::Node {
+    name: n,
+    ty: ast::NodeType::Default,
+
+    graph: s_l,
+    withs: s_w,
+    children: s_c,
+    tensor_graph: s_g,
+};
+nodeSuiteLet: HashMap<String, ast::NodeLet> = <v:NodeLet*> => v.into_iter().map(|v| (v.name.clone(), v)).collect();
+nodeSuiteWith: HashMap<String, ast::With> = <v:WithDef*> => v.into_iter().map(|v| (v.name.clone(), v)).collect();
+nodeSuiteChildren: HashMap<String, ast::Node> = <v:NodeDef*> => v.into_iter().map(|v| (v.name.clone(), v)).collect();
+nodeSuiteGraph: HashMap<u64, ast::GraphNode> = <v:GraphNode*> => v.into_iter().map(|v| (v.id, v)).collect();
+
+NodeLet: ast::NodeLet = "let" <s:(name ":")?> <n:fullname> "=" <v:nodeLetValue> NewLine => ast::NodeLet {
+    name: n,
+    shortcut: s.map(|s| s.0),
+    ty: v.0,
+    value: v.1,
+};
+nodeLetValue: (ast::LetType, Option<ast::Value>) = {
+    "bool" <v:MaybeNull<Expr, Null>> => (ast::LetType::Bool, v),
+    "int" <v:MaybeNull<Expr, Null>> => (ast::LetType::Int, v),
+    "real" <v:MaybeNull<Expr, Null>> => (ast::LetType::Real, v),
+    <t:nodeLetType> "node" <v:MaybeNull<ValueNode, Null>> => (t, v),
+    "dim" => (ast::LetType::Dim, None),
+}
+nodeLetType: ast::LetType = {
+    "data" => ast::LetType::Node(ast::LetNodeType::Data),
+    "optim" => ast::LetType::Node(ast::LetNodeType::Optim),
+    => ast::LetType::Node(ast::LetNodeType::Default),
+}
+
+GraphNode: ast::GraphNode = <id:graphId> <calls:GraphCalls> <shapes:graphShapes> => ast::GraphNode { id, calls, shapes };
+graphId: u64 = <v:uint> "." => v;
+GraphCalls: Vec<ast::GraphCall> = <v:OneOrMore<GraphCall, plusSep>> => v;
+GraphCall: ast::GraphCall = <n:name> <inputs:graphInputs?> <args:graphArgs?> => ast::GraphCall {
+    name: n,
+    inputs,
+    args,
+};
+graphInputs: ast::GraphInputs = {
+    "{" <v:OneOrMore<graphInputKw, commaSep>> "}" => ast::GraphInputs::Dict(v.into_iter().collect()),
+    "[" <v:OneOrMore<Out, commaSep>> "]" => ast::GraphInputs::List(v),
+}
+graphInputKw: (String, ast::Out) = <k:name> "=" <v:Out> => (k, v);
+graphArgs: HashMap<String, ast::Value> = "(" <v:OneOrMore<graphArg, commaSep>> ")" => v.into_iter().collect();
+graphArg: (String, ast::Value) = <k:name> "=" <v:Expr> => (k, v);
+graphShapes: Option<ast::Shapes> = {
+    <v:graphShape> NewLine => Some(ast::Shapes::Single(v)),
+    ":" NewLine Indent <v:graphShapeKw+> Dedent => Some(ast::Shapes::Dict(v.into_iter().collect())),
+    NewLine => None,
+}
+graphShapeKw: (String, ast::Shape) = <k:name> <v:graphShape> NewLine => (k, v);
+graphShape: ast::Shape = "=" <v:OneOrMore<Dim, commaSep>> => ast::Shape::with_dims(v);
+
+Dim: ast::Value = Expr;
+
+Out: ast::Out = <name:name?> "$" <id:uint?> => ast::Out { id, name };
+
+WithDef: ast::With = "with" <n:name> ":" <v:WithSuite> => ast::With {
+    name: n,
+    graph: v,
+};
+WithSuite: HashMap<String, ast::Value> = NewLine Indent <v:WithSet+> Dedent => v.into_iter().collect();
+
+WithSet: (String, ast::Value) = "set" <k:fullname> "=" <v:Expr> NewLine => (k, v);
+
+Expr: ast::Value = BinaryOp<orOp, Expr, xorExpr>;
+xorExpr: ast::Value = BinaryOp<xorOp, xorExpr, andExpr>;
+andExpr: ast::Value = BinaryOp<andOp, andExpr, arithExpr>;
+arithExpr: ast::Value = BinaryOp<addOp, arithExpr, term>;
+term: ast::Value = BinaryOp<mulOp, term, factor>;
+factor: ast::Value = {
+    <op:unOp> <v:power> => ast::Value::Expr {
+        op,
+        lhs: Box::new(v),
+        rhs: None,
+    },
+    power,
+}
+power: ast::Value = BinaryOpReversed<powOp, Value, factor>;
+
+orOp: ast::Operator = "|" => ast::Operator::Or;
+xorOp: ast::Operator = "^" => ast::Operator::Xor;
+andOp: ast::Operator = "&" => ast::Operator::And;
+addOp: ast::Operator = {
+    "+" => ast::Operator::Add,
+    "-" => ast::Operator::Sub,
+}
+mulOp: ast::Operator = {
+    "*" => ast::Operator::Mul,
+    "/" => ast::Operator::Div,
+    "%" => ast::Operator::Mod,
+}
+unOp: ast::Operator = {
+    "+" => ast::Operator::Pos,
+    "-" => ast::Operator::Neg,
+}
+powOp: ast::Operator = "**" => ast::Operator::Pow;
+
+plusSep: () = "+" => ();
+commaSep: () = "," => ();
+
+#[inline]
+BinaryOp<O, L, R>: ast::Value = {
+    <lhs:L> <op:O> <rhs:R> => ast::Value::Expr {
+        op,
+        lhs: Box::new(lhs),
+        rhs: Some(Box::new(rhs)),
+    },
+    <v:R> => v,
+};
+#[inline]
+BinaryOpReversed<O, L, R>: ast::Value = {
+    <lhs:L> <op:O> <rhs:R> => ast::Value::Expr {
+        op,
+        lhs: Box::new(lhs),
+        rhs: Some(Box::new(rhs)),
+    },
+    <v:L> => v,
+};
+
+Value: ast::Value = {
+    ValueBool,
+    ValueInt,
+    ValueReal,
+    <v:Variable> => ast::Value::Variable(v.into()),
+    "(" <v:Expr> ")" => v,
+}
+ValueBool: ast::Value = {
+    "yes" => ast::Value::Bool(true),
+    "no" => ast::Value::Bool(false),
+}
+ValueInt: ast::Value = <v:uint> => ast::Value::Int(v as i64);
+ValueReal: ast::Value = <v:float> => ast::Value::Real(v);
+ValueNode: ast::Value = <v:name> => ast::Value::Node(v);
+Variable: ast::Variable = <s:name> => ast::Variable::with_name(s);
+fullname: String = <s:name+> => s.join(" ");
+
+#[inline]
+OneOrMore<T, Sep>: Vec<T> = {
+    <i1: T> <i2:(Sep T)*> Sep? => {
+        let mut items = vec![i1];
+        items.extend(i2.into_iter().map(|e| e.1));
+        items
+    }
+};
+
+#[inline]
+MaybeNull<T, Kw>: Option<T> = {
+    <v:T> => Some(v),
+    Kw => None,
+}
+
+NewLine: () = "\n" => ();
+Null: () = "*" => ();
+
+// Hook external lexer:
+extern {
+    type Location = location::Location;
+    type Error = LexicalError;
+
+    enum lexer::Tok {
+        Indent => lexer::Tok::Indent,
+        Dedent => lexer::Tok::Dedent,
+        uint => lexer::Tok::UInt { value: <u64> },
+        float => lexer::Tok::Float { value: <f64> },
+        string => lexer::Tok::String { value: <String> },
+        bytes => lexer::Tok::Bytes { value: <Vec<u8>> },
+        name => lexer::Tok::Name { name: <String> },
+        StartFile => lexer::Tok::StartFile,
+        "\n" => lexer::Tok::Newline,
+        "," => lexer::Tok::Comma,
+        "(" => lexer::Tok::Lpar,
+        ")" => lexer::Tok::Rpar,
+        "{" => lexer::Tok::Lbrace,
+        "}" => lexer::Tok::Rbrace,
+        "[" => lexer::Tok::Lbracket,
+        "]" => lexer::Tok::Rbracket,
+        ":" => lexer::Tok::Colon,
+        "=" => lexer::Tok::Equal,
+        "$" => lexer::Tok::NodeIdx,
+        "." => lexer::Tok::Dot,
+        "+" => lexer::Tok::Add,
+        "-" => lexer::Tok::Sub,
+        "*" => lexer::Tok::Mul,
+        "/" => lexer::Tok::Div,
+        "%" => lexer::Tok::Mod,
+        "**" => lexer::Tok::Pow,
+        "&" => lexer::Tok::And,
+        "^" => lexer::Tok::Xor,
+        "|" => lexer::Tok::Or,
+        "yes" => lexer::Tok::BoolYes,
+        "no" => lexer::Tok::BoolNo,
+        "with" => lexer::Tok::WithDef,
+        "set" => lexer::Tok::WithSet,
+        "let" => lexer::Tok::LetDef,
+        "bool" => lexer::Tok::LetBool,
+        "int" => lexer::Tok::LetInt,
+        "real" => lexer::Tok::LetReal,
+        "dim" => lexer::Tok::LetDim,
+        "node" => lexer::Tok::NodeDef,
+        "extern" => lexer::Tok::NodeExtern,
+        "data" => lexer::Tok::NodeData,
+        "optim" => lexer::Tok::NodeOptim,
+        "exec" => lexer::Tok::NodeExec,
+        "use" => lexer::Tok::UseDef,
+        "by" => lexer::Tok::UseBy,
+    }
+}

@@ -1,0 +1,42 @@
+use MyModel
+use OtherModel by author
+use NetworkModel by "http://localhost/"
+
+node LeNet5:
+    let K: kernel size = int *
+
+    let pi = real 3.14
+    let power = int pi ** 2 % 1
+    let logical = bool no | yes & yes ^ no
+
+    let dataset = data node *
+    let model = node *
+
+    let W: width = dim
+    let H: height = dim
+
+    with Conv2d:
+        set padding = K / 2 + 1
+        set stride = 1
+
+    node MyRelu:
+        node Foo:
+            1. Any
+        1. Relu
+
+    node MyConv:
+        1. Conv2d
+        2. BatchNorm2d
+        3. Relu
+
+    0. Input                                = 1, W  , H
+    1. MyConv                               = K, W/2, H/2
+    2. MyConv                               = K, W/4, H/4
+    3. Transform                            = K* W/4* H/4
+    4. Linear + Relu + Dropout              = 1024
+    5. Linear(Oc=1024) + Concat[x$4, x$]    = 2048
+    6. TupleInOut {a=x$, b=x$0}:
+        x = 1024
+        y = 1024
+    7. DismissableTupleIn {x=x$}
+    8. Square[x$]

@@ -1,0 +1,5 @@
+node LeNet6:
+    with LeNet5:
+        set kernel size = 7
+
+    1. LeNet5

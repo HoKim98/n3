@@ -1,0 +1,7 @@
+node TestCat:
+    let axis = int -1
+
+    0. Input                    = 32
+    1. Linear                   = 64
+    2. Concat[$0, $1] (axis=-1) = 96
+    3. Linear                   = 10

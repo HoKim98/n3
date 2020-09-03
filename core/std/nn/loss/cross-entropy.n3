@@ -1,0 +1,7 @@
+extern node CrossEntropy:
+    let C: number of classes = dim
+
+    0. Input:
+        x = C
+        y = C
+    1. Output

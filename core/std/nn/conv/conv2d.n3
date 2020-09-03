@@ -1,0 +1,18 @@
+extern node Conv2D:
+    let K: kernel size = int *
+    let P: padding = int (K-1) / 2
+
+    let S: stride = int 1
+
+    let Ic: input channels = dim
+    let Oc: output channels = dim
+
+    let W: width = dim
+    let H: height = dim
+
+    let bias = bool yes
+
+    let M: _margin = int -(K-1) / 2 + P
+
+    0. Input    = Ic,  W     ,  H
+    1. Output   = Oc, (W+M)/S, (H+M)/S

@@ -1,0 +1,8 @@
+extern node Linear:
+    let bias = bool yes
+
+    let Ic: input channels = dim
+    let Oc: output channels = dim
+
+    0. Input    = Ic
+    1. Output   = Oc

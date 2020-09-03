@@ -1,0 +1,2 @@
+optim node Adam:
+    let lr: learning rate = real 0.001

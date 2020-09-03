@@ -1,0 +1,18 @@
+[package]
+name = "n3-parser"
+version = "0.1.0"
+authors = ["h <besqer996@gnu.ac.kr>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[build-dependencies]
+lalrpop = "0.19"
+
+[dependencies]
+lalrpop-util = "0.19"
+log = "0.4"
+num-traits = "0.2"
+unic-emoji-char = "0.9"
+unic-ucd-ident = "0.9"
+wtf8 = "0.0.3"

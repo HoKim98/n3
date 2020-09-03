@@ -1,0 +1,4 @@
+data node Mnist:
+    0. Output:
+        x = 3, 28, 28
+        classes = 10
