@@ -4,6 +4,19 @@ use std::fmt;
 use super::fmt::FmtGuard;
 use super::variable::Value;
 
+#[derive(Clone, Debug)]
+pub struct OutDim {
+    pub out: Out,
+    pub dim: Value,
+}
+
+impl Into<Value> for OutDim {
+    fn into(self) -> Value {
+        Value::Dim(Box::new(self))
+    }
+}
+
+#[derive(Clone)]
 pub struct Out {
     pub id: Option<u64>,
     pub name: Option<String>,

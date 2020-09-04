@@ -1,7 +1,7 @@
 use std::fs;
 
 fn recon(source: &str) {
-    let parser = n3_parser::Parser::new();
+    let parser = n3_core::Parser::new();
 
     let source_recon1 = format!("{:?}", parser.parse_file(source).unwrap());
     println!("{}", &source_recon1);

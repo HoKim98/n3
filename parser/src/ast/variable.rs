@@ -1,12 +1,34 @@
 use std::cell::RefCell;
 use std::fmt;
+use std::ops::Deref;
 use std::rc::Rc;
 
 use super::fmt::FmtGuard;
+use super::graph::OutDim;
 
-pub type RefVariable = Rc<RefCell<Variable>>;
+#[derive(Clone)]
+pub struct RefVariable(Rc<RefCell<Variable>>);
 
-#[derive(Default)]
+impl Deref for RefVariable {
+    type Target = RefCell<Variable>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl fmt::Debug for RefVariable {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let inner = self.0.borrow();
+        write!(f, "{}", &inner.name)?;
+        if let Some(value) = &inner.value {
+            write!(f, "={:?}", value)?;
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Default)]
 pub struct Variable {
     pub id: Option<usize>,
     pub id_old: Option<usize>,
@@ -18,8 +40,6 @@ pub struct Variable {
     pub value: Option<Value>,
 }
 
-struct FmtVariable<'a>(&'a RefVariable);
-
 impl Variable {
     pub fn with_name(name: String) -> Self {
         Self {
@@ -27,26 +47,34 @@ impl Variable {
             ..Default::default()
         }
     }
+
+    pub fn with_name_value(name: String, value: Value) -> Self {
+        Self {
+            name,
+            value: Some(value),
+            ..Default::default()
+        }
+    }
+
+    pub fn is_hint(&self) -> bool {
+        self.ty.map(|x| x == LetType::Dim).unwrap_or_default()
+            || self.value.as_ref().map(|x| x.is_hint()).unwrap_or_default()
+    }
 }
 
 impl Into<RefVariable> for Variable {
     fn into(self) -> RefVariable {
-        Rc::new(RefCell::new(self))
+        RefVariable(Rc::new(RefCell::new(self)))
     }
 }
 
-impl<'a> fmt::Debug for FmtVariable<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let inner = self.0.borrow();
-        write!(f, "{}", &inner.name)?;
-        if let Some(value) = &inner.value {
-            write!(f, "={:?}", value)?;
-        }
-        Ok(())
+impl Into<Value> for RefVariable {
+    fn into(self) -> Value {
+        Value::Variable(self)
     }
 }
 
-#[derive(PartialEq, Eq)]
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub enum LetType {
     Bool,
     Int,
@@ -67,7 +95,7 @@ impl fmt::Debug for LetType {
     }
 }
 
-#[derive(PartialEq, Eq)]
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub enum LetNodeType {
     Default,
     Data,
@@ -111,17 +139,31 @@ impl<'a> fmt::Debug for FmtGuard<'a, NodeLet> {
     }
 }
 
+#[derive(Clone)]
 pub enum Value {
     Bool(bool),
     Int(i64),
     Real(f64),
     Node(String),
+    Dim(Box<OutDim>),
     Variable(RefVariable),
     Expr {
         op: Operator,
         lhs: Box<Value>,
         rhs: Option<Box<Value>>,
     },
+}
+
+impl Value {
+    pub fn is_hint(&self) -> bool {
+        match self {
+            Self::Variable(value) => value.borrow().is_hint(),
+            Self::Expr { op: _, lhs, rhs } => {
+                lhs.is_hint() || rhs.as_ref().map(|x| x.is_hint()).unwrap_or_default()
+            }
+            _ => false,
+        }
+    }
 }
 
 impl fmt::Debug for Value {
@@ -137,7 +179,8 @@ impl fmt::Debug for Value {
             Self::Int(value) => write!(f, "{}", value),
             Self::Real(value) => write!(f, "{}", value),
             Self::Node(value) => write!(f, "{}", value),
-            Self::Variable(value) => write!(f, "{:?}", FmtVariable(value)),
+            Self::Dim(value) => write!(f, "{:?}", value),
+            Self::Variable(value) => write!(f, "{:?}", value),
             Self::Expr { op, lhs, rhs } => match rhs {
                 Some(rhs) => write!(f, "({:?} {:?} {:?})", lhs, op, rhs),
                 None => write!(f, "{:?}{:?}", op, lhs),
@@ -146,6 +189,7 @@ impl fmt::Debug for Value {
     }
 }
 
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub enum Operator {
     // unary
     Pos,

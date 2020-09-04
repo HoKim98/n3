@@ -8,7 +8,6 @@ edition = "2018"
 
 [dependencies]
 n3-core = { path = "core" }
-n3-parser = { path = "parser" }
 
 [workspace]
 members = [

@@ -11,8 +11,8 @@ Cargo.lock
 **/*.rs.bk
 
 # Fake n3 root directory
-/tests/data/data/
-/tests/data/models/
+**/tests/data/data/
+**/tests/data/models/
 
 # Editor
 **/.vscode/
