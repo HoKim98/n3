@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+
 use n3_parser::error::ParseError;
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -14,11 +16,11 @@ pub enum BuildError {
         name: String,
     },
     CycledVariables {
-        names: Vec<String>,
+        names: BTreeSet<String>,
     },
     NoSuchVariable {
         name: String,
-        candidates: Vec<String>,
+        candidates: BTreeSet<String>,
     },
 }
 

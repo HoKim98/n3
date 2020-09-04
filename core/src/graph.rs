@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use n3_parser::ast;
 
 use super::error::{BuildError, Result};
-use super::variable::{CloneValue, Detach};
+use super::variable::*;
 
 #[derive(Debug)]
 pub struct Graph {
@@ -12,7 +12,7 @@ pub struct Graph {
     variables: Table,
 }
 
-type Table = HashMap<String, ast::RefVariable>;
+pub(crate) type Table = HashMap<String, ast::RefVariable>;
 
 impl Graph {
     pub fn new(id: usize) -> Self {
@@ -21,6 +21,34 @@ impl Graph {
             shortcuts: Table::new(),
             variables: Table::new(),
         }
+    }
+
+    pub fn try_with_variables<I>(id: usize, variables: I) -> Result<Self>
+    where
+        I: IntoIterator<Item = (String, ast::NodeLet)>,
+    {
+        let mut graph = Graph {
+            id,
+            shortcuts: Table::new(),
+            variables: variables
+                .into_iter()
+                .map(|(k, v)| {
+                    (
+                        k,
+                        ast::Variable {
+                            name: v.name,
+                            shortcut: v.shortcut,
+                            ty: Some(v.ty),
+                            value: v.value,
+                            ..Default::default()
+                        }
+                        .into(),
+                    )
+                })
+                .collect(),
+        };
+        graph.build()?;
+        Ok(graph)
     }
 
     pub fn clone_safe(&self, id: usize, variables: &mut Vec<ast::RefVariable>) -> Self {
@@ -108,214 +136,15 @@ impl Graph {
         let dims = shape
             .dims
             .iter()
-            .map(|d| d.hint(&self.variables, out, d, true))
+            .enumerate()
+            .map(|(dim, v)| v.hint(&self.variables, out, dim, true))
             .collect::<Result<_>>()?;
         Ok(ast::Shape::with_dims(dims))
     }
 }
 
-trait Replace {
-    fn replace_to(
-        &self,
-        names: &mut Vec<String>,
-        variables: &Table,
-        shortcuts: &HashMap<String, String>,
-    ) -> Result<Self>
-    where
-        Self: Sized;
-}
-
-impl Replace for ast::RefVariable {
-    fn replace_to(
-        &self,
-        names: &mut Vec<String>,
-        variables: &Table,
-        shortcuts: &HashMap<String, String>,
-    ) -> Result<Self> {
-        let raise_cycled_variables = || {
-            let names = names.iter().rev().map(|x| x.to_string()).collect();
-            Err(BuildError::CycledVariables { names }.into())
-        };
-
-        let mut value = self;
-        {
-            // If a cycle is detected, the same mutable variable cannot be referenced again.
-            let mut value_ref = match value.try_borrow_mut() {
-                Ok(v) => v,
-                Err(_) => return raise_cycled_variables(),
-            };
-            let name = &mut value_ref.name;
-
-            if let Some(n) = shortcuts.get(name) {
-                *name = n.to_string();
-            }
-            if let Some(var) = variables.get(name) {
-                value = var;
-            }
-        }
-
-        {
-            // If a cycle is detected, the same mutable variable cannot be referenced again.
-            let mut value_ref = match value.try_borrow_mut() {
-                Ok(v) => v,
-                Err(_) => return raise_cycled_variables(),
-            };
-            let name = value_ref.name.clone();
-
-            names.push(name);
-            value_ref.value = value_ref.value.replace_to(names, variables, shortcuts)?;
-            names.pop();
-        }
-        Ok(value.clone())
-    }
-}
-
-impl Replace for ast::Value {
-    fn replace_to(
-        &self,
-        names: &mut Vec<String>,
-        variables: &Table,
-        shortcuts: &HashMap<String, String>,
-    ) -> Result<Self> {
-        match self {
-            Self::Variable(value) => Ok(value.replace_to(names, variables, shortcuts)?.into()),
-            Self::Expr { op, lhs, rhs } => {
-                let lhs = lhs.replace_to(names, variables, shortcuts)?;
-                let rhs = rhs.replace_to(names, variables, shortcuts)?;
-                Ok(Self::Expr { op: *op, lhs, rhs })
-            }
-            _ => Ok(self.clone()),
-        }
-    }
-}
-
-impl<T> Replace for Option<T>
-where
-    T: Replace,
-{
-    fn replace_to(
-        &self,
-        names: &mut Vec<String>,
-        variables: &Table,
-        shortcuts: &HashMap<String, String>,
-    ) -> Result<Self> {
-        match self {
-            Some(value) => Ok(Some(value.replace_to(names, variables, shortcuts)?)),
-            None => Ok(None),
-        }
-    }
-}
-
-impl<T> Replace for Box<T>
-where
-    T: Replace,
-{
-    fn replace_to(
-        &self,
-        names: &mut Vec<String>,
-        variables: &Table,
-        shortcuts: &HashMap<String, String>,
-    ) -> Result<Self> {
-        Ok(Box::new((**self).replace_to(names, variables, shortcuts)?))
-    }
-}
-
-trait Hint {
-    fn hint(
-        &self,
-        shortcuts: &Table,
-        out: &ast::Out,
-        dim: &ast::Value,
-        is_root: bool,
-    ) -> Result<Self>
-    where
-        Self: Sized;
-}
-
-impl Hint for ast::RefVariable {
-    fn hint(
-        &self,
-        shortcuts: &Table,
-        out: &ast::Out,
-        dim: &ast::Value,
-        is_root: bool,
-    ) -> Result<Self> {
-        let this = self.borrow();
-        let name = &this.name;
-
-        match shortcuts.get(name) {
-            // hint in-place
-            Some(output) => {
-                let mut output_ref = output.borrow_mut();
-                if output_ref.ty == Some(ast::LetType::Dim) && is_root {
-                    output_ref.value = Some(
-                        ast::OutDim {
-                            out: out.clone(),
-                            dim: dim.clone(),
-                        }
-                        .into(),
-                    );
-                }
-                Ok(output.clone())
-            }
-            None => Err(BuildError::NoSuchVariable {
-                name: name.clone(),
-                candidates: shortcuts.keys().cloned().collect(),
-            }
-            .into()),
-        }
-    }
-}
-
-impl Hint for ast::Value {
-    fn hint(
-        &self,
-        shortcuts: &Table,
-        out: &ast::Out,
-        dim: &ast::Value,
-        is_root: bool,
-    ) -> Result<Self> {
-        match self {
-            Self::Variable(value) => Ok(value.hint(shortcuts, out, dim, is_root)?.into()),
-            Self::Expr { op, lhs, rhs } => {
-                let lhs = lhs.hint(shortcuts, out, dim, is_root)?;
-                let rhs = rhs.hint(shortcuts, out, dim, is_root)?;
-                Ok(Self::Expr { op: *op, lhs, rhs })
-            }
-            _ => Ok(self.clone()),
-        }
-    }
-}
-
-impl<T> Hint for Option<T>
-where
-    T: Hint,
-{
-    fn hint(
-        &self,
-        shortcuts: &Table,
-        out: &ast::Out,
-        dim: &ast::Value,
-        is_root: bool,
-    ) -> Result<Self> {
-        match self {
-            Some(value) => Ok(Some(value.hint(shortcuts, out, dim, is_root)?)),
-            None => Ok(None),
-        }
-    }
-}
-
-impl<T> Hint for Box<T>
-where
-    T: Hint,
-{
-    fn hint(
-        &self,
-        shortcuts: &Table,
-        out: &ast::Out,
-        dim: &ast::Value,
-        is_root: bool,
-    ) -> Result<Self> {
-        Ok(Box::new((**self).hint(shortcuts, out, dim, is_root)?))
+impl Estimable for Graph {
+    fn is_estimable(&self) -> bool {
+        self.variables.values().all(|x| x.is_estimable())
     }
 }

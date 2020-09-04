@@ -7,7 +7,7 @@ use super::variable::Value;
 #[derive(Clone, Debug)]
 pub struct OutDim {
     pub out: Out,
-    pub dim: Value,
+    pub dim: usize,
 }
 
 impl Into<Value> for OutDim {
@@ -20,6 +20,15 @@ impl Into<Value> for OutDim {
 pub struct Out {
     pub id: Option<u64>,
     pub name: Option<String>,
+}
+
+impl Out {
+    pub fn with_name(name: String) -> Self {
+        Self {
+            id: None,
+            name: Some(name),
+        }
+    }
 }
 
 impl fmt::Debug for Out {

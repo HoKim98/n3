@@ -1,4 +1,4 @@
-use n3_core::{ast, Graph};
+use n3_core::*;
 
 fn get_simple_graph() -> Graph {
     let mut graph = Graph::new(1);
@@ -34,7 +34,58 @@ fn get_simple_graph() -> Graph {
 
 #[test]
 fn test_simple() {
-    let mut graph = get_simple_graph();
+    let graph = get_simple_graph();
 
-    graph.build().unwrap();
+    let a = graph.get("a").unwrap();
+
+    // unestimable variable: a
+    assert_eq!(graph.is_estimable(), false);
+
+    // hinting
+    a.borrow_mut().value = Some(
+        ast::OutDim {
+            out: ast::Out::with_name("x".to_string()),
+            dim: 0,
+        }
+        .into(),
+    );
+    assert_eq!(graph.is_estimable(), true);
+}
+
+#[test]
+fn test_node_root() {
+    const SOURCE: &'static str = "
+node MyNode:
+    let c = int a + b - 1
+    let a = int 4
+    let b = int 3
+    let d = int c
+";
+
+    let parser = n3_core::Parser::new();
+    let file = parser.parse_file(SOURCE).unwrap();
+
+    let graph = Graph::try_with_variables(1, file.node.graph).unwrap();
+    assert_eq!(graph.is_estimable(), true);
+}
+
+#[test]
+fn test_cycle() {
+    const SOURCE: &'static str = "
+node MyNode:
+    let a = int b + 1
+    let b = int c + 2
+    let c = int a + 3
+";
+
+    let parser = n3_core::Parser::new();
+    let file = parser.parse_file(SOURCE).unwrap();
+
+    // cycled variable: [a, b, c]
+    assert_eq!(
+        Graph::try_with_variables(1, file.node.graph).err(),
+        Some(Error::BuildError(BuildError::CycledVariables {
+            names: ["a", "b", "c"].iter().map(|x| x.to_string()).collect(),
+        }))
+    );
 }

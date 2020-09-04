@@ -4,8 +4,8 @@ mod error;
 mod graph;
 mod variable;
 
-pub use self::error::{BuildError, Result};
-pub use self::graph::Graph;
+pub use self::error::*;
+pub use self::graph::*;
+pub use self::variable::*;
 
-pub use n3_parser::ast;
-pub use n3_parser::Parser;
+pub use n3_parser::{ast, Parser};
