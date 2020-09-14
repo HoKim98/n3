@@ -23,6 +23,9 @@ pub enum BuildError {
         name: String,
         candidates: BTreeSet<String>,
     },
+    NoSuchNode {
+        name: String,
+    },
 }
 
 #[derive(Debug)]

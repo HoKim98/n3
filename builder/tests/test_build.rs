@@ -42,3 +42,18 @@ fn test_tensor_graph() {
     let root = NodeRoot::new();
     ir.build(&root).unwrap();
 }
+
+#[test]
+fn test_unexpected_extern_node() {
+    let root = NodeRoot::new();
+
+    assert_eq!(
+        root.get_extern("FOO").err(),
+        Some(
+            BuildError::NoSuchNode {
+                name: "FOO".to_string(),
+            }
+            .into()
+        )
+    );
+}

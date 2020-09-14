@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::fs;
 
 use crate::ast;
-use crate::error::Result;
+use crate::error::{BuildError, Result};
 use crate::nodes::NodeRoot;
 use crate::seed::Seed;
 
@@ -45,7 +45,10 @@ impl<T: Build> NodeCache<T> {
         if let Some(source) = self.caches_source.borrow_mut().remove(name) {
             return self.build_and_store(name, root, source);
         }
-        todo!()
+        Err(BuildError::NoSuchNode {
+            name: name.to_string(),
+        }
+        .into())
     }
 
     fn build_and_store(&self, name: &str, root: &NodeRoot, source: String) -> Result<T> {
