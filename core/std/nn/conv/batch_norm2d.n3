@@ -1,0 +1,7 @@
+extern node BatchNorm2D:
+    let C: channels = dim
+    let W: width = dim
+    let H: height = dim
+
+    0. Input    = C, W, H
+    1. Output   = C, W, H

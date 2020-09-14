@@ -1,0 +1,38 @@
+node Vgg:
+    let C: input channels = dim
+    let W: width = dim
+    let H: height = dim
+
+    with Conv2D:
+        set kernel size = 3
+        set padding = 1
+
+    with MaxPool2D:
+        set kernel size = 2
+        set stride = 2
+
+    node Block:
+        let R: repeat = int *
+
+        let C: channels = dim
+        let W: width = dim
+        let H: height = dim
+
+        node ConvBlock:
+            1. Conv2D = C, W, H
+            2. BatchNorm2D
+            3. Relu
+
+        1. ConvBlock * R
+        2. MaxPool2D
+
+    0. Input        =   C, W    , H
+    1. Block(R=1)   =  64, W/2  , H/2
+    2. Block(R=1)   = 128, W/4  , H/4
+    3. Block(R=2)   = 256, W/8  , H/8
+    4. Block(R=2)   = 512, W/16 , H/16
+
+    5. ToLinear
+    6. Linear + Relu + Dropout = 4096
+    7. Linear + Relu + Dropout = 4096
+    8. Linear = 10

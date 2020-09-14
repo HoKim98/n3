@@ -3,26 +3,18 @@ import torch.nn as nn
 from n3 import ExternNode
 
 
-class Conv2D(ExternNode):
+class MaxPool2D(ExternNode):
     kernel_size: int
     padding: int
 
     stride: int
 
-    input_channels: int
-    output_channels: int
-
-    bias: bool
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self._inner = nn.Conv2d(
-            in_channels=self.input_channels,
-            out_channels=self.output_channels,
+        self._inner = nn.MaxPool2d(
             kernel_size=self.kernel_size,
-            stride=self.stride,
             padding=self.padding,
-            bias=self.bias,
+            stride=self.stride,
         )
 
     def forward(self, x):

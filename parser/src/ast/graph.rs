@@ -116,6 +116,7 @@ pub struct GraphCall {
     pub name: String,
     pub inputs: Option<GraphInputs>,
     pub args: Option<BTreeMap<String, Value>>,
+    pub repeat: Option<Value>,
 }
 
 impl fmt::Debug for GraphCall {
@@ -131,6 +132,9 @@ impl fmt::Debug for GraphCall {
                 write!(f, "{}={:?}, ", name, value)?;
             }
             write!(f, ")")?;
+        }
+        if let Some(repeat) = &self.repeat {
+            write!(f, " * {:?}", repeat)?;
         }
         Ok(())
     }

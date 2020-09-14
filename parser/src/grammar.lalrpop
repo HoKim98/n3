@@ -72,10 +72,11 @@ nodeLetType: ast::LetType = {
 GraphNode: ast::GraphNode = <id:graphId> <calls:GraphCalls> <shapes:graphShapes> => ast::GraphNode { id, calls, shapes };
 graphId: u64 = <v:uint> "." => v;
 GraphCalls: Vec<ast::GraphCall> = <v:OneOrMore<GraphCall, plusSep>> => v;
-GraphCall: ast::GraphCall = <n:name> <inputs:graphInputs?> <args:graphArgs?> => ast::GraphCall {
+GraphCall: ast::GraphCall = <n:name> <inputs:graphInputs?> <args:graphArgs?> <r:graphRepeat?> => ast::GraphCall {
     name: n,
     inputs,
     args,
+    repeat: r,
 };
 graphInputs: ast::GraphInputs = {
     "{" <v:OneOrMore<graphInputKw, commaSep>> "}" => ast::GraphInputs::Dict(v.into_iter().collect()),
@@ -84,6 +85,7 @@ graphInputs: ast::GraphInputs = {
 graphInputKw: (String, ast::Out) = <k:name> "=" <v:Out> => (k, v);
 graphArgs: BTreeMap<String, ast::Value> = "(" <v:OneOrMore<graphArg, commaSep>> ")" => v.into_iter().collect();
 graphArg: (String, ast::Value) = <k:name> "=" <v:Expr> => (k, v);
+graphRepeat: ast::Value = "*" <v:Value> => v;
 graphShapes: Option<ast::Shapes> = {
     <v:graphShape> NewLine => Some(ast::Shapes::Single(v)),
     ":" NewLine Indent <v:graphShapeKw+> Dedent => Some(ast::Shapes::Dict(v.into_iter().collect())),
@@ -174,7 +176,14 @@ ValueInt: ast::Value = <v:uint> => ast::Value::Int(v as i64);
 ValueReal: ast::Value = <v:float> => ast::Value::Real(v);
 ValueNode: ast::Value = <v:name> => ast::Value::Node(v);
 Variable: ast::Variable = <s:name> => ast::Variable::with_name(s);
+
+
 fullname: String = <s:name+> => s.join(" ");
+name: String = {
+    "data" => "data".to_string(),
+    "optim" => "optim".to_string(),
+    token,
+}
 
 #[inline]
 OneOrMore<T, Sep>: Vec<T> = {
@@ -206,7 +215,7 @@ extern {
         float => lexer::Tok::Float { value: <f64> },
         string => lexer::Tok::String { value: <String> },
         bytes => lexer::Tok::Bytes { value: <Vec<u8>> },
-        name => lexer::Tok::Name { name: <String> },
+        token => lexer::Tok::Name { name: <String> },
         StartFile => lexer::Tok::StartFile,
         "\n" => lexer::Tok::Newline,
         "," => lexer::Tok::Comma,

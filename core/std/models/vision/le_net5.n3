@@ -1,0 +1,22 @@
+node LeNet5:
+    let K: kernel size = int 5
+
+    let C: input channels = dim
+    let W: width = dim
+    let H: height = dim
+
+    with Conv2D:
+        set kernel size = K
+        set padding = K / 2
+        set stride = 2
+
+    node MyConv:
+        1. Conv2D
+        2. Relu
+
+    0. Input                    =  C, W  , H
+    1. MyConv                   = 32, W/2, H/2
+    2. MyConv                   = 64, W/4, H/4
+    3. Transform                = 64* W/4* H/4
+    4. Linear + Relu + Dropout  = 1024
+    5. Linear                   = 10

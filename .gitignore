@@ -14,5 +14,8 @@ Cargo.lock
 **/tests/data/data/
 **/tests/data/models/
 
+# Python
+**/*.pyc
+
 # Editor
 **/.vscode/
