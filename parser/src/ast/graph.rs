@@ -6,7 +6,7 @@ use super::variable::{Keywords, Value};
 
 pub type Outs = BTreeMap<String, Out>;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct OutDim {
     pub out: Out,
     pub dim: usize,
@@ -14,11 +14,11 @@ pub struct OutDim {
 
 impl Into<Value> for OutDim {
     fn into(self) -> Value {
-        Value::Dim(Box::new(self))
+        Value::Dim(self)
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct Out {
     pub id: Option<u64>,
     pub name: Option<String>,

@@ -1,24 +1,26 @@
 use n3_builder::*;
 
-fn get_simple_graph() -> Graph {
+pub fn get_simple_graph() -> Graph {
     let mut graph = Graph::new(1);
 
     let a: ast::RefVariable = ast::Variable::with_name("a".to_string()).into();
     let b: ast::RefVariable =
-        ast::Variable::with_name_value("b".to_string(), ast::Value::Int(1)).into();
+        ast::Variable::with_name_value("b".to_string(), ast::Value::Int(3)).into();
 
     // c = a + b - 1
     let c: ast::RefVariable = ast::Variable::with_name_value(
         "c".to_string(),
-        ast::Value::Expr {
+        ast::Expr {
             op: ast::Operator::Sub,
-            lhs: Box::new(ast::Value::Expr {
+            lhs: ast::Expr {
                 op: ast::Operator::Add,
-                lhs: Box::new(a.clone().into()),
-                rhs: Some(Box::new(b.clone().into())),
-            }),
-            rhs: Some(Box::new(ast::Value::Int(1))),
-        },
+                lhs: a.clone().into(),
+                rhs: Some(b.clone().into()),
+            }
+            .into(),
+            rhs: Some(ast::Value::Int(1)),
+        }
+        .into(),
     )
     .into();
 
@@ -88,4 +90,15 @@ node MyNode:
             names: ["a", "b", "c"].iter().map(|x| x.to_string()).collect(),
         }))
     );
+}
+
+#[test]
+fn test_build() {
+    let graph = get_simple_graph();
+
+    let a = graph.get("a").unwrap();
+    a.borrow_mut().value = Some(4u64.into());
+
+    let c = graph.get("c").unwrap();
+    assert_eq!(c.build(), 6u64.into());
 }

@@ -11,6 +11,7 @@ n3-parser = { path = "../parser" }
 
 include_dir = "0.6"
 Inflector = "0.11"
+num-traits = "0.2"
 
 [dev-dependencies]
 maplit = "1.0"

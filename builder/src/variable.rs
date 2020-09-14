@@ -1,5 +1,7 @@
 use std::collections::{BTreeMap, HashMap};
 
+use num_traits::Pow;
+
 use super::error::{BuildError, Result};
 use super::graph::Table;
 use crate::ast;
@@ -14,6 +16,10 @@ pub trait Detach {
 
 pub trait Estimable {
     fn is_estimable(&self) -> bool;
+}
+
+pub trait BuildValue {
+    fn build(&self) -> ast::Value;
 }
 
 pub(crate) trait Replace {
@@ -50,12 +56,18 @@ impl CloneValue for ast::Value {
     fn clone_value(&self, variables: &[ast::RefVariable]) -> Self {
         match self {
             Self::Variable(value) => Self::Variable(value.clone_value(variables)),
-            Self::Expr { op, lhs, rhs } => Self::Expr {
-                op: *op,
-                lhs: lhs.clone_value(variables),
-                rhs: rhs.clone_value(variables),
-            },
+            Self::Expr(value) => Self::Expr(value.clone_value(variables).into()),
             _ => self.clone(),
+        }
+    }
+}
+
+impl CloneValue for ast::Expr {
+    fn clone_value(&self, variables: &[ast::RefVariable]) -> Self {
+        Self {
+            op: self.op,
+            lhs: self.lhs.clone_value(variables),
+            rhs: self.rhs.clone_value(variables),
         }
     }
 }
@@ -90,15 +102,6 @@ where
     }
 }
 
-impl<T> CloneValue for Box<T>
-where
-    T: CloneValue,
-{
-    fn clone_value(&self, variables: &[ast::RefVariable]) -> Self {
-        Box::new((&**self).clone_value(variables))
-    }
-}
-
 impl Detach for ast::RefVariable {
     fn detach(&self, id: usize) -> Self {
         let this = self.borrow();
@@ -124,9 +127,15 @@ impl Estimable for ast::Value {
     fn is_estimable(&self) -> bool {
         match self {
             Self::Variable(value) => value.is_estimable(),
-            Self::Expr { op: _, lhs, rhs } => lhs.is_estimable() && rhs.is_estimable(),
+            Self::Expr(value) => value.is_estimable(),
             _ => true,
         }
+    }
+}
+
+impl Estimable for ast::Expr {
+    fn is_estimable(&self) -> bool {
+        self.lhs.is_estimable() && self.rhs.as_ref().map(|x| x.is_estimable()).unwrap_or(true)
     }
 }
 
@@ -136,15 +145,6 @@ where
 {
     fn is_estimable(&self) -> bool {
         self.as_ref().map(|x| x.is_estimable()).unwrap_or_default()
-    }
-}
-
-impl<T> Estimable for Box<T>
-where
-    T: Estimable,
-{
-    fn is_estimable(&self) -> bool {
-        (&**self).is_estimable()
     }
 }
 
@@ -202,13 +202,24 @@ impl Replace for ast::Value {
     ) -> Result<Self> {
         match self {
             Self::Variable(value) => Ok(value.replace_to(names, variables, shortcuts)?.into()),
-            Self::Expr { op, lhs, rhs } => {
-                let lhs = lhs.replace_to(names, variables, shortcuts)?;
-                let rhs = rhs.replace_to(names, variables, shortcuts)?;
-                Ok(Self::Expr { op: *op, lhs, rhs })
-            }
+            Self::Expr(value) => Ok(value.replace_to(names, variables, shortcuts)?.into()),
             _ => Ok(self.clone()),
         }
+    }
+}
+
+impl Replace for ast::Expr {
+    fn replace_to(
+        &self,
+        names: &mut Vec<String>,
+        variables: &Table,
+        shortcuts: &HashMap<String, String>,
+    ) -> Result<Self> {
+        Ok(Self {
+            op: self.op,
+            lhs: self.lhs.replace_to(names, variables, shortcuts)?,
+            rhs: self.rhs.replace_to(names, variables, shortcuts)?,
+        })
     }
 }
 
@@ -226,20 +237,6 @@ where
             Some(value) => Ok(Some(value.replace_to(names, variables, shortcuts)?)),
             None => Ok(None),
         }
-    }
-}
-
-impl<T> Replace for Box<T>
-where
-    T: Replace,
-{
-    fn replace_to(
-        &self,
-        names: &mut Vec<String>,
-        variables: &Table,
-        shortcuts: &HashMap<String, String>,
-    ) -> Result<Self> {
-        Ok(Box::new((**self).replace_to(names, variables, shortcuts)?))
     }
 }
 
@@ -276,13 +273,20 @@ impl Hint for ast::Value {
     fn hint(&self, shortcuts: &Table, out: &ast::Out, dim: usize, is_root: bool) -> Result<Self> {
         match self {
             Self::Variable(value) => Ok(value.hint(shortcuts, out, dim, is_root)?.into()),
-            Self::Expr { op, lhs, rhs } => {
-                let lhs = lhs.hint(shortcuts, out, dim, is_root)?;
-                let rhs = rhs.hint(shortcuts, out, dim, is_root)?;
-                Ok(Self::Expr { op: *op, lhs, rhs })
-            }
+            Self::Expr(value) => Ok(value.hint(shortcuts, out, dim, is_root)?.into()),
             _ => Ok(self.clone()),
         }
+    }
+}
+
+impl Hint for ast::Expr {
+    fn hint(&self, shortcuts: &Table, out: &ast::Out, dim: usize, is_root: bool) -> Result<Self> {
+        Ok(ast::Expr {
+            op: self.op,
+            lhs: self.lhs.hint(shortcuts, out, dim, is_root)?,
+            rhs: self.rhs.hint(shortcuts, out, dim, is_root)?,
+        }
+        .into())
     }
 }
 
@@ -298,11 +302,69 @@ where
     }
 }
 
-impl<T> Hint for Box<T>
+impl BuildValue for ast::RefVariable {
+    fn build(&self) -> ast::Value {
+        self.borrow().value.build()
+    }
+}
+
+impl BuildValue for ast::Value {
+    fn build(&self) -> Self {
+        match self {
+            Self::Bool(_) | Self::UInt(_) | Self::Int(_) | Self::Real(_) => self.clone(),
+            Self::Node(_) => unreachable!("node variable should be pruned."),
+            Self::Dim(_) => unreachable!("The value should have already been checked."),
+            Self::Variable(value) => value.build(),
+            Self::Expr(value) => value.build(),
+        }
+    }
+}
+
+impl BuildValue for ast::Expr {
+    fn build(&self) -> ast::Value {
+        let lhs = self.lhs.build();
+        if let Some(rhs) = &self.rhs {
+            let rhs = self.rhs.build();
+            match self.op {
+                ast::Operator::Add => lhs + rhs,
+                ast::Operator::Sub => lhs - rhs,
+                ast::Operator::Mul => lhs * rhs,
+                ast::Operator::MulInt => lhs.into_uint() * rhs.into_uint(),
+                ast::Operator::Div => lhs / rhs,
+                ast::Operator::Mod => lhs % rhs,
+                ast::Operator::Pow => lhs.pow(rhs),
+                ast::Operator::And => lhs & rhs,
+                ast::Operator::Or => lhs | rhs,
+                ast::Operator::Xor => lhs ^ rhs,
+                _ => unreachable!("expected binary operators"),
+            }
+        } else {
+            match self.op {
+                ast::Operator::Pos => lhs,
+                ast::Operator::Neg => -lhs,
+                _ => unreachable!("expected unary operators"),
+            }
+        }
+    }
+}
+
+impl<T> BuildValue for Option<T>
 where
-    T: Hint,
+    T: BuildValue,
 {
-    fn hint(&self, shortcuts: &Table, out: &ast::Out, dim: usize, is_root: bool) -> Result<Self> {
-        Ok(Box::new((**self).hint(shortcuts, out, dim, is_root)?))
+    fn build(&self) -> ast::Value {
+        match self {
+            Some(value) => value.build(),
+            None => unreachable!("The value should have already been checked."),
+        }
+    }
+}
+
+impl<T> BuildValue for Box<T>
+where
+    T: BuildValue,
+{
+    fn build(&self) -> ast::Value {
+        (**self).build()
     }
 }

@@ -114,11 +114,11 @@ andExpr: ast::Value = BinaryOp<andOp, andExpr, arithExpr>;
 arithExpr: ast::Value = BinaryOp<addOp, arithExpr, term>;
 term: ast::Value = BinaryOp<mulOp, term, factor>;
 factor: ast::Value = {
-    <op:unOp> <v:power> => ast::Value::Expr {
+    <op:unOp> <lhs:power> => ast::Value::Expr(ast::Expr {
         op,
-        lhs: Box::new(v),
+        lhs,
         rhs: None,
-    },
+    }.into()),
     power,
 }
 power: ast::Value = BinaryOpReversed<powOp, Value, factor>;
@@ -146,20 +146,20 @@ commaSep: () = "," => ();
 
 #[inline]
 BinaryOp<O, L, R>: ast::Value = {
-    <lhs:L> <op:O> <rhs:R> => ast::Value::Expr {
+    <lhs:L> <op:O> <rhs:R> => ast::Value::Expr(ast::Expr {
         op,
-        lhs: Box::new(lhs),
-        rhs: Some(Box::new(rhs)),
-    },
+        lhs,
+        rhs: Some(rhs),
+    }.into()),
     <v:R> => v,
 };
 #[inline]
 BinaryOpReversed<O, L, R>: ast::Value = {
-    <lhs:L> <op:O> <rhs:R> => ast::Value::Expr {
+    <lhs:L> <op:O> <rhs:R> => ast::Value::Expr(ast::Expr {
         op,
-        lhs: Box::new(lhs),
-        rhs: Some(Box::new(rhs)),
-    },
+        lhs,
+        rhs: Some(rhs),
+    }.into()),
     <v:L> => v,
 };
 
