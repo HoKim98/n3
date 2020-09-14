@@ -88,7 +88,9 @@ graphArg: (String, ast::Value) = <k:name> "=" <v:Expr> => (k, v);
 graphRepeat: ast::Value = "*" <v:Value> => v;
 graphShapes: Option<ast::Shapes> = {
     <v:graphShape> NewLine => Some(ast::Shapes::Single(v)),
-    ":" NewLine Indent <v:graphShapeKw+> Dedent => Some(ast::Shapes::Dict(v.into_iter().collect())),
+    ":" NewLine Indent <v:graphShapeKw+> Dedent =>
+        Some(ast::Shapes::Dict(ast::ShapesDict(
+            v.into_iter().map(|(k, v)| (k, Some(v))).collect()))),
     NewLine => None,
 }
 graphShapeKw: (String, ast::Shape) = <k:name> <v:graphShape> NewLine => (k, v);

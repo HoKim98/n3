@@ -8,8 +8,16 @@ use inflector::Inflector;
 const STD_DIR: Dir = include_dir!("./std");
 
 pub fn get_sources() -> HashMap<String, String> {
+    get_files("n3")
+}
+
+pub fn get_externs() -> HashMap<String, String> {
+    get_files("py")
+}
+
+fn get_files(extension: &'static str) -> HashMap<String, String> {
     STD_DIR
-        .find("**/*.n3")
+        .find(&format!("**/*.{}", extension))
         .unwrap()
         .map(|e| e.path())
         .map(|p| (trim_path(p), load_source(p)))

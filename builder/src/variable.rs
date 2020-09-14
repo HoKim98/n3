@@ -1,9 +1,8 @@
 use std::collections::{BTreeMap, HashMap};
 
-use n3_parser::ast;
-
 use super::error::{BuildError, Result};
 use super::graph::Table;
+use crate::ast;
 
 pub trait CloneValue {
     fn clone_value(&self, variables: &[ast::RefVariable]) -> Self;

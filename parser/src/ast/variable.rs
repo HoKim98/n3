@@ -1,4 +1,5 @@
 use std::cell::RefCell;
+use std::collections::BTreeMap;
 use std::fmt;
 use std::ops::Deref;
 use std::rc::Rc;
@@ -139,9 +140,12 @@ impl<'a> fmt::Debug for FmtGuard<'a, NodeLet> {
     }
 }
 
+pub type Keywords = BTreeMap<String, Value>;
+
 #[derive(Clone)]
 pub enum Value {
     Bool(bool),
+    UInt(u64),
     Int(i64),
     Real(f64),
     Node(String),
@@ -152,6 +156,30 @@ pub enum Value {
         lhs: Box<Value>,
         rhs: Option<Box<Value>>,
     },
+}
+
+impl Into<Value> for bool {
+    fn into(self) -> Value {
+        Value::Bool(self)
+    }
+}
+
+impl Into<Value> for u64 {
+    fn into(self) -> Value {
+        Value::UInt(self)
+    }
+}
+
+impl Into<Value> for i64 {
+    fn into(self) -> Value {
+        Value::Int(self)
+    }
+}
+
+impl Into<Value> for f64 {
+    fn into(self) -> Value {
+        Value::Real(self)
+    }
 }
 
 impl Value {
@@ -176,6 +204,7 @@ impl fmt::Debug for Value {
                     write!(f, "no")
                 }
             }
+            Self::UInt(value) => write!(f, "{}", value),
             Self::Int(value) => write!(f, "{}", value),
             Self::Real(value) => write!(f, "{}", value),
             Self::Node(value) => write!(f, "{}", value),
@@ -198,6 +227,7 @@ pub enum Operator {
     Add,
     Sub,
     Mul,
+    MulInt,
     Div,
     Mod,
     Pow,
@@ -212,7 +242,7 @@ impl fmt::Debug for Operator {
         match self {
             Self::Pos | Self::Add => write!(f, "+"),
             Self::Neg | Self::Sub => write!(f, "-"),
-            Self::Mul => write!(f, "*"),
+            Self::Mul | Self::MulInt => write!(f, "*"),
             Self::Div => write!(f, "/"),
             Self::Mod => write!(f, "%"),
             Self::Pow => write!(f, "**"),

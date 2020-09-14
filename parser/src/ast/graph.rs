@@ -2,7 +2,9 @@ use std::collections::BTreeMap;
 use std::fmt;
 
 use super::fmt::FmtGuard;
-use super::variable::Value;
+use super::variable::{Keywords, Value};
+
+pub type Outs = BTreeMap<String, Out>;
 
 #[derive(Clone, Debug)]
 pub struct OutDim {
@@ -44,13 +46,13 @@ impl fmt::Debug for Out {
     }
 }
 
+#[derive(Clone)]
 pub struct Shape {
     pub dims: Vec<Value>,
 }
 
 impl fmt::Debug for Shape {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, " = ")?;
         for dim in &self.dims {
             write!(f, "{:?}, ", dim)?;
         }
@@ -64,30 +66,43 @@ impl Shape {
     }
 }
 
+#[derive(Clone)]
 pub enum Shapes {
-    Dict(BTreeMap<String, Shape>),
+    Dict(ShapesDict),
     Single(Shape),
 }
+
+#[derive(Clone)]
+pub struct ShapesDict(pub BTreeMap<String, Option<Shape>>);
 
 impl<'a> fmt::Debug for FmtGuard<'a, Shapes> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &**self {
-            Shapes::Dict(dict) => {
-                let indent = self.indent();
-                write!(f, ":\n")?;
-
-                for (name, shape) in dict {
-                    write!(f, "{}{}{:?}\n", &indent, name, shape)?;
-                }
-                Ok(())
-            }
-            Shapes::Single(shape) => write!(f, "{:?}\n", shape),
+            Shapes::Dict(dict) => self.sibling(dict).fmt(f),
+            Shapes::Single(shape) => write!(f, " = {:?}\n", shape),
         }
     }
 }
 
+impl<'a> fmt::Debug for FmtGuard<'a, ShapesDict> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let indent = self.indent();
+        write!(f, ":\n")?;
+
+        for (name, shape) in &self.0 {
+            write!(f, "{}{} = ", &indent, name)?;
+            match shape {
+                Some(shape) => shape.fmt(f)?,
+                None => write!(f, "...")?, // TODO: ambiguous shapes?
+            }
+            write!(f, "\n")?;
+        }
+        Ok(())
+    }
+}
+
 pub enum GraphInputs {
-    Dict(BTreeMap<String, Out>),
+    Dict(Outs),
     List(Vec<Out>),
 }
 
@@ -115,7 +130,7 @@ impl fmt::Debug for GraphInputs {
 pub struct GraphCall {
     pub name: String,
     pub inputs: Option<GraphInputs>,
-    pub args: Option<BTreeMap<String, Value>>,
+    pub args: Option<Keywords>,
     pub repeat: Option<Value>,
 }
 
@@ -156,7 +171,7 @@ impl<'a> fmt::Debug for FmtGuard<'a, GraphNode> {
         }
 
         if let Some(shapes) = &self.shapes {
-            self.resolve(shapes).fmt(f)
+            self.child(shapes).fmt(f)
         } else {
             write!(f, "\n")
         }

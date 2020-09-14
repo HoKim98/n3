@@ -1,0 +1,9 @@
+exec node DummyImageClassification:
+    let D: data = data node *
+    let M: model = node *
+
+    let loss = node CrossEntropy
+    let optimizer = node Adam
+
+    let epoch = int *
+    let batch size = int *

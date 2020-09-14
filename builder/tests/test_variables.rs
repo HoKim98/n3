@@ -1,4 +1,4 @@
-use n3_core::*;
+use n3_builder::*;
 
 fn get_simple_graph() -> Graph {
     let mut graph = Graph::new(1);
@@ -62,7 +62,7 @@ node MyNode:
     let d = int c
 ";
 
-    let parser = n3_core::Parser::new();
+    let parser = n3_builder::Parser::new();
     let file = parser.parse_file(SOURCE).unwrap();
 
     let graph = Graph::try_with_variables(1, file.node.graph).unwrap();
@@ -78,7 +78,7 @@ node MyNode:
     let c = int a + 3
 ";
 
-    let parser = n3_core::Parser::new();
+    let parser = n3_builder::Parser::new();
     let file = parser.parse_file(SOURCE).unwrap();
 
     // cycled variable: [a, b, c]

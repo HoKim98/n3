@@ -16,7 +16,14 @@ impl<'a, T> FmtGuard<'a, T> {
         INDENT.repeat(self.depth)
     }
 
-    pub fn resolve<C>(&self, child: &'a C) -> FmtGuard<'a, C> {
+    pub fn sibling<C>(&self, child: &'a C) -> FmtGuard<'a, C> {
+        FmtGuard {
+            inner: child,
+            depth: self.depth,
+        }
+    }
+
+    pub fn child<C>(&self, child: &'a C) -> FmtGuard<'a, C> {
         FmtGuard {
             inner: child,
             depth: self.depth + 1,

@@ -3,11 +3,11 @@ use std::fmt;
 
 use super::fmt::FmtGuard;
 use super::graph::GraphNode;
-use super::variable::{NodeLet, Value};
+use super::variable::{Keywords, NodeLet, Value};
 
 pub struct With {
     pub name: String,
-    pub graph: BTreeMap<String, Value>,
+    pub graph: Keywords,
 }
 
 impl<'a> fmt::Debug for FmtGuard<'a, With> {
@@ -16,7 +16,7 @@ impl<'a> fmt::Debug for FmtGuard<'a, With> {
         write!(f, "{}with {}:\n", &indent, &self.name)?;
 
         for (name, value) in &self.graph {
-            self.resolve(&FmtWithSet { name, value }).fmt(f)?;
+            self.child(&FmtWithSet { name, value }).fmt(f)?;
         }
         Ok(())
     }
@@ -70,16 +70,16 @@ impl<'a> fmt::Debug for FmtGuard<'a, Node> {
         write!(f, "{}{:?}node {}:\n", &indent, &self.ty, &self.name)?;
 
         for value in self.graph.values() {
-            self.resolve(value).fmt(f)?;
+            self.child(value).fmt(f)?;
         }
         for value in self.withs.values() {
-            self.resolve(value).fmt(f)?;
+            self.child(value).fmt(f)?;
         }
         for value in self.children.values() {
-            self.resolve(value).fmt(f)?;
+            self.child(value).fmt(f)?;
         }
         for value in self.tensor_graph.values() {
-            self.resolve(value).fmt(f)?;
+            self.child(value).fmt(f)?;
         }
         Ok(())
     }

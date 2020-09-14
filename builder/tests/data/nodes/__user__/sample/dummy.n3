@@ -9,7 +9,7 @@ node LeNet5:
     let power = int pi ** 2 % 1
     let logical = bool no | yes & yes ^ no
 
-    let dataset = data node *
+    let data = data node *
     let model = node *
 
     let W: width = dim
