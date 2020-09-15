@@ -4,6 +4,7 @@ use super::super::ir::NodeIR;
 use super::super::root::NodeRoot;
 use super::graph::GraphNodeEntry;
 use crate::ast;
+use crate::cache::CloneSafe;
 use crate::error::{BuildError, Result};
 use crate::graph::{Graph, RefGraph};
 use crate::tensor::TensorNode;
@@ -12,31 +13,41 @@ pub trait ASTBuild<'a> {
     type Args;
     type Output;
 
-    fn build(self, root: &NodeRoot, args: Self::Args) -> Result<Self::Output>;
+    fn build(self, ctx: &mut Context<'a>, args: Self::Args) -> Result<Self::Output>;
 }
 
-#[derive(Default)]
-pub struct Container {
-    parent: BTreeMap<NodeName, RefGraph>,
-    uses: BTreeMap<NodeName, TensorNode>,
-}
-
-struct ContainerGuard<'a> {
-    container: &'a mut Container,
+pub struct Context<'a> {
     root: &'a NodeRoot,
+    parent: BTreeMap<NodeName, RefGraph>,
+    uses: BTreeMap<String, TensorNode>,
+}
+
+impl<'a> Context<'a> {
+    pub fn new(root: &'a NodeRoot) -> Self {
+        Context {
+            root,
+            parent: Default::default(),
+            uses: Default::default(),
+        }
+    }
 }
 
 type NodeName = Vec<String>;
 
-pub struct NodeEntry<'a> {
+pub struct NodeEntry<'a, 'b>
+where
+    'a: 'b,
+{
     name: NodeName,
     graph: RefGraph,
+    ctx: &'b mut Context<'a>,
+
     children: BTreeMap<String, TensorNode>,
-    cg: ContainerGuard<'a>,
+
     last_tensor_id: u64,
 }
 
-impl<'a> NodeEntry<'a> {
+impl<'a, 'b> NodeEntry<'a, 'b> {
     fn add_use(&mut self, name: String, u: ast::Use) -> Result<()> {
         // Step 1. get the source
         // Step 2. build
@@ -75,7 +86,7 @@ impl<'a> NodeEntry<'a> {
         };
 
         // Step 2. build
-        let node = file.build(self.cg.root, (self.cg.container, self.name.clone()))?;
+        let node = file.build(self.ctx, self.name.clone())?;
 
         // Step 3. store
         self.children.insert(node.name.clone(), node.into());
@@ -108,21 +119,37 @@ impl<'a> NodeEntry<'a> {
         todo!()
     }
 
+    pub fn get(&mut self, name: &str) -> Result<TensorNode> {
+        if let Some(node) = self.children.get(name) {
+            let mut variables = vec![];
+            Ok(node.clone_safe(&self.ctx.root.seed, &mut variables))
+        } else {
+            self.ctx.get(name)
+        }
+    }
+}
+
+impl<'a> Context<'a> {
     fn get(&mut self, name: &str) -> Result<TensorNode> {
-        todo!()
+        if let Some(node) = self.uses.get(name) {
+            let mut variables = vec![];
+            Ok(node.clone_safe(&self.root.seed, &mut variables))
+        } else {
+            Ok(self.root.get(name)?.into())
+        }
     }
 }
 
 impl<'a> ASTBuild<'a> for ast::File {
-    type Args = (&'a mut Container, NodeName);
+    type Args = NodeName;
     type Output = NodeIR;
 
-    fn build(self, root: &NodeRoot, (container, parent): Self::Args) -> Result<Self::Output> {
+    fn build(self, ctx: &mut Context<'a>, parent: Self::Args) -> Result<Self::Output> {
         if self.node.ty.is_extern() {
-            return ExternFile(self).build(root, ());
+            return ExternFile(self).build(ctx, ());
         }
         if self.node.ty.is_exec() {
-            return ExecFile(self).build(root, ());
+            return ExecFile(self).build(ctx, ());
         }
 
         let mut node = self.node;
@@ -130,17 +157,16 @@ impl<'a> ASTBuild<'a> for ast::File {
         let mut name = parent.clone();
         name.push(node.name.clone());
 
-        let cg = ContainerGuard { container, root };
-
         // Step 1. make a graph
-        let graph: RefGraph = Graph::try_with_variables(root.seed.generate(), node.graph)?.into();
-        cg.container.parent.insert(name.clone(), graph.clone());
+        let graph: RefGraph =
+            Graph::try_with_variables(ctx.root.seed.generate(), node.graph)?.into();
+        ctx.parent.insert(name.clone(), graph.clone());
 
         let mut entry = NodeEntry {
             name,
             graph,
             children: Default::default(),
-            cg,
+            ctx,
             last_tensor_id: 0,
         };
 
@@ -188,7 +214,10 @@ impl<'a> ASTBuild<'a> for ExternFile {
     type Args = ();
     type Output = NodeIR;
 
-    fn build(self, root: &NodeRoot, parent: Self::Args) -> Result<Self::Output> {
+    fn build(self, ctx: &mut Context<'a>, (): Self::Args) -> Result<Self::Output> {
+        let file = self.0;
+
+        dbg!(&file);
         todo!()
     }
 }
@@ -198,7 +227,7 @@ impl<'a> ASTBuild<'a> for ExecFile {
     type Args = ();
     type Output = NodeIR;
 
-    fn build(self, root: &NodeRoot, parent: Self::Args) -> Result<Self::Output> {
+    fn build(self, ctx: &mut Context<'a>, (): Self::Args) -> Result<Self::Output> {
         todo!()
     }
 }

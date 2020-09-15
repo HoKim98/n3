@@ -2,29 +2,35 @@ use super::node::NodeEntry;
 use crate::ast;
 use crate::error::Result;
 
-trait GraphNodeBuilder<B>
+pub struct GraphNodeEntry<'a, 'b, 'c>
 where
-    Self: Sized,
+    'a: 'b,
+    'b: 'c,
 {
-    fn build(self) -> Result<()>;
-}
-
-pub struct GraphNodeEntry<'a, 'b> {
-    pub root: &'b mut NodeEntry<'a>,
+    pub root: &'c mut NodeEntry<'a, 'b>,
     pub id: u64,
     pub node: ast::GraphNode,
 }
 
+// ----------------------
+//  BEGIN Default nodes
+// ----------------------
+
 struct InputNode;
-impl<'a, 'b> GraphNodeBuilder<InputNode> for GraphNodeEntry<'a, 'b> {
+impl<'a, 'b, 'c> GraphNodeBuilder<InputNode> for GraphNodeEntry<'a, 'b, 'c> {
     fn build(self) -> Result<()> {
         todo!()
     }
 }
 
 struct DefaultNode;
-impl<'a, 'b> GraphNodeBuilder<DefaultNode> for GraphNodeEntry<'a, 'b> {
+impl<'a, 'b, 'c> GraphNodeBuilder<DefaultNode> for GraphNodeEntry<'a, 'b, 'c> {
     fn build(self) -> Result<()> {
+        for call in self.node.calls {
+            // Step 1. get the node
+            let callee = self.root.get(&call.name)?;
+            todo!();
+        }
         todo!()
     }
 }
@@ -34,21 +40,21 @@ impl<'a, 'b> GraphNodeBuilder<DefaultNode> for GraphNodeEntry<'a, 'b> {
 // ----------------------
 
 struct Transform;
-impl<'a, 'b> GraphNodeBuilder<Transform> for GraphNodeEntry<'a, 'b> {
+impl<'a, 'b, 'c> GraphNodeBuilder<Transform> for GraphNodeEntry<'a, 'b, 'c> {
     fn build(self) -> Result<()> {
         todo!()
     }
 }
 
 struct ToLinear;
-impl<'a, 'b> GraphNodeBuilder<ToLinear> for GraphNodeEntry<'a, 'b> {
+impl<'a, 'b, 'c> GraphNodeBuilder<ToLinear> for GraphNodeEntry<'a, 'b, 'c> {
     fn build(self) -> Result<()> {
         todo!()
     }
 }
 
 struct Concat;
-impl<'a, 'b> GraphNodeBuilder<Concat> for GraphNodeEntry<'a, 'b> {
+impl<'a, 'b, 'c> GraphNodeBuilder<Concat> for GraphNodeEntry<'a, 'b, 'c> {
     fn build(self) -> Result<()> {
         todo!()
     }
@@ -67,7 +73,7 @@ macro_rules! match_builtins(
     }
 );
 
-impl<'a, 'b> GraphNodeEntry<'a, 'b> {
+impl<'a, 'b, 'c> GraphNodeEntry<'a, 'b, 'c> {
     pub fn build(self) -> Result<()> {
         if self.id == 0 {
             // input node
@@ -85,3 +91,10 @@ impl<'a, 'b> GraphNodeEntry<'a, 'b> {
 // ----------------------
 //   END  Built-in nodes
 // ----------------------
+
+trait GraphNodeBuilder<B>
+where
+    Self: Sized,
+{
+    fn build(self) -> Result<()>;
+}

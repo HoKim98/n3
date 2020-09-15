@@ -42,13 +42,17 @@ impl<T: Build> NodeCache<T> {
             return Ok(cache.clone_safe(&root.seed, &mut variables));
         }
 
-        if let Some(path) = self.paths.borrow_mut().remove(name) {
+        let path = self.paths.borrow_mut().remove(name);
+        if let Some(path) = path {
             let source = fs::read_to_string(path)?;
             return self.build_and_store(name, root, source);
         }
-        if let Some(source) = self.caches_source.borrow_mut().remove(name) {
+
+        let source = self.caches_source.borrow_mut().remove(name);
+        if let Some(source) = source {
             return self.build_and_store(name, root, source);
         }
+
         Err(BuildError::NoSuchNode {
             name: name.to_string(),
         }

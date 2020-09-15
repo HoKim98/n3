@@ -1,4 +1,4 @@
-use super::builder::ASTBuild;
+use super::builder::{ASTBuild, Context};
 use super::code::NodeCode;
 use super::root::NodeRoot;
 use crate::ast;
@@ -8,6 +8,7 @@ use crate::graph::RefGraph;
 use crate::seed::Seed;
 use crate::tensor::TensorGraph;
 
+#[derive(Debug)]
 pub struct NodeIR {
     pub name: String,
     pub graph: RefGraph,
@@ -15,7 +16,7 @@ pub struct NodeIR {
     pub data: NodeIRData,
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct NodeIRData {
     pub id: u64,
     pub input: Option<ast::Outs>,
@@ -73,8 +74,8 @@ impl Build for NodeIR {
             }
             .into())
         } else {
-            let mut container = Default::default();
-            file.build(root, (&mut container, Default::default()))
+            let mut ctx = Context::new(root);
+            file.build(&mut ctx, Default::default())
         }
     }
 }

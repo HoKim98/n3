@@ -1,12 +1,16 @@
 use crate::ast;
+use crate::cache::CloneSafe;
 use crate::code::Code;
 use crate::error::Result;
 use crate::externs::ExternIR;
 use crate::graph::Table;
 use crate::nodes::{NodeIR, NodeRoot};
+use crate::seed::Seed;
 
+#[derive(Debug)]
 pub struct TensorGraph(Vec<TensorNode>);
 
+#[derive(Debug)]
 pub enum TensorNode {
     Node(NodeIR),
     Extern(ExternIR),
@@ -94,6 +98,12 @@ impl TensorNode {
     }
 
     pub fn apply_variables(&mut self, variables: Table) -> Result<()> {
+        todo!()
+    }
+}
+
+impl CloneSafe for TensorNode {
+    fn clone_safe(&self, seed: &Seed, variables: &mut Vec<ast::RefVariable>) -> Self {
         todo!()
     }
 }

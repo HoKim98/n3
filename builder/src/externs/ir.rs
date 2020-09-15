@@ -4,13 +4,13 @@ use crate::error::Result;
 use crate::graph::RefGraph;
 use crate::nodes::NodeRoot;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ExternIR {
     data: ExternIRData,
     shapes: ExternIRShapes,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ExternIRData {
     pub id: u64,
     pub name: String,
@@ -19,7 +19,7 @@ pub struct ExternIRData {
     pub output: ast::Outs,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ExternIRShapes {
     input: ast::Shapes,
     output: ast::Shapes,
