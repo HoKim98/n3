@@ -1,5 +1,5 @@
 use crate::ast;
-use crate::cache::{Build, CloneSafe};
+use crate::context::{Build, CloneSafe};
 use crate::error::Result;
 use crate::nodes::NodeRoot;
 use crate::seed::Seed;

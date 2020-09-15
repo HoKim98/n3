@@ -2,25 +2,14 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fs;
 
-use crate::ast;
+use crate::context::Build;
 use crate::error::{BuildError, Result};
 use crate::nodes::NodeRoot;
-use crate::seed::Seed;
 
 pub struct NodeCache<T: Build> {
     paths: RefCell<HashMap<String, String>>,
     caches_source: RefCell<HashMap<String, String>>,
     caches: RefCell<HashMap<String, T>>,
-}
-
-pub trait Build: CloneSafe {
-    fn build(root: &NodeRoot, name: &str, source: String) -> Result<Self>
-    where
-        Self: Sized;
-}
-
-pub trait CloneSafe {
-    fn clone_safe(&self, seed: &Seed, variables: &mut Vec<ast::RefVariable>) -> Self;
 }
 
 impl<T: Build> NodeCache<T> {

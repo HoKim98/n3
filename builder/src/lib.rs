@@ -2,6 +2,7 @@ pub mod n3_std;
 
 mod cache;
 mod code;
+mod context;
 mod error;
 mod externs;
 mod graph;

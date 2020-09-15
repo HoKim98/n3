@@ -30,6 +30,10 @@ pub enum BuildError {
         expected: u64,
         given: u64,
     },
+    MismatchedGraphNodeSize {
+        expected: &'static [&'static str],
+        given: u64,
+    },
     MismatchedNodeName {
         expected: String,
         given: String,

@@ -38,16 +38,14 @@ impl<'a> fmt::Debug for FmtGuard<'a, FmtWithSet<'a>> {
 #[derive(Copy, Clone, PartialEq)]
 pub enum NodeType {
     Default,
-    Extern,
-    Data,
-    Optim,
     Exec,
+    Extern(ExternNodeType),
 }
 
 impl NodeType {
     pub fn is_extern(&self) -> bool {
         match self {
-            Self::Extern | Self::Data | Self::Optim => true,
+            Self::Extern(_) => true,
             _ => false,
         }
     }
@@ -55,16 +53,38 @@ impl NodeType {
     pub fn is_exec(&self) -> bool {
         *self == Self::Exec
     }
+
+    pub fn unwrap_extern(self) -> ExternNodeType {
+        match self {
+            Self::Extern(ty) => ty,
+            _ => unreachable!("expected extern type"),
+        }
+    }
 }
 
 impl fmt::Debug for NodeType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Default => Ok(()),
-            Self::Extern => write!(f, "extern "),
+            Self::Exec => write!(f, "exec "),
+            Self::Extern(ty) => ty.fmt(f),
+        }
+    }
+}
+
+#[derive(Copy, Clone, PartialEq)]
+pub enum ExternNodeType {
+    Default,
+    Data,
+    Optim,
+}
+
+impl fmt::Debug for ExternNodeType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Default => write!(f, "extern "),
             Self::Data => write!(f, "data "),
             Self::Optim => write!(f, "optim "),
-            Self::Exec => write!(f, "exec "),
         }
     }
 }

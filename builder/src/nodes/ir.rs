@@ -1,9 +1,8 @@
-use super::builder::{ASTBuild, Context};
 use super::code::NodeCode;
 use super::root::NodeRoot;
 use crate::ast;
-use crate::cache::{Build, CloneSafe};
-use crate::error::{BuildError, Result};
+use crate::context::CloneSafe;
+use crate::error::Result;
 use crate::graph::RefGraph;
 use crate::seed::Seed;
 use crate::tensor::TensorGraph;
@@ -59,24 +58,6 @@ impl NodeIR {
 impl CloneSafe for NodeIR {
     fn clone_safe(&self, seed: &Seed, variables: &mut Vec<ast::RefVariable>) -> Self {
         todo!()
-    }
-}
-
-impl Build for NodeIR {
-    fn build(root: &NodeRoot, name: &str, source: String) -> Result<Self> {
-        let file = root.parser.parse_file(&source)?;
-
-        // test name
-        if file.node.name != name {
-            Err(BuildError::MismatchedNodeName {
-                expected: name.to_string(),
-                given: file.node.name,
-            }
-            .into())
-        } else {
-            let mut ctx = Context::new(root);
-            file.build(&mut ctx, Default::default())
-        }
     }
 }
 

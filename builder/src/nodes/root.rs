@@ -1,15 +1,15 @@
 use std::cell::UnsafeCell;
 
-use super::ir::NodeIR;
 use crate::cache::NodeCache;
 use crate::error::Result;
 use crate::externs::PythonScript;
 use crate::n3_std;
 use crate::seed::Seed;
+use crate::tensor::TensorNode;
 
 pub struct NodeRoot {
     pub(crate) seed: Seed,
-    sources: NodeCache<NodeIR>,
+    sources: NodeCache<TensorNode>,
     externs: NodeCache<PythonScript>,
     pub(crate) parser: crate::Parser,
     _thread_unsafe: UnsafeCell<()>,
@@ -30,7 +30,7 @@ impl NodeRoot {
         self.sources.add_source(name, source);
     }
 
-    pub fn get(&self, name: &str) -> Result<NodeIR> {
+    pub fn get(&self, name: &str) -> Result<TensorNode> {
         self.sources.get(name, self)
     }
 

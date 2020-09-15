@@ -1,12 +1,14 @@
 use super::code::ExternCode;
 use crate::ast;
+use crate::context::CloneSafe;
 use crate::error::Result;
 use crate::graph::RefGraph;
 use crate::nodes::NodeRoot;
+use crate::seed::Seed;
 
 #[derive(Clone, Debug)]
 pub struct ExternIR {
-    data: ExternIRData,
+    pub data: ExternIRData,
     shapes: ExternIRShapes,
 }
 
@@ -59,5 +61,11 @@ impl ExternIR {
             input: self.data.input,
             output: self.data.output,
         })
+    }
+}
+
+impl CloneSafe for ExternIR {
+    fn clone_safe(&self, seed: &Seed, variables: &mut Vec<ast::RefVariable>) -> Self {
+        todo!()
     }
 }

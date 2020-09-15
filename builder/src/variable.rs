@@ -324,7 +324,7 @@ impl BuildValue for ast::Expr {
     fn build(&self) -> ast::Value {
         let lhs = self.lhs.build();
         if let Some(rhs) = &self.rhs {
-            let rhs = self.rhs.build();
+            let rhs = rhs.build();
             match self.op {
                 ast::Operator::Add => lhs + rhs,
                 ast::Operator::Sub => lhs - rhs,

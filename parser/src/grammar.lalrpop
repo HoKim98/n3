@@ -17,9 +17,9 @@ RootDef: ast::Node = <ty:nodeType> <mut v:NodeDef> => {
     v
 };
 nodeType: ast::NodeType = {
-    "extern" => ast::NodeType::Extern,
-    "data" => ast::NodeType::Data,
-    "optim" => ast::NodeType::Optim,
+    "extern" => ast::NodeType::Extern(ast::ExternNodeType::Default),
+    "data" => ast::NodeType::Extern(ast::ExternNodeType::Data),
+    "optim" => ast::NodeType::Extern(ast::ExternNodeType::Optim),
     "exec" => ast::NodeType::Exec,
     => ast::NodeType::Default,
 }
@@ -64,8 +64,8 @@ nodeLetValue: (ast::LetType, Option<ast::Value>) = {
     "dim" => (ast::LetType::Dim, None),
 }
 nodeLetType: ast::LetType = {
-    "data" => ast::LetType::Node(ast::LetNodeType::Data),
-    "optim" => ast::LetType::Node(ast::LetNodeType::Optim),
+    "data" => ast::LetType::Node(ast::LetNodeType::Extern(ast::ExternNodeType::Data)),
+    "optim" => ast::LetType::Node(ast::LetNodeType::Extern(ast::ExternNodeType::Optim)),
     => ast::LetType::Node(ast::LetNodeType::Default),
 }
 

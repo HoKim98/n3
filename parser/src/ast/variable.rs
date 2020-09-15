@@ -8,6 +8,7 @@ use num_traits::Pow;
 
 use super::fmt::FmtGuard;
 use super::graph::OutDim;
+use super::node::ExternNodeType;
 
 #[derive(Clone)]
 pub struct RefVariable(Rc<RefCell<Variable>>);
@@ -77,7 +78,7 @@ impl Into<Value> for RefVariable {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum LetType {
     Bool,
     UInt,
@@ -99,19 +100,17 @@ impl fmt::Debug for LetType {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum LetNodeType {
     Default,
-    Data,
-    Optim,
+    Extern(ExternNodeType),
 }
 
 impl fmt::Debug for LetNodeType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Default => Ok(()),
-            Self::Data => write!(f, "data "),
-            Self::Optim => write!(f, "optim "),
+            Self::Extern(ty) => ty.fmt(f),
         }
     }
 }

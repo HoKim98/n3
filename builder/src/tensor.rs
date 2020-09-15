@@ -1,10 +1,10 @@
 use crate::ast;
-use crate::cache::CloneSafe;
 use crate::code::Code;
-use crate::error::Result;
+use crate::context::{Build, CloneSafe, Context};
+use crate::error::{BuildError, Result};
 use crate::externs::ExternIR;
 use crate::graph::Table;
-use crate::nodes::{NodeIR, NodeRoot};
+use crate::nodes::{ASTBuild, NodeIR, NodeRoot};
 use crate::seed::Seed;
 
 #[derive(Debug)]
@@ -73,7 +73,10 @@ impl TensorNode {
     }
 
     pub fn name(&self) -> &str {
-        todo!()
+        match self {
+            Self::Node(node) => &node.name,
+            Self::Extern(node) => &node.data.name,
+        }
     }
 
     pub fn get_input_shapes(&self) -> Option<&ast::Shapes> {
@@ -104,6 +107,27 @@ impl TensorNode {
 
 impl CloneSafe for TensorNode {
     fn clone_safe(&self, seed: &Seed, variables: &mut Vec<ast::RefVariable>) -> Self {
-        todo!()
+        match self {
+            Self::Node(node) => node.clone_safe(seed, variables).into(),
+            Self::Extern(node) => node.clone_safe(seed, variables).into(),
+        }
+    }
+}
+
+impl Build for TensorNode {
+    fn build(root: &NodeRoot, name: &str, source: String) -> Result<Self> {
+        let file = root.parser.parse_file(&source)?;
+
+        // test name
+        if file.node.name != name {
+            Err(BuildError::MismatchedNodeName {
+                expected: name.to_string(),
+                given: file.node.name,
+            }
+            .into())
+        } else {
+            let mut ctx = Context::new(root);
+            file.build(&mut ctx, Default::default())
+        }
     }
 }
