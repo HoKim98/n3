@@ -1,3 +1,4 @@
+mod builder;
 mod code;
 mod ir;
 mod root;

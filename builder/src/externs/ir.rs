@@ -1,6 +1,7 @@
 use super::code::ExternCode;
 use crate::ast;
 use crate::error::Result;
+use crate::graph::RefGraph;
 use crate::nodes::NodeRoot;
 
 #[derive(Clone)]
@@ -13,15 +14,15 @@ pub struct ExternIR {
 pub struct ExternIRData {
     pub id: u64,
     pub name: String,
-    pub kwargs: ast::Keywords,
+    pub graph: RefGraph,
     pub input: ast::Outs,
     pub output: ast::Outs,
 }
 
 #[derive(Clone)]
 pub struct ExternIRShapes {
-    input: ast::ShapesDict,
-    output: ast::ShapesDict,
+    input: ast::Shapes,
+    output: ast::Shapes,
 }
 
 impl Into<ExternIR> for ExternIRData {
@@ -36,18 +37,18 @@ impl Into<ExternIR> for ExternIRData {
 impl<'a> Into<ExternIRShapes> for &'a ExternIRData {
     fn into(self) -> ExternIRShapes {
         ExternIRShapes {
-            input: ast::ShapesDict(self.input.keys().map(|x| (x.clone(), None)).collect()),
-            output: ast::ShapesDict(self.output.keys().map(|x| (x.clone(), None)).collect()),
+            input: ast::Shapes(self.input.keys().map(|x| (x.clone(), None)).collect()),
+            output: ast::Shapes(self.output.keys().map(|x| (x.clone(), None)).collect()),
         }
     }
 }
 
 impl ExternIR {
-    pub fn get_input_shapes(&self) -> Option<&ast::ShapesDict> {
+    pub fn get_input_shapes(&self) -> Option<&ast::Shapes> {
         Some(&self.shapes.input)
     }
 
-    pub fn get_output_shapes(&self) -> Option<&ast::ShapesDict> {
+    pub fn get_output_shapes(&self) -> Option<&ast::Shapes> {
         Some(&self.shapes.output)
     }
 

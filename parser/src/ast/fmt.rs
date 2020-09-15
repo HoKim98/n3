@@ -16,13 +16,6 @@ impl<'a, T> FmtGuard<'a, T> {
         INDENT.repeat(self.depth)
     }
 
-    pub fn sibling<C>(&self, child: &'a C) -> FmtGuard<'a, C> {
-        FmtGuard {
-            inner: child,
-            depth: self.depth,
-        }
-    }
-
     pub fn child<C>(&self, child: &'a C) -> FmtGuard<'a, C> {
         FmtGuard {
             inner: child,
@@ -38,3 +31,14 @@ impl<'a, T> Deref for FmtGuard<'a, T> {
         self.inner
     }
 }
+
+#[macro_export]
+macro_rules! impl_debug_no_guard(
+    ($t:ty) => {
+        impl std::fmt::Debug for $t {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                FmtGuard::new(self).fmt(f)
+            }
+        }
+    }
+);

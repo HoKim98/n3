@@ -31,6 +31,13 @@ impl Out {
             name: Some(name),
         }
     }
+
+    pub fn new(id: u64, name: String) -> Self {
+        Self {
+            id: Some(id),
+            name: Some(name),
+        }
+    }
 }
 
 impl fmt::Debug for Out {
@@ -67,25 +74,17 @@ impl Shape {
 }
 
 #[derive(Clone)]
-pub enum Shapes {
-    Dict(ShapesDict),
-    Single(Shape),
-}
+pub struct Shapes(pub BTreeMap<String, Option<Shape>>);
 
-#[derive(Clone)]
-pub struct ShapesDict(pub BTreeMap<String, Option<Shape>>);
-
+crate::impl_debug_no_guard!(Shapes);
 impl<'a> fmt::Debug for FmtGuard<'a, Shapes> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match &**self {
-            Shapes::Dict(dict) => self.sibling(dict).fmt(f),
-            Shapes::Single(shape) => write!(f, " = {:?}\n", shape),
+        if self.0.len() == 1 {
+            if let Some(shape) = self.0.get("x") {
+                return write!(f, " = {:?}\n", shape);
+            }
         }
-    }
-}
 
-impl<'a> fmt::Debug for FmtGuard<'a, ShapesDict> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let indent = self.indent();
         write!(f, ":\n")?;
 
@@ -161,6 +160,7 @@ pub struct GraphNode {
     pub shapes: Option<Shapes>,
 }
 
+crate::impl_debug_no_guard!(GraphNode);
 impl<'a> fmt::Debug for FmtGuard<'a, GraphNode> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let indent = self.indent();

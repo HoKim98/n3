@@ -11,7 +11,7 @@ pub trait CloneValue {
 }
 
 pub trait Detach {
-    fn detach(&self, id: usize) -> Self;
+    fn detach(&self, id: u64) -> Self;
 }
 
 pub trait Estimable {
@@ -103,7 +103,7 @@ where
 }
 
 impl Detach for ast::RefVariable {
-    fn detach(&self, id: usize) -> Self {
+    fn detach(&self, id: u64) -> Self {
         let this = self.borrow();
         let cloned = ast::Variable {
             id: Some(id),

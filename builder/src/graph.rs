@@ -1,13 +1,17 @@
+use std::cell::RefCell;
 use std::collections::HashMap;
+use std::rc::Rc;
 
 use n3_parser::ast;
 
 use super::error::{BuildError, Result};
 use super::variable::*;
 
+pub type RefGraph = Rc<RefCell<Graph>>;
+
 #[derive(Debug)]
 pub struct Graph {
-    id: usize,
+    id: u64,
     shortcuts: Table,
     variables: Table,
 }
@@ -15,7 +19,7 @@ pub struct Graph {
 pub(crate) type Table = HashMap<String, ast::RefVariable>;
 
 impl Graph {
-    pub fn new(id: usize) -> Self {
+    pub fn new(id: u64) -> Self {
         Self {
             id,
             shortcuts: Table::new(),
@@ -23,7 +27,7 @@ impl Graph {
         }
     }
 
-    pub fn try_with_variables<I>(id: usize, variables: I) -> Result<Self>
+    pub fn try_with_variables<I>(id: u64, variables: I) -> Result<Self>
     where
         I: IntoIterator<Item = (String, ast::NodeLet)>,
     {
@@ -51,7 +55,7 @@ impl Graph {
         Ok(graph)
     }
 
-    pub fn clone_safe(&self, id: usize, variables: &mut Vec<ast::RefVariable>) -> Self {
+    pub fn clone_safe(&self, id: u64, variables: &mut Vec<ast::RefVariable>) -> Self {
         // Step 1. get the copies
         let mut self_variables: HashMap<_, _> = self
             .variables
@@ -108,7 +112,7 @@ impl Graph {
         }
     }
 
-    pub fn build(&mut self) -> Result<()> {
+    fn build(&mut self) -> Result<()> {
         let shortcuts_map = self
             .variables
             .iter()
@@ -127,7 +131,22 @@ impl Graph {
                 Ok((k.clone(), value))
             })
             .collect::<Result<_>>()?;
+
         self.variables = variables;
+        self.shortcuts = self
+            .variables
+            .values()
+            .map(|var| {
+                let borrowed = var.borrow();
+                let name = borrowed
+                    .shortcut
+                    .as_ref()
+                    .or_else(|| Some(&borrowed.name))
+                    .cloned()
+                    .unwrap();
+                (name, var.clone())
+            })
+            .collect();
 
         Ok(())
     }
@@ -137,14 +156,24 @@ impl Graph {
             .dims
             .iter()
             .enumerate()
-            .map(|(dim, v)| v.hint(&self.variables, out, dim, true))
+            .map(|(dim, v)| v.hint(&self.shortcuts, out, dim, true))
             .collect::<Result<_>>()?;
         Ok(ast::Shape::with_dims(dims))
+    }
+
+    pub fn replace_to(&self, variable: ast::Value) -> Result<ast::Value> {
+        todo!()
     }
 }
 
 impl Estimable for Graph {
     fn is_estimable(&self) -> bool {
         self.variables.values().all(|x| x.is_estimable())
+    }
+}
+
+impl Into<RefGraph> for Graph {
+    fn into(self) -> RefGraph {
+        Rc::new(RefCell::new(self))
     }
 }

@@ -5,22 +5,24 @@ pub fn get_simple_graph() -> Graph {
 
     let a: ast::RefVariable = ast::Variable::with_name("a".to_string()).into();
     let b: ast::RefVariable =
-        ast::Variable::with_name_value("b".to_string(), ast::Value::Int(3)).into();
+        ast::Variable::with_name_value("b".to_string(), Some(ast::Value::Int(3))).into();
 
     // c = a + b - 1
     let c: ast::RefVariable = ast::Variable::with_name_value(
         "c".to_string(),
-        ast::Expr {
-            op: ast::Operator::Sub,
-            lhs: ast::Expr {
-                op: ast::Operator::Add,
-                lhs: a.clone().into(),
-                rhs: Some(b.clone().into()),
+        Some(
+            ast::Expr {
+                op: ast::Operator::Sub,
+                lhs: ast::Expr {
+                    op: ast::Operator::Add,
+                    lhs: a.clone().into(),
+                    rhs: Some(b.clone().into()),
+                }
+                .into(),
+                rhs: Some(ast::Value::Int(1)),
             }
             .into(),
-            rhs: Some(ast::Value::Int(1)),
-        }
-        .into(),
+        ),
     )
     .into();
 

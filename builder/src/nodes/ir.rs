@@ -1,15 +1,16 @@
+use super::builder::ASTBuild;
 use super::code::NodeCode;
 use super::root::NodeRoot;
 use crate::ast;
 use crate::cache::{Build, CloneSafe};
-use crate::error::Result;
-use crate::graph::Graph;
+use crate::error::{BuildError, Result};
+use crate::graph::RefGraph;
 use crate::seed::Seed;
 use crate::tensor::TensorGraph;
 
 pub struct NodeIR {
     pub name: String,
-    pub graph: Graph,
+    pub graph: RefGraph,
     pub tensor_graph: TensorGraph,
     pub data: NodeIRData,
 }
@@ -23,11 +24,11 @@ pub struct NodeIRData {
 }
 
 impl NodeIR {
-    pub fn get_input_shapes(&self) -> Option<&ast::ShapesDict> {
+    pub fn get_input_shapes(&self) -> Option<&ast::Shapes> {
         self.tensor_graph.get_input_shapes()
     }
 
-    pub fn get_output_shapes(&self) -> Option<&ast::ShapesDict> {
+    pub fn get_output_shapes(&self) -> Option<&ast::Shapes> {
         self.tensor_graph.get_output_shapes()
     }
 
@@ -62,7 +63,19 @@ impl CloneSafe for NodeIR {
 
 impl Build for NodeIR {
     fn build(root: &NodeRoot, name: &str, source: String) -> Result<Self> {
-        todo!()
+        let file = root.parser.parse_file(&source)?;
+
+        // test name
+        if file.node.name != name {
+            Err(BuildError::MismatchedNodeName {
+                expected: name.to_string(),
+                given: file.node.name,
+            }
+            .into())
+        } else {
+            let mut container = Default::default();
+            file.build(root, (&mut container, Default::default()))
+        }
     }
 }
 
@@ -73,7 +86,7 @@ fn unwrap_outs<'a, F>(
     fn_get_shapes: F,
 ) -> ast::Outs
 where
-    F: FnOnce(&'a TensorGraph) -> &'a ast::ShapesDict,
+    F: FnOnce(&'a TensorGraph) -> &'a ast::Shapes,
 {
     match outs {
         Some(input) => input,

@@ -2,6 +2,7 @@ use crate::ast;
 use crate::code::Code;
 use crate::error::Result;
 use crate::externs::ExternIR;
+use crate::graph::Table;
 use crate::nodes::{NodeIR, NodeRoot};
 
 pub struct TensorGraph(Vec<TensorNode>);
@@ -30,7 +31,7 @@ impl Into<TensorNode> for ExternIR {
 }
 
 impl TensorGraph {
-    pub fn get_input_shapes(&self) -> Option<&ast::ShapesDict> {
+    pub fn get_input_shapes(&self) -> Option<&ast::Shapes> {
         let input_node = &self.0[0];
         if input_node.is_input() {
             input_node.get_output_shapes()
@@ -39,7 +40,7 @@ impl TensorGraph {
         }
     }
 
-    pub fn get_output_shapes(&self) -> Option<&ast::ShapesDict> {
+    pub fn get_output_shapes(&self) -> Option<&ast::Shapes> {
         for node in self.0.iter().rev() {
             if let Some(shapes) = node.get_output_shapes() {
                 // filter dynamic size
@@ -71,14 +72,14 @@ impl TensorNode {
         todo!()
     }
 
-    pub fn get_input_shapes(&self) -> Option<&ast::ShapesDict> {
+    pub fn get_input_shapes(&self) -> Option<&ast::Shapes> {
         match self {
             Self::Node(node) => node.get_input_shapes(),
             Self::Extern(node) => node.get_input_shapes(),
         }
     }
 
-    pub fn get_output_shapes(&self) -> Option<&ast::ShapesDict> {
+    pub fn get_output_shapes(&self) -> Option<&ast::Shapes> {
         match self {
             Self::Node(node) => node.get_output_shapes(),
             Self::Extern(node) => node.get_output_shapes(),
@@ -90,5 +91,9 @@ impl TensorNode {
             Self::Node(node) => Ok(node.build(root)?.into()),
             Self::Extern(node) => Ok(node.build(root)?.into()),
         }
+    }
+
+    pub fn apply_variables(&mut self, variables: Table) -> Result<()> {
+        todo!()
     }
 }

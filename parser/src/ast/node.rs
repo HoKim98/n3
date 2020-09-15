@@ -10,6 +10,7 @@ pub struct With {
     pub graph: Keywords,
 }
 
+crate::impl_debug_no_guard!(With);
 impl<'a> fmt::Debug for FmtGuard<'a, With> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let indent = self.indent();
@@ -34,12 +35,26 @@ impl<'a> fmt::Debug for FmtGuard<'a, FmtWithSet<'a>> {
     }
 }
 
+#[derive(Copy, Clone, PartialEq)]
 pub enum NodeType {
     Default,
     Extern,
     Data,
     Optim,
     Exec,
+}
+
+impl NodeType {
+    pub fn is_extern(&self) -> bool {
+        match self {
+            Self::Extern | Self::Data | Self::Optim => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_exec(&self) -> bool {
+        *self == Self::Exec
+    }
 }
 
 impl fmt::Debug for NodeType {
@@ -64,6 +79,7 @@ pub struct Node {
     pub tensor_graph: BTreeMap<u64, GraphNode>,
 }
 
+crate::impl_debug_no_guard!(Node);
 impl<'a> fmt::Debug for FmtGuard<'a, Node> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let indent = self.indent();

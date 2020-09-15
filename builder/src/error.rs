@@ -26,6 +26,14 @@ pub enum BuildError {
     NoSuchNode {
         name: String,
     },
+    MismatchedGraphNodeId {
+        expected: u64,
+        given: u64,
+    },
+    MismatchedNodeName {
+        expected: String,
+        given: String,
+    },
 }
 
 #[derive(Debug)]
@@ -51,6 +59,12 @@ impl PartialEq for ExternalError {
             (Self::IOError(_), Self::IOError(_)) => true,
             _ => false,
         }
+    }
+}
+
+impl From<ParseError> for Error {
+    fn from(error: ParseError) -> Self {
+        Self::ParseError(error)
     }
 }
 

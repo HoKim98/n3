@@ -1,3 +1,7 @@
+use std::cell::RefCell;
+use std::collections::BTreeMap;
+use std::rc::Rc;
+
 use maplit::btreemap;
 
 use n3_builder::*;
@@ -5,25 +9,36 @@ use n3_builder::*;
 #[test]
 fn test_tensor_graph() {
     fn make_graph((ix, ic): (u64, u64), (ox, oc): (u64, u64)) -> ExternIR {
+        let graph = btreemap! {
+            "input channels" => (ic.into(), ast::LetType::UInt),
+            "output channels" => (oc.into(), ast::LetType::UInt),
+            "bias" => (true.into(), ast::LetType::Bool),
+        };
+        let graph = graph
+            .into_iter()
+            .map(|(k, (v, ty))| {
+                (
+                    k.to_string(),
+                    ast::NodeLet {
+                        name: k.to_string(),
+                        shortcut: None,
+                        ty,
+                        value: Some(v),
+                    },
+                )
+            })
+            .collect::<BTreeMap<_, _>>();
+        let graph = Graph::try_with_variables(1, graph).unwrap();
+
         ExternIRData {
             id: ix,
             name: "Linear".to_string(),
-            kwargs: btreemap! {
-                "input channels".to_string() => ic.into(),
-                "output channels".to_string() => oc.into(),
-                "bias".to_string() => true.into(),
-            },
+            graph: graph.into(),
             input: btreemap! {
-                "x".to_string() => ast::Out {
-                    id: Some(ix),
-                    name: Some("x".to_string()),
-                },
+                "x".to_string() => ast::Out::new(ix, "x".to_string()),
             },
             output: btreemap! {
-                "x".to_string() => ast::Out {
-                    id: Some(ox),
-                    name: Some("x".to_string()),
-                },
+                "x".to_string() => ast::Out::new(ox, "x".to_string()),
             },
         }
         .into()
@@ -34,7 +49,7 @@ fn test_tensor_graph() {
 
     let ir = NodeIR {
         name: "MyNode".to_string(),
-        graph: Graph::new(1),
+        graph: Rc::new(RefCell::new(Graph::new(1))),
         tensor_graph: vec![graph_1.into(), graph_2.into()].into(),
         data: Default::default(),
     };
@@ -56,4 +71,28 @@ fn test_unexpected_extern_node() {
             .into()
         )
     );
+}
+
+#[test]
+fn test_build_process() {
+    let model = "
+node MyNode:
+    let Ic: input dimension = int 32
+    let Oc: output dimension = int 10
+
+    node MyRelu:
+        let inner = int Ic
+
+        1. Relu
+
+    0. Input = Ic
+    1. Linear + MyRelu = 64
+    2. Linear + MyRelu = Oc
+";
+
+    let root = NodeRoot::new();
+    root.add_source("MyNode".to_string(), model.to_string());
+
+    let ir = root.get("MyNode").unwrap();
+    ir.build(&root).unwrap();
 }

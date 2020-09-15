@@ -33,8 +33,8 @@ impl fmt::Debug for RefVariable {
 
 #[derive(Clone, Default)]
 pub struct Variable {
-    pub id: Option<usize>,
-    pub id_old: Option<usize>,
+    pub id: Option<u64>,
+    pub id_old: Option<u64>,
 
     pub name: String,
     pub shortcut: Option<String>,
@@ -51,10 +51,10 @@ impl Variable {
         }
     }
 
-    pub fn with_name_value(name: String, value: Value) -> Self {
+    pub fn with_name_value(name: String, value: Option<Value>) -> Self {
         Self {
             name,
-            value: Some(value),
+            value,
             ..Default::default()
         }
     }
@@ -80,6 +80,7 @@ impl Into<Value> for RefVariable {
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub enum LetType {
     Bool,
+    UInt,
     Int,
     Real,
     Node(LetNodeType),
@@ -90,7 +91,7 @@ impl fmt::Debug for LetType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Bool => write!(f, "bool"),
-            Self::Int => write!(f, "int"),
+            Self::UInt | Self::Int => write!(f, "int"),
             Self::Real => write!(f, "real"),
             Self::Node(ty) => write!(f, "{:?}node", &ty),
             Self::Dim => write!(f, "dim"),
@@ -122,6 +123,7 @@ pub struct NodeLet {
     pub value: Option<Value>,
 }
 
+crate::impl_debug_no_guard!(NodeLet);
 impl<'a> fmt::Debug for FmtGuard<'a, NodeLet> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let indent = self.indent();

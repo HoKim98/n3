@@ -1,3 +1,5 @@
+use std::cell::UnsafeCell;
+
 use super::ir::NodeIR;
 use crate::cache::NodeCache;
 use crate::error::Result;
@@ -9,7 +11,8 @@ pub struct NodeRoot {
     pub(crate) seed: Seed,
     sources: NodeCache<NodeIR>,
     externs: NodeCache<PythonScript>,
-    parser: crate::Parser,
+    pub(crate) parser: crate::Parser,
+    _thread_unsafe: UnsafeCell<()>,
 }
 
 impl NodeRoot {
@@ -19,7 +22,16 @@ impl NodeRoot {
             sources: NodeCache::new(n3_std::get_sources()),
             externs: NodeCache::new(n3_std::get_externs()),
             parser: crate::Parser::new(),
+            _thread_unsafe: UnsafeCell::new(()),
         }
+    }
+
+    pub fn add_source(&self, name: String, source: String) {
+        self.sources.add_source(name, source);
+    }
+
+    pub fn get(&self, name: &str) -> Result<NodeIR> {
+        self.sources.get(name, self)
     }
 
     pub fn get_extern(&self, name: &str) -> Result<PythonScript> {
