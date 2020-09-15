@@ -100,18 +100,18 @@ impl<'a, 'b> NodeEntry<'a, 'b> {
         Ok(())
     }
 
-    fn add_tensor_graph(&mut self, id: u64, node: ast::GraphNode) -> Result<()> {
+    fn add_tensor_graph(&mut self, node: ast::GraphNode) -> Result<()> {
         let last_id = self.last_tensor_id;
-        if id < last_id || id - last_id != 1 && !(last_id == 0 && id == 0) {
+        if node.id < last_id || node.id - last_id != 1 && !(last_id == 0 && node.id == 0) {
             Err(BuildError::MismatchedGraphNodeId {
                 expected: last_id + 1,
-                given: id,
+                given: node.id,
             }
             .into())
         } else {
             GraphNodeEntry {
                 root: self,
-                id,
+                id: node.id,
                 node,
             }
             .build()
@@ -175,8 +175,8 @@ impl<'a> ASTBuild<'a> for ast::File {
         }
 
         // Step 6. make a tensor graph
-        for (id, n) in node.tensor_graph {
-            entry.add_tensor_graph(id, n)?;
+        for (_, n) in node.tensor_graph {
+            entry.add_tensor_graph(n)?;
         }
 
         // Step 7. store
@@ -186,8 +186,8 @@ impl<'a> ASTBuild<'a> for ast::File {
 
 struct ExternNodeEntry<'a, 'b>(NodeEntry<'a, 'b>);
 impl<'a, 'b> ExternNodeEntry<'a, 'b> {
-    fn add_tensor_graph(&mut self, id: u64, node: ast::GraphNode) -> Result<()> {
-        dbg!(&self, id, node);  // TODO: 여기부터 시작
+    fn add_tensor_graph(&mut self, node: ast::GraphNode) -> Result<()> {
+        dbg!(node); // TODO: 여기부터 시작
         todo!()
     }
 
@@ -226,8 +226,8 @@ impl<'a> ASTBuild<'a> for ExternFile {
         };
         assert_extern_tensor_graph_size(tensor_graph_size, expected_tensor_graph)?;
 
-        for (id, n) in node.tensor_graph {
-            entry.add_tensor_graph(id, n)?;
+        for (_, n) in node.tensor_graph {
+            entry.add_tensor_graph(n)?;
         }
 
         // Step 4. store
