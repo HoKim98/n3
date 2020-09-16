@@ -138,7 +138,7 @@ impl<'a> ASTBuild<'a> for ast::File {
 
     fn build(self, ctx: &mut Context<'a>, parent: Self::Args) -> Result<Self::Output> {
         if self.node.ty.is_extern() {
-            return ExternFile(self).build(ctx, ());
+            return Ok(ExternFile(self).build(ctx, ())?.into());
         }
         if self.node.ty.is_exec() {
             return ExecFile(self).build(ctx, ());
@@ -251,7 +251,7 @@ impl<'a, 'b> ExternNodeEntry<'a, 'b> {
 struct ExternFile(ast::File);
 impl<'a> ASTBuild<'a> for ExternFile {
     type Args = ();
-    type Output = TensorNode;
+    type Output = NodeIR;
 
     fn build(self, ctx: &mut Context<'a>, (): Self::Args) -> Result<Self::Output> {
         let file = self.0;
@@ -276,7 +276,8 @@ impl<'a> ASTBuild<'a> for ExternFile {
         }
 
         // Step 4. store
-        Ok(entry.build().into())
+        todo!() // TODO: ExecIR -> NodeIR wrapping
+                // Ok(entry.build().into())
     }
 }
 

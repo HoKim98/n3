@@ -72,6 +72,12 @@ impl fmt::Debug for NodeType {
     }
 }
 
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum FinalNodeType {
+    Default,
+    Exec,
+}
+
 #[derive(Copy, Clone, PartialEq)]
 pub enum ExternNodeType {
     Default,

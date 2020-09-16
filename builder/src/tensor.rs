@@ -2,6 +2,7 @@ use crate::ast;
 use crate::code::Code;
 use crate::context::{Build, CloneSafe, Context};
 use crate::error::{Result, TensorNodeError};
+use crate::execs::ExecIR;
 use crate::externs::ExternIR;
 use crate::graph::{RefGraph, Table};
 use crate::nodes::{ASTBuild, NodeIR, NodeRoot};
@@ -14,6 +15,7 @@ pub struct TensorGraph(Vec<TensorNode>);
 pub enum TensorNode {
     Node(NodeIR),
     Extern(ExternIR),
+    Exec(ExecIR),
 }
 
 #[derive(Debug)]
@@ -43,6 +45,12 @@ impl Into<TensorNode> for ExternIR {
     }
 }
 
+impl Into<TensorNode> for ExecIR {
+    fn into(self) -> TensorNode {
+        TensorNode::Exec(self)
+    }
+}
+
 impl TensorGraph {
     pub fn get_input_shapes(&self) -> Option<&ast::Shapes> {
         let input_node = &self.0[0];
@@ -69,7 +77,7 @@ impl TensorGraph {
     }
 
     pub fn build(self, root: &NodeRoot) -> Result<Vec<Code>> {
-        self.0.into_iter().map(|x| x.build(root)).collect()
+        self.0.into_iter().map(|x| x.build_to_code(root)).collect()
     }
 }
 
@@ -78,6 +86,7 @@ impl TensorNode {
         match self {
             Self::Node(node) => node.data.id == 0,
             Self::Extern(_) => false,
+            Self::Exec(_) => false,
         }
     }
 
@@ -85,6 +94,30 @@ impl TensorNode {
         match self {
             Self::Node(node) => &node.data.name,
             Self::Extern(node) => &node.data.name,
+            Self::Exec(node) => &node.data.name,
+        }
+    }
+
+    fn ty(&self) -> ast::FinalNodeType {
+        match self {
+            Self::Node(_) | Self::Extern(_) => ast::FinalNodeType::Default,
+            Self::Exec(_) => ast::FinalNodeType::Exec,
+        }
+    }
+
+    pub fn get_id(&self) -> u64 {
+        match self {
+            Self::Node(node) => node.data.id,
+            Self::Extern(node) => node.data.id,
+            Self::Exec(node) => node.data.id,
+        }
+    }
+
+    pub fn set_id(&mut self, id: u64) {
+        match self {
+            Self::Node(node) => node.data.id = id,
+            Self::Extern(node) => node.data.id = id,
+            Self::Exec(node) => node.data.id = id,
         }
     }
 
@@ -92,6 +125,7 @@ impl TensorNode {
         match self {
             Self::Node(node) => node.get_input_shapes(),
             Self::Extern(node) => node.get_input_shapes(),
+            Self::Exec(_) => exec_node_cannot_have_shapes(),
         }
     }
 
@@ -99,19 +133,36 @@ impl TensorNode {
         match self {
             Self::Node(node) => node.get_output_shapes(),
             Self::Extern(node) => node.get_output_shapes(),
+            Self::Exec(_) => exec_node_cannot_have_shapes(),
         }
     }
 
-    pub fn build(self, root: &NodeRoot) -> Result<Code> {
+    pub fn build_to_code(self, root: &NodeRoot) -> Result<Code> {
         match self {
             Self::Node(node) => Ok(node.build(root)?.into()),
             Self::Extern(node) => Ok(node.build(root)?.into()),
+            Self::Exec(node) => Ok(node.build(root)?.into()),
         }
     }
 
     pub fn apply_variables(&mut self, variables: Table) -> Result<()> {
         todo!()
     }
+
+    pub fn unwrap_node(self) -> Result<NodeIR> {
+        match self {
+            Self::Node(node) => Ok(node),
+            _ => TensorNodeError::MismatchedType {
+                expected: ast::FinalNodeType::Default,
+                given: self.ty(),
+            }
+            .into(),
+        }
+    }
+}
+
+fn exec_node_cannot_have_shapes() -> ! {
+    unreachable!("The exec node cannot have the shapes");
 }
 
 impl CloneSafe for TensorNode {
@@ -119,12 +170,15 @@ impl CloneSafe for TensorNode {
         match self {
             Self::Node(node) => node.clone_safe(seed, variables).into(),
             Self::Extern(node) => node.clone_safe(seed, variables).into(),
+            Self::Exec(node) => node.clone_safe(seed, variables).into(),
         }
     }
 }
 
 impl Build for TensorNode {
-    fn build(root: &NodeRoot, name: &str, source: String) -> Result<Self> {
+    type Output = Self;
+
+    fn build(root: &NodeRoot, name: &str, source: String) -> Result<Self::Output> {
         let file = root.parser.parse_file(&source)?;
 
         // test name

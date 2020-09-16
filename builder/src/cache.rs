@@ -2,14 +2,14 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fs;
 
-use crate::context::Build;
+use crate::context::{Build, CloneSafe};
 use crate::error::{Result, TensorNodeError};
 use crate::nodes::NodeRoot;
 
 pub struct NodeCache<T: Build> {
     paths: RefCell<HashMap<String, String>>,
     caches_source: RefCell<HashMap<String, String>>,
-    caches: RefCell<HashMap<String, T>>,
+    caches: RefCell<HashMap<String, T::Output>>,
 }
 
 impl<T: Build> NodeCache<T> {
@@ -25,7 +25,7 @@ impl<T: Build> NodeCache<T> {
         self.caches_source.borrow_mut().insert(name, source);
     }
 
-    pub fn get(&self, name: &str, root: &NodeRoot) -> Result<T> {
+    pub fn get(&self, name: &str, root: &NodeRoot) -> Result<T::Output> {
         if let Some(cache) = self.caches.borrow().get(name) {
             let mut variables = vec![];
             return Ok(cache.clone_safe(&root.seed, &mut variables));
@@ -48,7 +48,7 @@ impl<T: Build> NodeCache<T> {
         .into()
     }
 
-    fn build_and_store(&self, name: &str, root: &NodeRoot, source: String) -> Result<T> {
+    fn build_and_store(&self, name: &str, root: &NodeRoot, source: String) -> Result<T::Output> {
         // TODO: detect cycling
         let object = T::build(root, name, source)?;
 

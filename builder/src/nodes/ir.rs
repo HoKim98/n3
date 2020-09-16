@@ -1,10 +1,10 @@
 use super::code::NodeCode;
 use super::root::NodeRoot;
 use crate::ast;
-use crate::context::CloneSafe;
+use crate::context::{Build, CloneSafe};
 use crate::error::Result;
 use crate::seed::Seed;
-use crate::tensor::{IRData, TensorGraph};
+use crate::tensor::{IRData, TensorGraph, TensorNode};
 
 #[derive(Debug)]
 pub struct NodeIR {
@@ -42,6 +42,14 @@ impl NodeIR {
             output,
             graph: tensor_graph,
         })
+    }
+}
+
+impl Build for NodeIR {
+    type Output = TensorNode;
+
+    fn build(root: &NodeRoot, name: &str, source: String) -> Result<Self::Output> {
+        TensorNode::build(root, name, source)
     }
 }
 

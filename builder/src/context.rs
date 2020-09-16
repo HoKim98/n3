@@ -41,7 +41,9 @@ impl<'a> Context<'a> {
 }
 
 pub trait Build: CloneSafe {
-    fn build(root: &NodeRoot, name: &str, source: String) -> Result<Self>
+    type Output: CloneSafe;
+
+    fn build(root: &NodeRoot, name: &str, source: String) -> Result<Self::Output>
     where
         Self: Sized;
 }

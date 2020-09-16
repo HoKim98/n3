@@ -17,7 +17,9 @@ impl CloneSafe for PythonScript {
 }
 
 impl Build for PythonScript {
-    fn build(_root: &NodeRoot, name: &str, source: String) -> Result<Self>
+    type Output = Self;
+
+    fn build(_root: &NodeRoot, name: &str, source: String) -> Result<Self::Output>
     where
         Self: Sized,
     {

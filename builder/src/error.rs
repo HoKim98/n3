@@ -23,8 +23,17 @@ pub enum BuildError {
 
 #[derive(Debug, PartialEq)]
 pub enum TensorNodeError {
-    NoSuchNode { name: String },
-    MismatchedName { expected: String, given: String },
+    NoSuchNode {
+        name: String,
+    },
+    MismatchedName {
+        expected: String,
+        given: String,
+    },
+    MismatchedType {
+        expected: ast::FinalNodeType,
+        given: ast::FinalNodeType,
+    },
 }
 
 #[derive(Debug, PartialEq)]

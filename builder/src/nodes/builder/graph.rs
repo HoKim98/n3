@@ -28,7 +28,8 @@ impl<'a, 'b, 'c> GraphNodeBuilder<DefaultNode> for GraphNodeEntry<'a, 'b, 'c> {
     fn build(self) -> Result<()> {
         for call in self.node.calls {
             // Step 1. get the node
-            let callee = self.root.get(&call.name)?;
+            let mut callee = self.root.get(&call.name)?;
+            callee.set_id(self.id);
             todo!();
         }
         todo!()

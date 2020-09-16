@@ -6,6 +6,7 @@ mod cache;
 mod code;
 mod context;
 mod error;
+mod execs;
 mod externs;
 mod graph;
 mod nodes;
