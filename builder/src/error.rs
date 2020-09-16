@@ -2,6 +2,8 @@ use std::collections::BTreeSet;
 
 use n3_parser::error::ParseError;
 
+use crate::ast;
+
 pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug)]
@@ -26,17 +28,41 @@ pub enum BuildError {
     NoSuchNode {
         name: String,
     },
+    MismatchedNodeName {
+        expected: String,
+        given: String,
+    },
     MismatchedGraphNodeId {
         expected: u64,
         given: u64,
     },
     MismatchedGraphNodeSize {
         expected: &'static [&'static str],
-        given: u64,
+        given: usize,
     },
-    MismatchedNodeName {
-        expected: String,
+    MismatchedGraphNodeShapesExistence {
+        expected: bool,
+        given: bool,
+    },
+    MismatchedGraphCallName {
+        expected: Vec<&'static str>,
         given: String,
+    },
+    MismatchedGraphCallSize {
+        expected: Vec<&'static str>,
+        given: usize,
+    },
+    MismatchedGraphCallInputs {
+        expected: ast::GraphInputsType,
+        given: ast::GraphInputsType,
+    },
+    MismatchedGraphCallRepeat {
+        expected: bool,
+        given: bool,
+    },
+    MismatchedGraphCallArgs {
+        expected: &'static [&'static str],
+        given: Vec<String>,
     },
 }
 

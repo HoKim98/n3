@@ -187,7 +187,9 @@ impl<'a> ASTBuild<'a> for ast::File {
 struct ExternNodeEntry<'a, 'b>(NodeEntry<'a, 'b>);
 impl<'a, 'b> ExternNodeEntry<'a, 'b> {
     fn add_tensor_graph(&mut self, node: ast::GraphNode) -> Result<()> {
-        dbg!(node); // TODO: 여기부터 시작
+        // TODO: 여기부터 시작;
+        // TODO: 내 생각엔 이름이랑 _assert_tensor_graph_name 만 검사하고 부모꺼 호출하는게 좋을듯.
+        dbg!(node);
         todo!()
     }
 
@@ -218,13 +220,19 @@ impl<'a> ASTBuild<'a> for ExternFile {
         entry.0.hint_variables(&mut node.tensor_graph)?;
 
         // Step 3. make a tensor graph
-        let tensor_graph_size = node.tensor_graph.len();
-        let expected_tensor_graph: &[_] = match ty {
-            ast::ExternNodeType::Default => &["Input", "Output"],
-            ast::ExternNodeType::Data => &["Output"],
-            ast::ExternNodeType::Optim => &[],
-        };
-        assert_extern_tensor_graph_size(tensor_graph_size, expected_tensor_graph)?;
+        ExternTensorGraphCondition {
+            nodes: &node.tensor_graph,
+            names: match ty {
+                ast::ExternNodeType::Default => &["Input", "Output"],
+                ast::ExternNodeType::Data => &["Output"],
+                ast::ExternNodeType::Optim => &[],
+            },
+            ty_inputs: Some(ast::GraphInputsType::UseLast),
+            args: Some(&[]),
+            is_sized: None,
+            repeatable: Some(false),
+        }
+        .test()?;
 
         for (_, n) in node.tensor_graph {
             entry.add_tensor_graph(n)?;
@@ -235,15 +243,121 @@ impl<'a> ASTBuild<'a> for ExternFile {
     }
 }
 
-fn assert_extern_tensor_graph_size(given: usize, expected: &'static [&'static str]) -> Result<()> {
-    if expected.len() == given {
-        Ok(())
-    } else {
-        Err(BuildError::MismatchedGraphNodeSize {
-            expected,
-            given: given as u64,
+struct ExternTensorGraphCondition<'a> {
+    nodes: &'a BTreeMap<u64, ast::GraphNode>,
+
+    names: &'static [&'static str],
+    ty_inputs: Option<ast::GraphInputsType>,
+    // note: the args should be sorted
+    args: Option<&'static [&'static str]>,
+    is_sized: Option<bool>,
+    repeatable: Option<bool>,
+}
+
+impl<'a> ExternTensorGraphCondition<'a> {
+    fn test(self) -> Result<()> {
+        // test the number of nodes
+        if self.nodes.len() != self.names.len() {
+            return Err(BuildError::MismatchedGraphNodeSize {
+                expected: self.names,
+                given: self.nodes.len(),
+            }
+            .into());
         }
-        .into())
+
+        for (id, (name, node)) in self.names.iter().zip(self.nodes.values()).enumerate() {
+            self.test_each_node(&[name], id as u64, node)?;
+        }
+        Ok(())
+    }
+
+    fn test_each_node(
+        &self,
+        names: &[&'static str],
+        id: u64,
+        node: &'a ast::GraphNode,
+    ) -> Result<()> {
+        // Step 1. test the number of calls (should be 1)
+        {
+            let given = node.calls.len();
+            if given != 1 {
+                return Err(BuildError::MismatchedGraphCallSize {
+                    expected: names.to_vec(),
+                    given,
+                }
+                .into());
+            }
+        }
+
+        // Step 2. test the node id
+        {
+            if id != node.id {
+                return Err(BuildError::MismatchedGraphNodeId {
+                    expected: id,
+                    given: node.id,
+                }
+                .into());
+            }
+        }
+
+        let call = &node.calls[0];
+        let name = &call.name;
+
+        // Step 3. test the name
+        if !names.contains(&name.as_str()) {
+            return Err(BuildError::MismatchedGraphCallName {
+                expected: names.to_vec(),
+                given: name.clone(),
+            }
+            .into());
+        }
+
+        // Step 4. test inputs
+        if let Some(expected) = self.ty_inputs {
+            let given = call.get_inputs_ty();
+            if expected != given {
+                return Err(BuildError::MismatchedGraphCallInputs { expected, given }.into());
+            }
+        }
+
+        // Step 5. test repeat
+        if let Some(expected) = self.repeatable {
+            let given = call.repeat.is_some();
+            if expected != given {
+                return Err(BuildError::MismatchedGraphCallRepeat { expected, given }.into());
+            }
+        }
+
+        // Step 6. test the args
+        if let Some(expected) = self.args {
+            assert!(expected.is_sorted(), "the args should be sorted");
+
+            // note: the keywords are already sorted according to BTreeMap.
+            let given = match &call.args {
+                Some(args) => args.keys().collect(),
+                None => vec![],
+            };
+
+            if given != expected {
+                return Err(BuildError::MismatchedGraphCallArgs {
+                    expected,
+                    given: given.into_iter().cloned().collect(),
+                }
+                .into());
+            }
+        }
+
+        // Step 7. test the size
+        if let Some(expected) = self.is_sized {
+            let given = node.shapes.is_some();
+            if expected != given {
+                return Err(
+                    BuildError::MismatchedGraphNodeShapesExistence { expected, given }.into(),
+                );
+            }
+        }
+
+        Ok(())
     }
 }
 

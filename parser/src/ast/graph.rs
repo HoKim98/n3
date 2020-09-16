@@ -105,6 +105,15 @@ pub enum GraphInputs {
     List(Vec<Out>),
 }
 
+impl GraphInputs {
+    pub fn ty(&self) -> GraphInputsType {
+        match self {
+            Self::Dict(_) => GraphInputsType::Dict,
+            Self::List(_) => GraphInputsType::List,
+        }
+    }
+}
+
 impl fmt::Debug for GraphInputs {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -126,11 +135,27 @@ impl fmt::Debug for GraphInputs {
     }
 }
 
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum GraphInputsType {
+    UseLast,
+    Dict,
+    List,
+}
+
 pub struct GraphCall {
     pub name: String,
     pub inputs: Option<GraphInputs>,
     pub args: Option<Keywords>,
     pub repeat: Option<Value>,
+}
+
+impl GraphCall {
+    pub fn get_inputs_ty(&self) -> GraphInputsType {
+        match &self.inputs {
+            Some(inputs) => inputs.ty(),
+            None => GraphInputsType::UseLast,
+        }
+    }
 }
 
 impl fmt::Debug for GraphCall {
