@@ -3,23 +3,13 @@ use super::root::NodeRoot;
 use crate::ast;
 use crate::context::CloneSafe;
 use crate::error::Result;
-use crate::graph::RefGraph;
 use crate::seed::Seed;
-use crate::tensor::TensorGraph;
+use crate::tensor::{IRData, TensorGraph};
 
 #[derive(Debug)]
 pub struct NodeIR {
-    pub name: String,
-    pub graph: RefGraph,
+    pub data: IRData,
     pub tensor_graph: TensorGraph,
-    pub data: NodeIRData,
-}
-
-#[derive(Default, Debug)]
-pub struct NodeIRData {
-    pub id: u64,
-    pub input: Option<ast::Outs>,
-    pub output: Option<ast::Outs>,
     pub repeat: Option<ast::Value>,
 }
 
@@ -40,14 +30,14 @@ impl NodeIR {
             g.get_output_shapes().unwrap()
         });
 
-        if let Some(repeat) = self.data.repeat {
+        if let Some(repeat) = self.repeat {
             todo!()
         }
 
         let tensor_graph = self.tensor_graph.build(root)?;
 
         Ok(NodeCode {
-            name: self.name,
+            name: self.data.name,
             input,
             output,
             graph: tensor_graph,

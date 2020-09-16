@@ -53,35 +53,36 @@ impl fmt::Debug for Out {
     }
 }
 
-#[derive(Clone)]
-pub struct Shape {
-    pub dims: Vec<Value>,
-}
+pub struct Shape(pub Vec<Value>);
 
 impl fmt::Debug for Shape {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for dim in &self.dims {
+        for dim in &self.0 {
             write!(f, "{:?}, ", dim)?;
         }
         Ok(())
     }
 }
 
-impl Shape {
-    pub fn with_dims(dims: Vec<Value>) -> Self {
-        Self { dims }
+pub struct Shapes(pub BTreeMap<String, Option<Shape>>);
+
+impl Shapes {
+    pub fn to_outs(&self, id: u64) -> Outs {
+        self.0
+            .keys()
+            .map(|n| (n.clone(), Out::new(id, n.clone())))
+            .collect()
     }
 }
-
-#[derive(Clone)]
-pub struct Shapes(pub BTreeMap<String, Option<Shape>>);
 
 crate::impl_debug_no_guard!(Shapes);
 impl<'a> fmt::Debug for FmtGuard<'a, Shapes> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.0.len() == 1 {
             if let Some(shape) = self.0.get("x") {
-                return write!(f, " = {:?}\n", shape);
+                if let Some(shape) = shape {
+                    return write!(f, " = {:?}\n", shape);
+                }
             }
         }
 
@@ -89,10 +90,10 @@ impl<'a> fmt::Debug for FmtGuard<'a, Shapes> {
         write!(f, ":\n")?;
 
         for (name, shape) in &self.0 {
-            write!(f, "{}{} = ", &indent, name)?;
+            write!(f, "{}{}", &indent, name)?;
             match shape {
-                Some(shape) => shape.fmt(f)?,
-                None => write!(f, "...")?, // TODO: ambiguous shapes?
+                Some(shape) => write!(f, " = {:?}\n", shape)?,
+                None => write!(f, "\n")?,
             }
             write!(f, "\n")?;
         }

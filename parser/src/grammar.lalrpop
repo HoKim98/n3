@@ -98,7 +98,7 @@ graphShapes: Option<ast::Shapes> = {
     NewLine => None,
 }
 graphShapeKw: (String, ast::Shape) = <k:name> <v:graphShape> NewLine => (k, v);
-graphShape: ast::Shape = "=" <v:OneOrMore<Dim, commaSep>> => ast::Shape::with_dims(v);
+graphShape: ast::Shape = "=" <v:OneOrMore<Dim, commaSep>> => ast::Shape(v);
 
 Dim: ast::Value = Expr;
 

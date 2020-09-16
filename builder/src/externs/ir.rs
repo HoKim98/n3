@@ -5,29 +5,21 @@ use crate::error::Result;
 use crate::graph::RefGraph;
 use crate::nodes::NodeRoot;
 use crate::seed::Seed;
+use crate::tensor::IRData;
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct ExternIR {
-    pub data: ExternIRData,
+    pub data: IRData,
     shapes: ExternIRShapes,
 }
 
-#[derive(Clone, Debug)]
-pub struct ExternIRData {
-    pub id: u64,
-    pub name: String,
-    pub graph: RefGraph,
-    pub input: ast::Outs,
-    pub output: ast::Outs,
-}
-
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct ExternIRShapes {
-    input: ast::Shapes,
-    output: ast::Shapes,
+    input: Option<ast::Shapes>,
+    output: Option<ast::Shapes>,
 }
 
-impl Into<ExternIR> for ExternIRData {
+impl Into<ExternIR> for IRData {
     fn into(self) -> ExternIR {
         ExternIR {
             shapes: (&self).into(),
@@ -36,22 +28,40 @@ impl Into<ExternIR> for ExternIRData {
     }
 }
 
-impl<'a> Into<ExternIRShapes> for &'a ExternIRData {
+impl<'a> Into<ExternIRShapes> for &'a IRData {
     fn into(self) -> ExternIRShapes {
         ExternIRShapes {
-            input: ast::Shapes(self.input.keys().map(|x| (x.clone(), None)).collect()),
-            output: ast::Shapes(self.output.keys().map(|x| (x.clone(), None)).collect()),
+            input: self
+                .input
+                .as_ref()
+                .map(|x| ast::Shapes(x.keys().map(|x| (x.clone(), None)).collect())),
+            output: self
+                .output
+                .as_ref()
+                .map(|x| ast::Shapes(x.keys().map(|x| (x.clone(), None)).collect())),
         }
     }
 }
 
 impl ExternIR {
+    pub fn new(
+        name: String,
+        graph: RefGraph,
+        input: Option<ast::Shapes>,
+        output: Option<ast::Shapes>,
+    ) -> Self {
+        Self {
+            data: IRData::new(name, graph, input.as_ref(), output.as_ref()),
+            shapes: ExternIRShapes { input, output },
+        }
+    }
+
     pub fn get_input_shapes(&self) -> Option<&ast::Shapes> {
-        Some(&self.shapes.input)
+        self.shapes.input.as_ref()
     }
 
     pub fn get_output_shapes(&self) -> Option<&ast::Shapes> {
-        Some(&self.shapes.output)
+        self.shapes.output.as_ref()
     }
 
     pub fn build(self, root: &NodeRoot) -> Result<ExternCode> {
@@ -66,6 +76,20 @@ impl ExternIR {
 
 impl CloneSafe for ExternIR {
     fn clone_safe(&self, seed: &Seed, variables: &mut Vec<ast::RefVariable>) -> Self {
-        todo!()
+        // note: ordered (data -> shapes)
+        Self {
+            data: self.data.clone_safe(seed, variables),
+            shapes: self.shapes.clone_safe(seed, variables),
+        }
+    }
+}
+
+impl CloneSafe for ExternIRShapes {
+    fn clone_safe(&self, seed: &Seed, variables: &mut Vec<ast::RefVariable>) -> Self {
+        // note: ordered (data -> shapes)
+        Self {
+            input: self.input.as_ref().map(|x| x.clone_safe(seed, variables)),
+            output: self.output.as_ref().map(|x| x.clone_safe(seed, variables)),
+        }
     }
 }

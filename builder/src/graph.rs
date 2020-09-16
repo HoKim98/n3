@@ -4,8 +4,10 @@ use std::rc::Rc;
 
 use n3_parser::ast;
 
-use super::error::{GraphError, Result};
-use super::variable::*;
+use crate::context::CloneSafe;
+use crate::error::{GraphError, Result};
+use crate::seed::Seed;
+use crate::variable::*;
 
 pub type RefGraph = Rc<RefCell<Graph>>;
 
@@ -53,36 +55,6 @@ impl Graph {
         };
         graph.build()?;
         Ok(graph)
-    }
-
-    pub fn clone_safe(&self, id: u64, variables: &mut Vec<ast::RefVariable>) -> Self {
-        // Step 1. get the copies
-        let mut self_variables: HashMap<_, _> = self
-            .variables
-            .iter()
-            .map(|(k, v)| (k.clone(), v.detach(id)))
-            .collect();
-        let self_shortcuts = self_variables
-            .values()
-            .filter_map(|v| match &v.borrow().shortcut {
-                Some(shortcut) => Some((shortcut.clone(), v.clone())),
-                None => None,
-            })
-            .collect();
-
-        for var in self_variables.values_mut() {
-            variables.push(var.clone());
-            // Step 2. replace the olds into the news
-            let mut var = var.borrow_mut();
-            var.value = var.value.clone_value(variables);
-        }
-
-        // Step 3. store
-        Graph {
-            id,
-            shortcuts: self_shortcuts,
-            variables: self_variables,
-        }
     }
 
     pub fn add(&mut self, variable: ast::RefVariable) -> Result<()> {
@@ -153,16 +125,22 @@ impl Graph {
 
     pub fn hint(&self, out: &ast::Out, shape: &ast::Shape) -> Result<ast::Shape> {
         let dims = shape
-            .dims
+            .0
             .iter()
             .enumerate()
             .map(|(dim, v)| v.hint(&self.shortcuts, out, dim, true))
             .collect::<Result<_>>()?;
-        Ok(ast::Shape::with_dims(dims))
+        Ok(ast::Shape(dims))
     }
 
     pub fn replace_to(&self, variable: ast::Value) -> Result<ast::Value> {
         todo!()
+    }
+}
+
+impl Into<RefGraph> for Graph {
+    fn into(self) -> RefGraph {
+        Rc::new(RefCell::new(self))
     }
 }
 
@@ -172,8 +150,34 @@ impl Estimable for Graph {
     }
 }
 
-impl Into<RefGraph> for Graph {
-    fn into(self) -> RefGraph {
-        Rc::new(RefCell::new(self))
+impl CloneSafe for Graph {
+    fn clone_safe(&self, seed: &Seed, variables: &mut Vec<ast::RefVariable>) -> Self {
+        let id = seed.generate();
+
+        // Step 1. get the copies
+        let mut self_variables: HashMap<_, _> = self
+            .variables
+            .iter()
+            .map(|(k, v)| (k.clone(), v.detach(id)))
+            .collect();
+        let self_shortcuts = self_variables
+            .values()
+            .filter_map(|v| match &v.borrow().shortcut {
+                Some(shortcut) => Some((shortcut.clone(), v.clone())),
+                None => None,
+            })
+            .collect();
+        for var in self_variables.values_mut() {
+            variables.push(var.clone());
+            // Step 2. replace the olds into the news
+            let mut var = var.borrow_mut();
+            var.value = var.value.clone_value(variables);
+        }
+        // Step 3. store
+        Graph {
+            id,
+            shortcuts: self_shortcuts,
+            variables: self_variables,
+        }
     }
 }

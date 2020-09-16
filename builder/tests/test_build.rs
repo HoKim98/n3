@@ -30,16 +30,16 @@ fn test_tensor_graph() {
             .collect::<BTreeMap<_, _>>();
         let graph = Graph::try_with_variables(1, graph).unwrap();
 
-        ExternIRData {
+        IRData {
             id: ix,
             name: "Linear".to_string(),
             graph: graph.into(),
-            input: btreemap! {
+            input: Some(btreemap! {
                 "x".to_string() => ast::Out::new(ix, "x".to_string()),
-            },
-            output: btreemap! {
+            }),
+            output: Some(btreemap! {
                 "x".to_string() => ast::Out::new(ox, "x".to_string()),
-            },
+            }),
         }
         .into()
     }
@@ -47,11 +47,20 @@ fn test_tensor_graph() {
     let graph_1 = make_graph((1, 32), (2, 64));
     let graph_2 = make_graph((2, 64), (3, 10));
 
+    let name = "MyNode".to_string();
+    let graph = Rc::new(RefCell::new(Graph::new(1)));
+
+    let input = ast::Shapes(btreemap! {
+        "x".to_string() => Some(ast::Shape(vec![32u64.into()])),
+    });
+    let output = ast::Shapes(btreemap! {
+        "x".to_string() => Some(ast::Shape(vec![10u64.into()])),
+    });
+
     let ir = NodeIR {
-        name: "MyNode".to_string(),
-        graph: Rc::new(RefCell::new(Graph::new(1))),
+        data: IRData::new(name, graph, Some(&input), Some(&output)),
         tensor_graph: vec![graph_1.into(), graph_2.into()].into(),
-        data: Default::default(),
+        repeat: None,
     };
 
     let root = NodeRoot::new();

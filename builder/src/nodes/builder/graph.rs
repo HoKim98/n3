@@ -74,8 +74,12 @@ macro_rules! match_builtins(
 );
 
 impl<'a, 'b, 'c> GraphNodeEntry<'a, 'b, 'c> {
+    fn is_input(&self) -> bool {
+        self.id == 0
+    }
+
     pub fn build(self) -> Result<()> {
-        if self.id == 0 {
+        if self.is_input() {
             // input node
             GraphNodeBuilder::<InputNode>::build(self)
         } else {

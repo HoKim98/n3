@@ -64,7 +64,7 @@ impl<'a, 'b> NodeEntry<'a, 'b> {
 
     fn add_with(&mut self, name: String, with: ast::With) -> Result<()> {
         // Step 1. get the node
-        let mut node = self.get(&name)?; // TODO: 여기부터 만들기
+        let mut node = self.get(&name)?;
 
         // Step 2. apply variables
         let args = {
@@ -184,17 +184,67 @@ impl<'a> ASTBuild<'a> for ast::File {
     }
 }
 
-struct ExternNodeEntry<'a, 'b>(NodeEntry<'a, 'b>);
+struct ExternNodeEntry<'a, 'b> {
+    inner: NodeEntry<'a, 'b>,
+    ty: ast::ExternNodeType,
+
+    input: Option<ast::Shapes>,
+    output: Option<ast::Shapes>,
+}
 impl<'a, 'b> ExternNodeEntry<'a, 'b> {
-    fn add_tensor_graph(&mut self, node: ast::GraphNode) -> Result<()> {
-        // TODO: 여기부터 시작;
-        // TODO: 내 생각엔 이름이랑 _assert_tensor_graph_name 만 검사하고 부모꺼 호출하는게 좋을듯.
-        dbg!(node);
-        todo!()
+    fn new(inner: NodeEntry<'a, 'b>, ty: ast::ExternNodeType) -> Self {
+        Self {
+            inner,
+            ty,
+            input: None,
+            output: None,
+        }
     }
 
-    fn build(self) -> ExternIR {
-        todo!()
+    fn hint_variables(&mut self, tensor_graph: &mut BTreeMap<u64, ast::GraphNode>) -> Result<()> {
+        self.inner.hint_variables(tensor_graph)
+    }
+
+    fn test_tensor_graph(&self, nodes: &BTreeMap<u64, ast::GraphNode>) -> Result<()> {
+        ExternTensorGraphCondition {
+            nodes,
+            names: match self.ty {
+                ast::ExternNodeType::Default => &["Input", "Output"],
+                ast::ExternNodeType::Data => &["Output"],
+                ast::ExternNodeType::Optim => &[],
+            },
+            ty_inputs: Some(ast::GraphInputsType::UseLast),
+            args: Some(&[]),
+            is_sized: None,
+            repeatable: Some(false),
+        }
+        .test()
+    }
+
+    fn add_tensor_graph(&mut self, node: ast::GraphNode) {
+        let target = match self.ty {
+            ast::ExternNodeType::Default => {
+                if node.id == 0 {
+                    &mut self.input
+                } else {
+                    &mut self.output
+                }
+            }
+            ast::ExternNodeType::Data => &mut self.output,
+            ast::ExternNodeType::Optim => {
+                unreachable!("the optim node cannot have the tensor graph")
+            }
+        };
+        *target = node.shapes;
+    }
+
+    fn build(mut self) -> ExternIR {
+        ExternIR::new(
+            self.inner.name.pop().unwrap(),
+            self.inner.graph,
+            self.input,
+            self.output,
+        )
     }
 }
 
@@ -214,28 +264,15 @@ impl<'a> ASTBuild<'a> for ExternFile {
             Graph::try_with_variables(ctx.root.seed.generate(), node.graph)?.into();
 
         let entry = NodeEntry::new(vec![node.name], graph, ctx);
-        let mut entry = ExternNodeEntry(entry);
+        let mut entry = ExternNodeEntry::new(entry, ty);
 
         // Step 2. hint variables with tensor graph
-        entry.0.hint_variables(&mut node.tensor_graph)?;
+        entry.hint_variables(&mut node.tensor_graph)?;
 
         // Step 3. make a tensor graph
-        ExternTensorGraphCondition {
-            nodes: &node.tensor_graph,
-            names: match ty {
-                ast::ExternNodeType::Default => &["Input", "Output"],
-                ast::ExternNodeType::Data => &["Output"],
-                ast::ExternNodeType::Optim => &[],
-            },
-            ty_inputs: Some(ast::GraphInputsType::UseLast),
-            args: Some(&[]),
-            is_sized: None,
-            repeatable: Some(false),
-        }
-        .test()?;
-
+        entry.test_tensor_graph(&node.tensor_graph)?;
         for (_, n) in node.tensor_graph {
-            entry.add_tensor_graph(n)?;
+            entry.add_tensor_graph(n);
         }
 
         // Step 4. store

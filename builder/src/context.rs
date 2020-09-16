@@ -1,4 +1,6 @@
+use std::cell::RefCell;
 use std::collections::BTreeMap;
+use std::rc::Rc;
 
 use crate::ast;
 use crate::error::Result;
@@ -46,4 +48,60 @@ pub trait Build: CloneSafe {
 
 pub trait CloneSafe {
     fn clone_safe(&self, seed: &Seed, variables: &mut Vec<ast::RefVariable>) -> Self;
+}
+
+impl<T> CloneSafe for Rc<T>
+where
+    T: CloneSafe,
+{
+    fn clone_safe(&self, seed: &Seed, variables: &mut Vec<ast::RefVariable>) -> Self {
+        Rc::new((**self).clone_safe(seed, variables))
+    }
+}
+
+impl<T> CloneSafe for RefCell<T>
+where
+    T: CloneSafe,
+{
+    fn clone_safe(&self, seed: &Seed, variables: &mut Vec<ast::RefVariable>) -> Self {
+        RefCell::new(self.borrow().clone_safe(seed, variables))
+    }
+}
+
+impl<T> CloneSafe for BTreeMap<String, T>
+where
+    T: CloneSafe,
+{
+    fn clone_safe(&self, seed: &Seed, variables: &mut Vec<ast::RefVariable>) -> Self {
+        self.iter()
+            .map(|(k, v)| (k.clone(), v.clone_safe(seed, variables)))
+            .collect()
+    }
+}
+
+impl<T> CloneSafe for Vec<T>
+where
+    T: CloneSafe,
+{
+    fn clone_safe(&self, seed: &Seed, variables: &mut Vec<ast::RefVariable>) -> Self {
+        self.iter().map(|x| x.clone_safe(seed, variables)).collect()
+    }
+}
+
+impl<T> CloneSafe for Option<T>
+where
+    T: CloneSafe,
+{
+    fn clone_safe(&self, seed: &Seed, variables: &mut Vec<ast::RefVariable>) -> Self {
+        self.as_ref().map(|x| x.clone_safe(seed, variables))
+    }
+}
+
+impl<T> CloneSafe for Box<T>
+where
+    T: CloneSafe,
+{
+    fn clone_safe(&self, seed: &Seed, variables: &mut Vec<ast::RefVariable>) -> Self {
+        Box::new((**self).clone_safe(seed, variables))
+    }
 }
