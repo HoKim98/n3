@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, HashMap};
 
 use num_traits::Pow;
 
-use super::error::{BuildError, Result};
+use super::error::{GraphError, Result};
 use super::graph::Table;
 use crate::ast;
 
@@ -157,7 +157,7 @@ impl Replace for ast::RefVariable {
     ) -> Result<Self> {
         let raise_cycled_variables = || {
             let names = names.iter().cloned().collect();
-            Err(BuildError::CycledVariables { names }.into())
+            GraphError::CycledVariables { names }.into()
         };
 
         let mut value = self;
@@ -260,11 +260,11 @@ impl Hint for ast::RefVariable {
                 }
                 Ok(output.clone())
             }
-            None => Err(BuildError::NoSuchVariable {
+            None => GraphError::NoSuchVariable {
                 name: name.clone(),
                 candidates: shortcuts.keys().cloned().collect(),
             }
-            .into()),
+            .into(),
         }
     }
 }

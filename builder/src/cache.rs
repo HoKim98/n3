@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::fs;
 
 use crate::context::Build;
-use crate::error::{BuildError, Result};
+use crate::error::{Result, TensorNodeError};
 use crate::nodes::NodeRoot;
 
 pub struct NodeCache<T: Build> {
@@ -42,10 +42,10 @@ impl<T: Build> NodeCache<T> {
             return self.build_and_store(name, root, source);
         }
 
-        Err(BuildError::NoSuchNode {
+        TensorNodeError::NoSuchNode {
             name: name.to_string(),
         }
-        .into())
+        .into()
     }
 
     fn build_and_store(&self, name: &str, root: &NodeRoot, source: String) -> Result<T> {

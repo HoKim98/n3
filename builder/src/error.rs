@@ -15,52 +15,67 @@ pub enum Error {
 
 #[derive(Debug, PartialEq)]
 pub enum BuildError {
+    TensorNodeError(TensorNodeError),
+    GraphError(GraphError),
+    GraphNodeError(GraphNodeError),
+    GraphCallError(GraphCallError),
+}
+
+#[derive(Debug, PartialEq)]
+pub enum TensorNodeError {
+    NoSuchNode { name: String },
+    MismatchedName { expected: String, given: String },
+}
+
+#[derive(Debug, PartialEq)]
+pub enum GraphError {
+    NoSuchVariable {
+        name: String,
+        candidates: BTreeSet<String>,
+    },
     DuplicatedVariable {
         name: String,
     },
     CycledVariables {
         names: BTreeSet<String>,
     },
-    NoSuchVariable {
-        name: String,
-        candidates: BTreeSet<String>,
-    },
-    NoSuchNode {
-        name: String,
-    },
-    MismatchedNodeName {
-        expected: String,
-        given: String,
-    },
-    MismatchedGraphNodeId {
+}
+
+#[derive(Debug, PartialEq)]
+pub enum GraphNodeError {
+    MismatchedId {
         expected: u64,
         given: u64,
     },
-    MismatchedGraphNodeSize {
+    MismatchedSize {
         expected: &'static [&'static str],
         given: usize,
     },
-    MismatchedGraphNodeShapesExistence {
+    MismatchedShapesExistence {
         expected: bool,
         given: bool,
     },
-    MismatchedGraphCallName {
+}
+
+#[derive(Debug, PartialEq)]
+pub enum GraphCallError {
+    MismatchedName {
         expected: Vec<&'static str>,
         given: String,
     },
-    MismatchedGraphCallSize {
+    MismatchedSize {
         expected: Vec<&'static str>,
         given: usize,
     },
-    MismatchedGraphCallInputs {
+    MismatchedInputs {
         expected: ast::GraphInputsType,
         given: ast::GraphInputsType,
     },
-    MismatchedGraphCallRepeat {
+    MismatchedRepeat {
         expected: bool,
         given: bool,
     },
-    MismatchedGraphCallArgs {
+    MismatchedArgs {
         expected: &'static [&'static str],
         given: Vec<String>,
     },
@@ -103,6 +118,33 @@ impl From<BuildError> for Error {
         Self::BuildError(error)
     }
 }
+
+macro_rules! impl_into_error(
+    ($t:ident) => {
+        impl From<$t> for BuildError {
+            fn from(error: $t) -> Self {
+                Self::$t(error)
+            }
+        }
+
+        impl From<$t> for Error {
+            fn from(error: $t) -> Self {
+                Self::BuildError(error.into())
+            }
+        }
+
+        impl<T> From<$t> for Result<T> {
+            fn from(error: $t) -> Self {
+                Err(Error::from(error))
+            }
+        }
+    }
+);
+
+impl_into_error!(TensorNodeError);
+impl_into_error!(GraphError);
+impl_into_error!(GraphNodeError);
+impl_into_error!(GraphCallError);
 
 impl From<std::io::Error> for Error {
     fn from(error: std::io::Error) -> Self {

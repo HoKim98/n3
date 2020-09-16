@@ -88,9 +88,12 @@ node MyNode:
     // cycled variable: [a, b, c]
     assert_eq!(
         Graph::try_with_variables(1, file.node.graph).err(),
-        Some(Error::BuildError(BuildError::CycledVariables {
-            names: ["a", "b", "c"].iter().map(|x| x.to_string()).collect(),
-        }))
+        Some(
+            GraphError::CycledVariables {
+                names: ["a", "b", "c"].iter().map(|x| x.to_string()).collect(),
+            }
+            .into()
+        )
     );
 }
 

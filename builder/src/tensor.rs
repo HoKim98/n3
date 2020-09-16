@@ -1,7 +1,7 @@
 use crate::ast;
 use crate::code::Code;
 use crate::context::{Build, CloneSafe, Context};
-use crate::error::{BuildError, Result};
+use crate::error::{Result, TensorNodeError};
 use crate::externs::ExternIR;
 use crate::graph::Table;
 use crate::nodes::{ASTBuild, NodeIR, NodeRoot};
@@ -120,11 +120,11 @@ impl Build for TensorNode {
 
         // test name
         if file.node.name != name {
-            Err(BuildError::MismatchedNodeName {
+            TensorNodeError::MismatchedName {
                 expected: name.to_string(),
                 given: file.node.name,
             }
-            .into())
+            .into()
         } else {
             let mut ctx = Context::new(root);
             file.build(&mut ctx, Default::default())

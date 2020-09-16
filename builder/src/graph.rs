@@ -4,7 +4,7 @@ use std::rc::Rc;
 
 use n3_parser::ast;
 
-use super::error::{BuildError, Result};
+use super::error::{GraphError, Result};
 use super::variable::*;
 
 pub type RefGraph = Rc<RefCell<Graph>>;
@@ -90,7 +90,7 @@ impl Graph {
         let name = var_ref.name.clone();
 
         if self.variables.contains_key(&name) {
-            return Err(BuildError::DuplicatedVariable { name }.into());
+            return GraphError::DuplicatedVariable { name }.into();
         }
 
         var_ref.id = Some(self.id);
@@ -104,11 +104,11 @@ impl Graph {
     pub fn get(&self, name: &str) -> Result<&ast::RefVariable> {
         match self.variables.get(name) {
             Some(var) => Ok(var),
-            None => Err(BuildError::NoSuchVariable {
+            None => GraphError::NoSuchVariable {
                 name: name.to_string(),
                 candidates: self.variables.keys().cloned().collect(),
             }
-            .into()),
+            .into(),
         }
     }
 

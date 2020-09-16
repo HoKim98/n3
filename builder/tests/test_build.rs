@@ -65,7 +65,7 @@ fn test_unexpected_extern_node() {
     assert_eq!(
         root.get_extern("FOO").err(),
         Some(
-            BuildError::NoSuchNode {
+            TensorNodeError::NoSuchNode {
                 name: "FOO".to_string(),
             }
             .into()

@@ -4,7 +4,7 @@ use super::super::ir::NodeIR;
 use super::graph::GraphNodeEntry;
 use crate::ast;
 use crate::context::{CloneSafe, Context, NodeName};
-use crate::error::{BuildError, Result};
+use crate::error::{GraphCallError, GraphNodeError, Result};
 use crate::externs::ExternIR;
 use crate::graph::{Graph, RefGraph};
 use crate::tensor::TensorNode;
@@ -103,11 +103,11 @@ impl<'a, 'b> NodeEntry<'a, 'b> {
     fn add_tensor_graph(&mut self, node: ast::GraphNode) -> Result<()> {
         let last_id = self.last_tensor_id;
         if node.id < last_id || node.id - last_id != 1 && !(last_id == 0 && node.id == 0) {
-            Err(BuildError::MismatchedGraphNodeId {
+            GraphNodeError::MismatchedId {
                 expected: last_id + 1,
                 given: node.id,
             }
-            .into())
+            .into()
         } else {
             GraphNodeEntry {
                 root: self,
@@ -258,11 +258,11 @@ impl<'a> ExternTensorGraphCondition<'a> {
     fn test(self) -> Result<()> {
         // test the number of nodes
         if self.nodes.len() != self.names.len() {
-            return Err(BuildError::MismatchedGraphNodeSize {
+            return GraphNodeError::MismatchedSize {
                 expected: self.names,
                 given: self.nodes.len(),
             }
-            .into());
+            .into();
         }
 
         for (id, (name, node)) in self.names.iter().zip(self.nodes.values()).enumerate() {
@@ -281,22 +281,22 @@ impl<'a> ExternTensorGraphCondition<'a> {
         {
             let given = node.calls.len();
             if given != 1 {
-                return Err(BuildError::MismatchedGraphCallSize {
+                return GraphCallError::MismatchedSize {
                     expected: names.to_vec(),
                     given,
                 }
-                .into());
+                .into();
             }
         }
 
         // Step 2. test the node id
         {
             if id != node.id {
-                return Err(BuildError::MismatchedGraphNodeId {
+                return GraphNodeError::MismatchedId {
                     expected: id,
                     given: node.id,
                 }
-                .into());
+                .into();
             }
         }
 
@@ -305,18 +305,18 @@ impl<'a> ExternTensorGraphCondition<'a> {
 
         // Step 3. test the name
         if !names.contains(&name.as_str()) {
-            return Err(BuildError::MismatchedGraphCallName {
+            return GraphCallError::MismatchedName {
                 expected: names.to_vec(),
                 given: name.clone(),
             }
-            .into());
+            .into();
         }
 
         // Step 4. test inputs
         if let Some(expected) = self.ty_inputs {
             let given = call.get_inputs_ty();
             if expected != given {
-                return Err(BuildError::MismatchedGraphCallInputs { expected, given }.into());
+                return GraphCallError::MismatchedInputs { expected, given }.into();
             }
         }
 
@@ -324,7 +324,7 @@ impl<'a> ExternTensorGraphCondition<'a> {
         if let Some(expected) = self.repeatable {
             let given = call.repeat.is_some();
             if expected != given {
-                return Err(BuildError::MismatchedGraphCallRepeat { expected, given }.into());
+                return GraphCallError::MismatchedRepeat { expected, given }.into();
             }
         }
 
@@ -339,11 +339,11 @@ impl<'a> ExternTensorGraphCondition<'a> {
             };
 
             if given != expected {
-                return Err(BuildError::MismatchedGraphCallArgs {
+                return GraphCallError::MismatchedArgs {
                     expected,
                     given: given.into_iter().cloned().collect(),
                 }
-                .into());
+                .into();
             }
         }
 
@@ -351,9 +351,7 @@ impl<'a> ExternTensorGraphCondition<'a> {
         if let Some(expected) = self.is_sized {
             let given = node.shapes.is_some();
             if expected != given {
-                return Err(
-                    BuildError::MismatchedGraphNodeShapesExistence { expected, given }.into(),
-                );
+                return GraphNodeError::MismatchedShapesExistence { expected, given }.into();
             }
         }
 
