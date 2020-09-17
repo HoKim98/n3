@@ -76,9 +76,9 @@ impl ExternIR {
 
 impl CloneSafe for ExternIR {
     fn clone_safe(&self, seed: &Seed, variables: &mut Vec<ast::RefVariable>) -> Self {
-        // note: ordered (data -> shapes)
+        // note: DO NOT clone_safe GRAPH, because it is already cloned by parent NodeIR
         Self {
-            data: self.data.clone_safe(seed, variables),
+            data: self.data.clone(),
             shapes: self.shapes.clone_safe(seed, variables),
         }
     }
@@ -86,7 +86,6 @@ impl CloneSafe for ExternIR {
 
 impl CloneSafe for ExternIRShapes {
     fn clone_safe(&self, seed: &Seed, variables: &mut Vec<ast::RefVariable>) -> Self {
-        // note: ordered (data -> shapes)
         Self {
             input: self.input.as_ref().map(|x| x.clone_safe(seed, variables)),
             output: self.output.as_ref().map(|x| x.clone_safe(seed, variables)),

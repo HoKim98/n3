@@ -133,8 +133,28 @@ impl Graph {
         Ok(ast::Shape(dims))
     }
 
-    pub fn replace_to(&self, variable: ast::Value) -> Result<ast::Value> {
-        todo!()
+    pub fn replace_to(&self, variable: Option<ast::Value>) -> Result<Option<ast::Value>> {
+        if let Some(variable) = variable {
+            match variable {
+                ast::Value::Variable(var) => {
+                    let var_borrow = var.borrow();
+                    if let Some(var) = self.shortcuts.get(&var_borrow.name) {
+                        Ok(Some(ast::Value::Variable(var.clone())))
+                    } else {
+                        drop(var_borrow);
+                        Ok(Some(ast::Value::Variable(var)))
+                    }
+                }
+                ast::Value::Expr(mut expr) => {
+                    expr.lhs = self.replace_to(Some(expr.lhs))?.unwrap();
+                    expr.rhs = self.replace_to(expr.rhs)?;
+                    Ok(Some(ast::Value::Expr(expr)))
+                }
+                _ => Ok(Some(variable)),
+            }
+        } else {
+            Ok(None)
+        }
     }
 }
 

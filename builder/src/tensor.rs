@@ -18,7 +18,7 @@ pub enum TensorNode {
     Exec(ExecIR),
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct IRData {
     pub id: u64,
     pub name: String,
@@ -52,6 +52,10 @@ impl Into<TensorNode> for ExecIR {
 }
 
 impl TensorGraph {
+    pub fn new_one(node: TensorNode) -> Self {
+        Self(vec![node])
+    }
+
     pub fn get_input_shapes(&self) -> Option<&ast::Shapes> {
         let input_node = &self.0[0];
         if input_node.is_input() {
@@ -74,6 +78,14 @@ impl TensorGraph {
             }
         }
         self.0.last().unwrap().get_output_shapes()
+    }
+
+    pub fn try_borrow_mut_extern_node(&mut self) -> Option<&mut ExternIR> {
+        if self.0.len() == 1 {
+            self.0[0].try_borrow_mut_extern()
+        } else {
+            None
+        }
     }
 
     pub fn build(self, root: &NodeRoot) -> Result<Vec<Code>> {
@@ -121,6 +133,13 @@ impl TensorNode {
         }
     }
 
+    pub fn set_repeat(&mut self, value: Option<ast::Value>) {
+        match self {
+            Self::Node(node) => node.repeat = value,
+            _ => unreachable!("Only the default nodes can repeat."),
+        }
+    }
+
     pub fn get_input_shapes(&self) -> Option<&ast::Shapes> {
         match self {
             Self::Node(node) => node.get_input_shapes(),
@@ -159,10 +178,23 @@ impl TensorNode {
             .into(),
         }
     }
+
+    pub fn try_borrow_mut_extern(&mut self) -> Option<&mut ExternIR> {
+        match self {
+            Self::Extern(node) => Some(node),
+            _ => None,
+        }
+    }
 }
 
 fn exec_node_cannot_have_shapes() -> ! {
     unreachable!("The exec node cannot have the shapes");
+}
+
+impl CloneSafe for TensorGraph {
+    fn clone_safe(&self, seed: &Seed, variables: &mut Vec<ast::RefVariable>) -> Self {
+        Self(self.0.clone_safe(seed, variables))
+    }
 }
 
 impl CloneSafe for TensorNode {

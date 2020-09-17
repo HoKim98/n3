@@ -7,7 +7,7 @@ use crate::context::{CloneSafe, Context, NodeName};
 use crate::error::{GraphCallError, GraphNodeError, Result};
 use crate::externs::ExternIR;
 use crate::graph::{Graph, RefGraph};
-use crate::tensor::TensorNode;
+use crate::tensor::{TensorGraph, TensorNode};
 
 pub trait ASTBuild<'a> {
     type Args;
@@ -21,8 +21,8 @@ where
     'a: 'b,
 {
     name: NodeName,
-    graph: RefGraph,
-    ctx: &'b mut Context<'a>,
+    pub graph: RefGraph,
+    pub ctx: &'b mut Context<'a>,
 
     children: BTreeMap<String, TensorNode>,
 
@@ -72,8 +72,8 @@ impl<'a, 'b> NodeEntry<'a, 'b> {
             with.graph
                 .into_iter()
                 .map(|(k, v)| {
-                    let v = graph.replace_to(v)?;
-                    let var = ast::Variable::with_name_value(k.clone(), Some(v));
+                    let v = graph.replace_to(Some(v))?;
+                    let var = ast::Variable::with_name_value(k.clone(), v);
                     Ok((k, var.into()))
                 })
                 .collect::<Result<_>>()?
@@ -238,13 +238,19 @@ impl<'a, 'b> ExternNodeEntry<'a, 'b> {
         *target = node.shapes;
     }
 
-    fn build(mut self) -> ExternIR {
-        ExternIR::new(
+    fn build(mut self) -> NodeIR {
+        let extern_node = ExternIR::new(
             self.inner.name.pop().unwrap(),
             self.inner.graph,
             self.input,
             self.output,
-        )
+        );
+
+        NodeIR {
+            data: extern_node.data.clone(),
+            tensor_graph: TensorGraph::new_one(extern_node.into()),
+            repeat: None,
+        }
     }
 }
 
@@ -276,8 +282,7 @@ impl<'a> ASTBuild<'a> for ExternFile {
         }
 
         // Step 4. store
-        todo!() // TODO: ExecIR -> NodeIR wrapping
-                // Ok(entry.build().into())
+        Ok(entry.build())
     }
 }
 

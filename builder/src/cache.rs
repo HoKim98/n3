@@ -50,12 +50,12 @@ impl<T: Build> NodeCache<T> {
 
     fn build_and_store(&self, name: &str, root: &NodeRoot, source: String) -> Result<T::Output> {
         // TODO: detect cycling
-        let object = T::build(root, name, source)?;
+        let result = T::build(root, name, source)?;
 
         let mut variables = vec![];
-        let cache = object.clone_safe(&root.seed, &mut variables);
+        let cloned = result.clone_safe(&root.seed, &mut variables);
 
-        self.caches.borrow_mut().insert(name.to_string(), cache);
-        Ok(object)
+        self.caches.borrow_mut().insert(name.to_string(), result);
+        Ok(cloned)
     }
 }

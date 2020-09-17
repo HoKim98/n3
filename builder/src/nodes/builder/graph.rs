@@ -29,7 +29,25 @@ impl<'a, 'b, 'c> GraphNodeBuilder<DefaultNode> for GraphNodeEntry<'a, 'b, 'c> {
         for call in self.node.calls {
             // Step 1. get the node
             let mut callee = self.root.get(&call.name)?;
+            let graph = self.root.graph.borrow();
+
             callee.set_id(self.id);
+            callee.set_repeat(graph.replace_to(call.repeat)?);
+
+            // Step 2. apply variables
+            if let Some(args) = call.args {
+                let args = args
+                    .into_iter()
+                    .map(|(k, v)| {
+                        let v = graph.replace_to(Some(v))?;
+                        let var = ast::Variable::with_name_value(k.clone(), v);
+                        Ok((k, var.into()))
+                    })
+                    .collect::<Result<_>>()?;
+                callee.apply_variables(args)?;
+            }
+
+            // Step 3. apply IO
             todo!();
         }
         todo!()

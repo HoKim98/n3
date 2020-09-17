@@ -55,7 +55,18 @@ impl Build for NodeIR {
 
 impl CloneSafe for NodeIR {
     fn clone_safe(&self, seed: &Seed, variables: &mut Vec<ast::RefVariable>) -> Self {
-        todo!()
+        // note: ordered (data -> tensor_graph -> repeat)
+        let mut cloned = Self {
+            data: self.data.clone_safe(seed, variables),
+            tensor_graph: self.tensor_graph.clone_safe(seed, variables),
+            repeat: self.repeat.clone_safe(seed, variables),
+        };
+
+        // note: the ExternIR wrapper's graph should be cloned manually.
+        if let Some(mut node) = cloned.tensor_graph.try_borrow_mut_extern_node() {
+            node.data.graph = cloned.data.graph.clone();
+        }
+        cloned
     }
 }
 
