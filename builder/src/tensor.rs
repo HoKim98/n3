@@ -23,8 +23,8 @@ pub struct IRData {
     pub id: u64,
     pub name: String,
     pub graph: RefGraph,
-    pub input: Option<ast::Outs>,
-    pub output: Option<ast::Outs>,
+    pub input: ast::Outs,
+    pub output: ast::Outs,
 }
 
 impl Into<TensorNode> for NodeIR {
@@ -140,6 +140,22 @@ impl TensorNode {
         }
     }
 
+    pub fn get_inputs(&self) -> &ast::Outs {
+        match self {
+            Self::Node(node) => &node.data.input,
+            Self::Extern(node) => &node.data.input,
+            Self::Exec(_) => exec_node_cannot_have_shapes(),
+        }
+    }
+
+    pub fn get_outputs(&self) -> &ast::Outs {
+        match self {
+            Self::Node(node) => &node.data.output,
+            Self::Extern(node) => &node.data.output,
+            Self::Exec(_) => exec_node_cannot_have_shapes(),
+        }
+    }
+
     pub fn get_input_shapes(&self) -> Option<&ast::Shapes> {
         match self {
             Self::Node(node) => node.get_input_shapes(),
@@ -238,9 +254,20 @@ impl IRData {
             id: 0,
             name,
             graph,
-            input: input.map(|x| x.to_outs(0)),
-            output: output.map(|x| x.to_outs(1)),
+            input: shapes_to_outs(0, input),
+            output: shapes_to_outs(1, output),
         }
+    }
+}
+
+fn shapes_to_outs(id: u64, shapes: Option<&ast::Shapes>) -> ast::Outs {
+    match shapes {
+        Some(shapes) => shapes.to_outs(id),
+        None => [("x")]
+            .iter()
+            .map(|x| x.to_string())
+            .map(|x| (x.clone(), ast::Out::new(id, x)))
+            .collect(),
     }
 }
 

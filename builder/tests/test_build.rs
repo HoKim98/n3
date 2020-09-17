@@ -34,12 +34,12 @@ fn test_tensor_graph() {
             id: ix,
             name: "Linear".to_string(),
             graph: graph.into(),
-            input: Some(btreemap! {
+            input: btreemap! {
                 "x".to_string() => ast::Out::new(ix, "x".to_string()),
-            }),
-            output: Some(btreemap! {
+            },
+            output: btreemap! {
                 "x".to_string() => ast::Out::new(ox, "x".to_string()),
-            }),
+            },
         }
         .into()
     }

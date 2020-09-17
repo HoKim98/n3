@@ -106,11 +106,24 @@ pub enum GraphInputs {
     List(Vec<Out>),
 }
 
+impl Default for GraphInputs {
+    fn default() -> Self {
+        Self::Dict(Outs::default())
+    }
+}
+
 impl GraphInputs {
     pub fn ty(&self) -> GraphInputsType {
         match self {
             Self::Dict(_) => GraphInputsType::Dict,
             Self::List(_) => GraphInputsType::List,
+        }
+    }
+
+    pub fn unwrap_dict(self) -> Option<Outs> {
+        match self {
+            Self::Dict(outs) => Some(outs),
+            _ => None,
         }
     }
 }

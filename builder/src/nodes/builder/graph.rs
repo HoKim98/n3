@@ -1,6 +1,6 @@
 use super::node::NodeEntry;
 use crate::ast;
-use crate::error::Result;
+use crate::error::{GraphCallError, Result};
 
 pub struct GraphNodeEntry<'a, 'b, 'c>
 where
@@ -26,12 +26,14 @@ impl<'a, 'b, 'c> GraphNodeBuilder<InputNode> for GraphNodeEntry<'a, 'b, 'c> {
 struct DefaultNode;
 impl<'a, 'b, 'c> GraphNodeBuilder<DefaultNode> for GraphNodeEntry<'a, 'b, 'c> {
     fn build(self) -> Result<()> {
+        let id = self.id;
+
         for call in self.node.calls {
             // Step 1. get the node
             let mut callee = self.root.get(&call.name)?;
             let graph = self.root.graph.borrow();
 
-            callee.set_id(self.id);
+            callee.set_id(id);
             callee.set_repeat(graph.replace_to(call.repeat)?);
 
             // Step 2. apply variables
@@ -48,10 +50,24 @@ impl<'a, 'b, 'c> GraphNodeBuilder<DefaultNode> for GraphNodeEntry<'a, 'b, 'c> {
             }
 
             // Step 3. apply IO
-            todo!();
+            let inputs = unwrap_dict(call.inputs.unwrap_or_default())?;
+            let callee_inputs = callee.get_inputs();
+
+            todo!()
         }
         todo!()
     }
+}
+
+fn unwrap_dict(inputs: ast::GraphInputs) -> Result<ast::Outs> {
+    let given = inputs.ty();
+    inputs.unwrap_dict().ok_or_else(|| {
+        GraphCallError::MismatchedInputs {
+            expected: ast::GraphInputsType::Dict,
+            given,
+        }
+        .into()
+    })
 }
 
 // ----------------------
