@@ -90,10 +90,10 @@ graphShapes: Option<ast::Shapes> = {
     <v:graphShape> NewLine => {
         let mut shapes = BTreeMap::default();
         shapes.insert("x".to_string(), Some(v));
-        Some(ast::Shapes(shapes))
+        Some(ast::Shapes::new(shapes))
     },
     ":" NewLine Indent <v:graphShapeKw+> Dedent =>
-        Some(ast::Shapes(
+        Some(ast::Shapes::new(
             v.into_iter().map(|(k, v)| (k, Some(v))).collect())),
     NewLine => None,
 }
@@ -102,7 +102,7 @@ graphShape: ast::Shape = "=" <v:OneOrMore<Dim, commaSep>> => ast::Shape(v);
 
 Dim: ast::Value = Expr;
 
-Out: ast::Out = <name:name?> "$" <id:uint?> => ast::Out { id, name };
+Out: ast::Out = <name:name> "$" <id:uint?> => ast::Out { id, name };
 
 WithDef: ast::With = "with" <n:name> ":" <v:WithSuite> => ast::With {
     name: n,

@@ -52,6 +52,9 @@ pub enum GraphError {
 
 #[derive(Debug, PartialEq)]
 pub enum GraphNodeError {
+    NoSuchInput {
+        out: ast::Out,
+    },
     MismatchedId {
         expected: u64,
         given: u64,

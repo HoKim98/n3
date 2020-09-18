@@ -49,17 +49,11 @@ fn test_tensor_graph() {
 
     let name = "MyNode".to_string();
     let graph = Rc::new(RefCell::new(Graph::new(1)));
-
-    let input = ast::Shapes(btreemap! {
-        "x".to_string() => Some(ast::Shape(vec![32u64.into()])),
-    });
-    let output = ast::Shapes(btreemap! {
-        "x".to_string() => Some(ast::Shape(vec![10u64.into()])),
-    });
+    let tensor_graph = vec![graph_1.into(), graph_2.into()].into();
 
     let ir = NodeIR {
-        data: IRData::new(name, graph, Some(&input), Some(&output)),
-        tensor_graph: vec![graph_1.into(), graph_2.into()].into(),
+        data: IRData::with_tensor_graph(name, graph, &tensor_graph),
+        tensor_graph,
         repeat: None,
     };
 

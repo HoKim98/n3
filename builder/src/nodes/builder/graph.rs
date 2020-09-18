@@ -1,6 +1,7 @@
 use super::node::NodeEntry;
 use crate::ast;
 use crate::error::{GraphCallError, Result};
+use crate::variable::Link;
 
 pub struct GraphNodeEntry<'a, 'b, 'c>
 where
@@ -19,6 +20,7 @@ where
 struct InputNode;
 impl<'a, 'b, 'c> GraphNodeBuilder<InputNode> for GraphNodeEntry<'a, 'b, 'c> {
     fn build(self) -> Result<()> {
+        dbg!(&self.id, &self.node);
         todo!()
     }
 }
@@ -26,12 +28,13 @@ impl<'a, 'b, 'c> GraphNodeBuilder<InputNode> for GraphNodeEntry<'a, 'b, 'c> {
 struct DefaultNode;
 impl<'a, 'b, 'c> GraphNodeBuilder<DefaultNode> for GraphNodeEntry<'a, 'b, 'c> {
     fn build(self) -> Result<()> {
+        let root = self.root;
         let id = self.id;
 
         for call in self.node.calls {
             // Step 1. get the node
-            let mut callee = self.root.get(&call.name)?;
-            let graph = self.root.graph.borrow();
+            let mut callee = root.get(&call.name)?;
+            let graph = root.graph.borrow();
 
             callee.set_id(id);
             callee.set_repeat(graph.replace_to(call.repeat)?);
@@ -50,12 +53,69 @@ impl<'a, 'b, 'c> GraphNodeBuilder<DefaultNode> for GraphNodeEntry<'a, 'b, 'c> {
             }
 
             // Step 3. apply IO
-            let inputs = unwrap_dict(call.inputs.unwrap_or_default())?;
-            let callee_inputs = callee.get_inputs();
+            let expected_inputs = callee.get_inputs();
+            let given_inputs = unwrap_dict(call.inputs.unwrap_or_default())?;
+            *callee.get_inputs_mut() = expected_inputs
+                .keys()
+                .map(|k| match given_inputs.get(k) {
+                    Some(x) => x.clone(),
+                    None => ast::Out::with_name(k.clone()),
+                })
+                .map(|x| (x.name.clone(), x))
+                .collect();
 
-            todo!()
+            let expected_outputs = callee.get_inputs();
+            *callee.get_outputs_mut() = expected_outputs
+                .keys()
+                .map(|k| ast::Out::new(id, k.clone()))
+                .map(|x| (x.name.clone(), x))
+                .collect();
+
+            // Step 4. merge shapes
+            if root.tensor_graph.is_some() {
+                let last_outputs = ast::Shapes::new(
+                    callee
+                        .get_outputs_mut()
+                        .iter_mut()
+                        .map(|(k, x)| Ok((k.clone(), root.fetch_shape(x)?)))
+                        .collect::<Result<_>>()?,
+                );
+                let new_inputs = callee.get_input_shapes();
+
+                if let Some(new_inputs) = new_inputs {
+                    last_outputs.link_to(new_inputs)?;
+
+                    // identity
+                    let new_inputs_borrowed = new_inputs.0.borrow();
+                    if let Some(new_outputs) = callee.get_output_shapes() {
+                        let mut new_outputs_borrowed = new_outputs.0.borrow_mut();
+                        for (name, out) in new_outputs_borrowed.iter_mut() {
+                            if out.is_none() {
+                                *out = new_inputs_borrowed[name].clone();
+                            }
+                        }
+                    }
+                } else {
+                    for x in callee.get_inputs_mut().values_mut() {
+                        x.id = Some(0);
+                    }
+                }
+            }
+
+            // Step 5. store
+            root.tensor_graph.push(callee.into());
         }
-        todo!()
+
+        // Step 6. merge dedicated shapes
+        if let Some(shapes) = self.node.shapes {
+            if let Some(last_outputs) = root.get_output_shapes() {
+                shapes.link_to(last_outputs)?;
+            }
+        }
+
+        // Step 7. store id
+        root.last_tensor_id = id;
+        Ok(())
     }
 }
 

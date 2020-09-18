@@ -7,7 +7,7 @@ use crate::context::{CloneSafe, Context, NodeName};
 use crate::error::{GraphCallError, GraphNodeError, Result};
 use crate::externs::ExternIR;
 use crate::graph::{Graph, RefGraph};
-use crate::tensor::{TensorGraph, TensorNode};
+use crate::tensor::{IRData, TensorGraph, TensorNode};
 
 pub trait ASTBuild<'a> {
     type Args;
@@ -26,7 +26,8 @@ where
 
     children: BTreeMap<String, TensorNode>,
 
-    last_tensor_id: u64,
+    pub tensor_graph: TensorGraph,
+    pub last_tensor_id: u64,
 }
 
 impl<'a, 'b> NodeEntry<'a, 'b> {
@@ -36,6 +37,7 @@ impl<'a, 'b> NodeEntry<'a, 'b> {
             graph,
             children: Default::default(),
             ctx,
+            tensor_graph: Default::default(),
             last_tensor_id: 0,
         }
     }
@@ -44,7 +46,7 @@ impl<'a, 'b> NodeEntry<'a, 'b> {
         let graph = self.graph.borrow();
         for (&id, n) in tensor_graph.iter_mut() {
             if let Some(shapes) = &mut n.shapes {
-                for (x, shape) in &mut shapes.0 {
+                for (x, shape) in shapes.0.borrow_mut().iter_mut() {
                     if let Some(shape) = shape {
                         let out = ast::Out::new(id, x.clone());
                         *shape = graph.hint(&out, shape)?;
@@ -118,8 +120,16 @@ impl<'a, 'b> NodeEntry<'a, 'b> {
         }
     }
 
-    fn build(self) -> NodeIR {
-        todo!()
+    fn build(mut self) -> NodeIR {
+        NodeIR {
+            data: IRData::with_tensor_graph(
+                self.name.pop().unwrap(),
+                self.graph,
+                &self.tensor_graph,
+            ),
+            tensor_graph: self.tensor_graph,
+            repeat: None,
+        }
     }
 
     pub fn get(&mut self, name: &str) -> Result<TensorNode> {
@@ -129,6 +139,38 @@ impl<'a, 'b> NodeEntry<'a, 'b> {
         } else {
             self.ctx.get(name)
         }
+    }
+
+    pub fn get_output_shapes(&self) -> Option<&ast::Shapes> {
+        for node in self.tensor_graph.iter().rev() {
+            if let Some(outputs) = node.get_output_shapes() {
+                return Some(outputs);
+            }
+        }
+        None
+    }
+
+    pub fn fetch_shape(&self, out: &mut ast::Out) -> Result<Option<ast::Shape>> {
+        for node in self.tensor_graph.iter().rev() {
+            // test id
+            let node_id = node.get_id();
+            if let Some(id) = &out.id {
+                if node_id > *id {
+                    continue;
+                }
+                if node_id < *id {
+                    break;
+                }
+            }
+
+            if let Some(shapes) = node.get_output_shapes() {
+                if let Some(shape) = shapes.0.borrow().get(&out.name) {
+                    out.id = Some(node_id);
+                    return Ok(shape.as_ref().cloned());
+                }
+            }
+        }
+        GraphNodeError::NoSuchInput { out: out.clone() }.into()
     }
 }
 

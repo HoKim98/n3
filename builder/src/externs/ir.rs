@@ -31,10 +31,10 @@ impl Into<ExternIR> for IRData {
 impl<'a> Into<ExternIRShapes> for &'a IRData {
     fn into(self) -> ExternIRShapes {
         ExternIRShapes {
-            input: Some(ast::Shapes(
+            input: Some(ast::Shapes::new(
                 self.input.keys().map(|x| (x.clone(), None)).collect(),
             )),
-            output: Some(ast::Shapes(
+            output: Some(ast::Shapes::new(
                 self.output.keys().map(|x| (x.clone(), None)).collect(),
             )),
         }
@@ -49,7 +49,7 @@ impl ExternIR {
         output: Option<ast::Shapes>,
     ) -> Self {
         Self {
-            data: IRData::new(name, graph, input.as_ref(), output.as_ref()),
+            data: IRData::with_shapes(name, graph, input.as_ref(), output.as_ref()),
             shapes: ExternIRShapes { input, output },
         }
     }

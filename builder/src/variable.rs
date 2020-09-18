@@ -22,6 +22,10 @@ pub trait BuildValue {
     fn build(&self) -> ast::Value;
 }
 
+pub trait Link {
+    fn link_to(&self, to: &Self) -> Result<()>;
+}
+
 pub(crate) trait Replace {
     fn replace_to(
         &self,
@@ -366,5 +370,11 @@ where
 {
     fn build(&self) -> ast::Value {
         (**self).build()
+    }
+}
+
+impl Link for ast::Shapes {
+    fn link_to(&self, to: &Self) -> Result<()> {
+        todo!()
     }
 }

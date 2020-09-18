@@ -1,3 +1,5 @@
+use std::ops::{Deref, DerefMut};
+
 use crate::ast;
 use crate::code::Code;
 use crate::context::{Build, CloneSafe, Context};
@@ -8,8 +10,22 @@ use crate::graph::{RefGraph, Table};
 use crate::nodes::{ASTBuild, NodeIR, NodeRoot};
 use crate::seed::Seed;
 
-#[derive(Debug)]
+#[derive(Default, Debug)]
 pub struct TensorGraph(Vec<TensorNode>);
+
+impl Deref for TensorGraph {
+    type Target = Vec<TensorNode>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for TensorGraph {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
 
 #[derive(Debug)]
 pub enum TensorNode {
@@ -56,6 +72,10 @@ impl TensorGraph {
         Self(vec![node])
     }
 
+    pub fn is_some(&self) -> bool {
+        !self.is_empty()
+    }
+
     pub fn get_input_shapes(&self) -> Option<&ast::Shapes> {
         let input_node = &self.0[0];
         if input_node.is_input() {
@@ -68,9 +88,11 @@ impl TensorGraph {
     pub fn get_output_shapes(&self) -> Option<&ast::Shapes> {
         for node in self.0.iter().rev() {
             if let Some(shapes) = node.get_output_shapes() {
+                let shapes_borrowed = shapes.0.borrow();
+
                 // filter dynamic size
-                if shapes.0.len() == 1 {
-                    if let Some(None) = shapes.0.get("x") {
+                if shapes_borrowed.len() == 1 {
+                    if let Some(None) = shapes_borrowed.get("x") {
                         continue;
                     }
                 }
@@ -148,10 +170,26 @@ impl TensorNode {
         }
     }
 
+    pub fn get_inputs_mut(&mut self) -> &mut ast::Outs {
+        match self {
+            Self::Node(node) => &mut node.data.input,
+            Self::Extern(node) => &mut node.data.input,
+            Self::Exec(_) => exec_node_cannot_have_shapes(),
+        }
+    }
+
     pub fn get_outputs(&self) -> &ast::Outs {
         match self {
             Self::Node(node) => &node.data.output,
             Self::Extern(node) => &node.data.output,
+            Self::Exec(_) => exec_node_cannot_have_shapes(),
+        }
+    }
+
+    pub fn get_outputs_mut(&mut self) -> &mut ast::Outs {
+        match self {
+            Self::Node(node) => &mut node.data.output,
+            Self::Extern(node) => &mut node.data.output,
             Self::Exec(_) => exec_node_cannot_have_shapes(),
         }
     }
@@ -244,7 +282,16 @@ impl Build for TensorNode {
 }
 
 impl IRData {
-    pub fn new(
+    pub fn with_tensor_graph(name: String, graph: RefGraph, tensor_graph: &TensorGraph) -> Self {
+        Self::with_shapes(
+            name,
+            graph,
+            tensor_graph.get_input_shapes(),
+            tensor_graph.get_output_shapes(),
+        )
+    }
+
+    pub fn with_shapes(
         name: String,
         graph: RefGraph,
         input: Option<&ast::Shapes>,

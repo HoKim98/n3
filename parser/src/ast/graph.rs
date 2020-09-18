@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::fmt;
 
@@ -21,30 +22,22 @@ impl Into<Value> for OutDim {
 #[derive(Clone, PartialEq)]
 pub struct Out {
     pub id: Option<u64>,
-    pub name: Option<String>,
+    pub name: String,
 }
 
 impl Out {
     pub fn with_name(name: String) -> Self {
-        Self {
-            id: None,
-            name: Some(name),
-        }
+        Self { id: None, name }
     }
 
     pub fn new(id: u64, name: String) -> Self {
-        Self {
-            id: Some(id),
-            name: Some(name),
-        }
+        Self { id: Some(id), name }
     }
 }
 
 impl fmt::Debug for Out {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if let Some(name) = &self.name {
-            write!(f, "{}", name)?;
-        }
+        write!(f, "{}", &self.name)?;
         write!(f, "$")?;
         if let Some(id) = &self.id {
             write!(f, "{}", id)?;
@@ -53,6 +46,7 @@ impl fmt::Debug for Out {
     }
 }
 
+#[derive(Clone)]
 pub struct Shape(pub Vec<Value>);
 
 impl fmt::Debug for Shape {
@@ -64,11 +58,18 @@ impl fmt::Debug for Shape {
     }
 }
 
-pub struct Shapes(pub BTreeMap<String, Option<Shape>>);
+pub struct Shapes(pub RefCell<ShapesInner>);
+
+type ShapesInner = BTreeMap<String, Option<Shape>>;
 
 impl Shapes {
+    pub fn new(inner: ShapesInner) -> Self {
+        Self(RefCell::new(inner))
+    }
+
     pub fn to_outs(&self, id: u64) -> Outs {
         self.0
+            .borrow()
             .keys()
             .map(|n| (n.clone(), Out::new(id, n.clone())))
             .collect()
@@ -78,8 +79,10 @@ impl Shapes {
 crate::impl_debug_no_guard!(Shapes);
 impl<'a> fmt::Debug for FmtGuard<'a, Shapes> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if self.0.len() == 1 {
-            if let Some(shape) = self.0.get("x") {
+        let borrowed = self.0.borrow();
+
+        if borrowed.len() == 1 {
+            if let Some(shape) = borrowed.get("x") {
                 if let Some(shape) = shape {
                     return write!(f, " = {:?}\n", shape);
                 }
@@ -89,7 +92,7 @@ impl<'a> fmt::Debug for FmtGuard<'a, Shapes> {
         let indent = self.indent();
         write!(f, ":\n")?;
 
-        for (name, shape) in &self.0 {
+        for (name, shape) in borrowed.iter() {
             write!(f, "{}{}", &indent, name)?;
             match shape {
                 Some(shape) => write!(f, " = {:?}\n", shape)?,
