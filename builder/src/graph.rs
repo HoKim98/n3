@@ -191,8 +191,8 @@ impl CloneSafe for Graph {
         for var in self_variables.values_mut() {
             variables.push(var.clone());
             // Step 2. replace the olds into the news
-            let mut var = var.borrow_mut();
-            var.value = var.value.clone_value(variables);
+            let new_var = var.borrow().value.clone_value(variables);
+            var.borrow_mut().value = new_var;
         }
         // Step 3. store
         Graph {

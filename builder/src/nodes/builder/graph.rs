@@ -22,7 +22,9 @@ where
 struct InputNode;
 impl<'a, 'b, 'c> GraphNodeBuilder<InputNode> for GraphNodeEntry<'a, 'b, 'c> {
     fn build(self) -> Result<()> {
-        let mut node = self.node;
+        const IR_NAME: &str = "AssertShape";
+
+        let node = self.node;
 
         ExternTensorGraphCondition {
             nodes: &[&node].iter().map(|&x| (x.id, x.clone())).collect(),
@@ -34,14 +36,11 @@ impl<'a, 'b, 'c> GraphNodeBuilder<InputNode> for GraphNodeEntry<'a, 'b, 'c> {
         }
         .test()?;
 
-        let call = node.calls.pop().unwrap();
-        let shapes = node.shapes;
-
         let ir = ExternIR::new(
-            call.name,
+            IR_NAME.to_string(),
             Graph::new(self.root.ctx.root.seed.generate()).into(),
             None,
-            shapes,
+            node.shapes,
         );
         self.root.tensor_graph.push(ir.into());
         Ok(())
