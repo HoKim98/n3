@@ -369,6 +369,7 @@ impl CloneSafe for ast::Expr {
 
 impl CloneSafe for ast::RefVariable {
     fn clone_safe(&self, seed: &Seed, variables: &mut Vec<ast::RefVariable>) -> Self {
+        dbg!(self);
         todo!()
     }
 }

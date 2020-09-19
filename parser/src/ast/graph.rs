@@ -7,7 +7,7 @@ use super::variable::{Keywords, Value};
 
 pub type Outs = BTreeMap<String, Out>;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub struct OutDim {
     pub out: Out,
     pub dim: usize,
@@ -16,6 +16,12 @@ pub struct OutDim {
 impl Into<Value> for OutDim {
     fn into(self) -> Value {
         Value::Dim(self)
+    }
+}
+
+impl fmt::Debug for OutDim {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}[{}]", &self.out, self.dim)
     }
 }
 
@@ -58,6 +64,7 @@ impl fmt::Debug for Shape {
     }
 }
 
+#[derive(Clone)]
 pub struct Shapes(pub RefCell<ShapesInner>);
 
 type ShapesInner = BTreeMap<String, Option<Shape>>;
@@ -104,6 +111,7 @@ impl<'a> fmt::Debug for FmtGuard<'a, Shapes> {
     }
 }
 
+#[derive(Clone)]
 pub enum GraphInputs {
     Dict(Outs),
     List(Vec<Out>),
@@ -159,6 +167,7 @@ pub enum GraphInputsType {
     List,
 }
 
+#[derive(Clone)]
 pub struct GraphCall {
     pub name: String,
     pub inputs: Option<GraphInputs>,
@@ -196,6 +205,7 @@ impl fmt::Debug for GraphCall {
     }
 }
 
+#[derive(Clone)]
 pub struct GraphNode {
     pub id: u64,
     pub calls: Vec<GraphCall>,

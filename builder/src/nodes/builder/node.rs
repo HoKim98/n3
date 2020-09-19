@@ -328,19 +328,19 @@ impl<'a> ASTBuild<'a> for ExternFile {
     }
 }
 
-struct ExternTensorGraphCondition<'a> {
-    nodes: &'a BTreeMap<u64, ast::GraphNode>,
+pub struct ExternTensorGraphCondition<'a> {
+    pub nodes: &'a BTreeMap<u64, ast::GraphNode>,
 
-    names: &'static [&'static str],
-    ty_inputs: Option<ast::GraphInputsType>,
+    pub names: &'static [&'static str],
+    pub ty_inputs: Option<ast::GraphInputsType>,
     // note: the args should be sorted
-    args: Option<&'static [&'static str]>,
-    is_sized: Option<bool>,
-    repeatable: Option<bool>,
+    pub args: Option<&'static [&'static str]>,
+    pub is_sized: Option<bool>,
+    pub repeatable: Option<bool>,
 }
 
 impl<'a> ExternTensorGraphCondition<'a> {
-    fn test(self) -> Result<()> {
+    pub fn test(self) -> Result<()> {
         // test the number of nodes
         if self.nodes.len() != self.names.len() {
             return GraphNodeError::MismatchedSize {
