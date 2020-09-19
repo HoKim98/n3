@@ -221,6 +221,20 @@ impl Value {
             _ => error_value_not_built(),
         }
     }
+
+    pub fn try_as_dim(&self) -> Option<&RefVariable> {
+        match self {
+            Self::Variable(var) => {
+                let dim = var.borrow().ty;
+                if dim == Some(LetType::Dim) {
+                    Some(var)
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        }
+    }
 }
 
 fn error_value_not_built<T>() -> T {

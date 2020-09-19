@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, HashMap};
 
 use num_traits::Pow;
 
-use super::error::{GraphError, Result};
+use super::error::{GraphError, LinkError, Result};
 use super::graph::Table;
 use crate::ast;
 
@@ -375,6 +375,58 @@ where
 
 impl Link for ast::Shapes {
     fn link_to(&self, to: &Self) -> Result<()> {
+        let mut to_borrowed = to.0.borrow_mut();
+
+        for (name, last_output) in self.0.borrow().iter() {
+            if let Some(new_input) = to_borrowed.get_mut(name) {
+                if let Some(new_input) = new_input {
+                    if let Some(last_output) = last_output {
+                        // test the tensor size
+                        let last_output_len = last_output.0.len();
+                        let new_input_len = new_input.0.len();
+
+                        if last_output_len != new_input_len {
+                            return LinkError::MismatchedShape {
+                                expected: new_input.clone(),
+                                given: last_output.clone(),
+                            }
+                            .into();
+                        }
+
+                        for (last_dim, new_dim) in last_output.0.iter().zip(new_input.0.iter_mut())
+                        {
+                            if !last_dim.is_hint() {
+                                // replace
+                                if let Some(new_dim) = new_dim.get_hint() {
+                                    *new_dim.value = Some(last_dim);
+                                }
+                                // test value
+                                else {
+                                    let last_dim = last_dim.build();
+                                    let new_dim = new_dim.build();
+                                    if last_dim != new_dim {
+                                        return LinkError::MismatchedDim {
+                                            expected: last_dim,
+                                            given: new_dim,
+                                        }
+                                        .into();
+                                    }
+                                }
+                            }
+                            // link
+                            else if let Some(new_dim) = new_dim.try_as_dim() {
+                                new_dim.borrow_mut().value = Some(last_dim.clone());
+                            }
+                        }
+                        todo!()
+                    }
+                } else {
+                    // dynamic size
+                    *new_input = last_output.clone();
+                    continue;
+                }
+            }
+        }
         todo!()
     }
 }

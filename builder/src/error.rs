@@ -19,6 +19,7 @@ pub enum BuildError {
     GraphError(GraphError),
     GraphNodeError(GraphNodeError),
     GraphCallError(GraphCallError),
+    LinkError(LinkError),
 }
 
 #[derive(Debug, PartialEq)]
@@ -94,6 +95,18 @@ pub enum GraphCallError {
 }
 
 #[derive(Debug)]
+pub enum LinkError {
+    MismatchedDim {
+        expected: ast::Value,
+        given: ast::Value,
+    },
+    MismatchedShape {
+        expected: ast::Shape,
+        given: ast::Shape,
+    },
+}
+
+#[derive(Debug)]
 pub enum ExternalError {
     IOError(std::io::Error),
 }
@@ -104,6 +117,35 @@ impl PartialEq for Error {
             (Self::ParseError(a), Self::ParseError(b)) => a.eq(b),
             (Self::BuildError(a), Self::BuildError(b)) => a.eq(b),
             (Self::ExternalError(a), Self::ExternalError(b)) => a.eq(b),
+            _ => false,
+        }
+    }
+}
+
+impl PartialEq for LinkError {
+    fn eq(&self, other: &Self) -> bool {
+        // note: only test the types
+        match (self, other) {
+            (
+                Self::MismatchedDim {
+                    expected: _,
+                    given: _,
+                },
+                Self::MismatchedDim {
+                    expected: _,
+                    given: _,
+                },
+            ) => true,
+            (
+                Self::MismatchedShape {
+                    expected: _,
+                    given: _,
+                },
+                Self::MismatchedShape {
+                    expected: _,
+                    given: _,
+                },
+            ) => true,
             _ => false,
         }
     }
@@ -157,6 +199,7 @@ impl_into_error!(TensorNodeError);
 impl_into_error!(GraphError);
 impl_into_error!(GraphNodeError);
 impl_into_error!(GraphCallError);
+impl_into_error!(LinkError);
 
 impl From<std::io::Error> for Error {
     fn from(error: std::io::Error) -> Self {

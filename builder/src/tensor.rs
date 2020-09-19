@@ -368,8 +368,17 @@ impl CloneSafe for ast::Expr {
 }
 
 impl CloneSafe for ast::RefVariable {
-    fn clone_safe(&self, seed: &Seed, variables: &mut Vec<ast::RefVariable>) -> Self {
-        dbg!(self);
-        todo!()
+    fn clone_safe(&self, _: &Seed, variables: &mut Vec<ast::RefVariable>) -> Self {
+        let self_borrowed = self.borrow();
+
+        for new_var in variables.iter() {
+            let new_var_borrowed = new_var.borrow();
+            if self_borrowed.id == new_var_borrowed.id_old
+                && self_borrowed.name == new_var_borrowed.name
+            {
+                return new_var.clone();
+            }
+        }
+        self.clone()
     }
 }

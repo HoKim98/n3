@@ -37,7 +37,12 @@ impl<'a, 'b, 'c> GraphNodeBuilder<InputNode> for GraphNodeEntry<'a, 'b, 'c> {
         let call = node.calls.pop().unwrap();
         let shapes = node.shapes;
 
-        let ir = ExternIR::new(call.name, Graph::new(0).into(), None, shapes);
+        let ir = ExternIR::new(
+            call.name,
+            Graph::new(self.root.ctx.root.seed.generate()).into(),
+            None,
+            shapes,
+        );
         self.root.tensor_graph.push(ir.into());
         Ok(())
     }
@@ -93,7 +98,7 @@ impl<'a, 'b, 'c> GraphNodeBuilder<DefaultNode> for GraphNodeEntry<'a, 'b, 'c> {
             if root.tensor_graph.is_some() {
                 let last_outputs = ast::Shapes::new(
                     callee
-                        .get_outputs_mut()
+                        .get_inputs_mut()
                         .iter_mut()
                         .map(|(k, x)| Ok((k.clone(), root.fetch_shape(x)?)))
                         .collect::<Result<_>>()?,

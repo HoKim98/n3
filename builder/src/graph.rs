@@ -42,11 +42,12 @@ impl Graph {
                     (
                         k,
                         ast::Variable {
+                            id: Some(id),
+                            id_old: Some(id),
                             name: v.name,
                             shortcut: v.shortcut,
                             ty: Some(v.ty),
                             value: v.value,
-                            ..Default::default()
                         }
                         .into(),
                     )
