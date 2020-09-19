@@ -1,6 +1,8 @@
-use super::node::NodeEntry;
+use super::node::{ExternTensorGraphCondition, NodeEntry};
 use crate::ast;
 use crate::error::{GraphCallError, Result};
+use crate::externs::ExternIR;
+use crate::graph::Graph;
 use crate::variable::Link;
 
 pub struct GraphNodeEntry<'a, 'b, 'c>
@@ -20,8 +22,24 @@ where
 struct InputNode;
 impl<'a, 'b, 'c> GraphNodeBuilder<InputNode> for GraphNodeEntry<'a, 'b, 'c> {
     fn build(self) -> Result<()> {
-        dbg!(&self.id, &self.node);
-        todo!()
+        let mut node = self.node;
+
+        ExternTensorGraphCondition {
+            nodes: &[&node].iter().map(|&x| (x.id, x.clone())).collect(),
+            names: &["Input"],
+            ty_inputs: Some(ast::GraphInputsType::UseLast),
+            args: Some(&[]),
+            is_sized: Some(true),
+            repeatable: Some(false),
+        }
+        .test()?;
+
+        let call = node.calls.pop().unwrap();
+        let shapes = node.shapes;
+
+        let ir = ExternIR::new(call.name, Graph::new(0).into(), None, shapes);
+        self.root.tensor_graph.push(ir.into());
+        Ok(())
     }
 }
 
