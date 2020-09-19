@@ -6,6 +6,7 @@ use crate::graph::RefGraph;
 use crate::nodes::NodeRoot;
 use crate::seed::Seed;
 use crate::tensor::IRData;
+use crate::variable::CloneValue;
 
 #[derive(Debug)]
 pub struct ExternIR {
@@ -83,10 +84,10 @@ impl CloneSafe for ExternIR {
 }
 
 impl CloneSafe for ExternIRShapes {
-    fn clone_safe(&self, seed: &Seed, variables: &mut Vec<ast::RefVariable>) -> Self {
+    fn clone_safe(&self, _: &Seed, variables: &mut Vec<ast::RefVariable>) -> Self {
         Self {
-            input: self.input.as_ref().map(|x| x.clone_safe(seed, variables)),
-            output: self.output.as_ref().map(|x| x.clone_safe(seed, variables)),
+            input: self.input.as_ref().map(|x| x.clone_value(variables)),
+            output: self.output.as_ref().map(|x| x.clone_value(variables)),
         }
     }
 }

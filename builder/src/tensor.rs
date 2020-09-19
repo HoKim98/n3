@@ -88,11 +88,11 @@ impl TensorGraph {
     pub fn get_output_shapes(&self) -> Option<&ast::Shapes> {
         for node in self.0.iter().rev() {
             if let Some(shapes) = node.get_output_shapes() {
-                let shapes_borrowed = shapes.0.borrow();
+                let shapes_ref = shapes.0.borrow();
 
                 // filter dynamic size
-                if shapes_borrowed.len() == 1 {
-                    if let Some(None) = shapes_borrowed.get("x") {
+                if shapes_ref.len() == 1 {
+                    if let Some(None) = shapes_ref.get("x") {
                         continue;
                     }
                 }
@@ -327,58 +327,5 @@ impl CloneSafe for IRData {
             input: self.input.clone(),
             output: self.output.clone(),
         }
-    }
-}
-
-impl CloneSafe for ast::Shapes {
-    fn clone_safe(&self, seed: &Seed, variables: &mut Vec<ast::RefVariable>) -> Self {
-        Self(self.0.clone_safe(seed, variables))
-    }
-}
-
-impl CloneSafe for ast::Shape {
-    fn clone_safe(&self, seed: &Seed, variables: &mut Vec<ast::RefVariable>) -> Self {
-        Self(self.0.clone_safe(seed, variables))
-    }
-}
-
-impl CloneSafe for ast::Value {
-    fn clone_safe(&self, seed: &Seed, variables: &mut Vec<ast::RefVariable>) -> Self {
-        match self {
-            Self::Bool(v) => Self::Bool(*v),
-            Self::UInt(v) => Self::UInt(*v),
-            Self::Int(v) => Self::Int(*v),
-            Self::Real(v) => Self::Real(*v),
-            Self::Node(v) => Self::Node(v.clone()),
-            Self::Dim(v) => Self::Dim(v.clone()),
-            Self::Variable(v) => Self::Variable(v.clone_safe(seed, variables)),
-            Self::Expr(v) => Self::Expr(v.clone_safe(seed, variables)),
-        }
-    }
-}
-
-impl CloneSafe for ast::Expr {
-    fn clone_safe(&self, seed: &Seed, variables: &mut Vec<ast::RefVariable>) -> Self {
-        Self {
-            op: self.op,
-            lhs: self.lhs.clone_safe(seed, variables),
-            rhs: self.rhs.clone_safe(seed, variables),
-        }
-    }
-}
-
-impl CloneSafe for ast::RefVariable {
-    fn clone_safe(&self, _: &Seed, variables: &mut Vec<ast::RefVariable>) -> Self {
-        let self_borrowed = self.borrow();
-
-        for new_var in variables.iter() {
-            let new_var_borrowed = new_var.borrow();
-            if self_borrowed.id == new_var_borrowed.id_old
-                && self_borrowed.name == new_var_borrowed.name
-            {
-                return new_var.clone();
-            }
-        }
-        self.clone()
     }
 }

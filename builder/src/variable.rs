@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap};
 
 use num_traits::Pow;
@@ -76,6 +77,18 @@ impl CloneValue for ast::Expr {
     }
 }
 
+impl CloneValue for ast::Shapes {
+    fn clone_value(&self, variables: &[ast::RefVariable]) -> Self {
+        Self(self.0.clone_value(variables))
+    }
+}
+
+impl CloneValue for ast::Shape {
+    fn clone_value(&self, variables: &[ast::RefVariable]) -> Self {
+        Self(self.0.clone_value(variables))
+    }
+}
+
 impl<K, V> CloneValue for BTreeMap<K, V>
 where
     K: Clone + Ord,
@@ -94,6 +107,15 @@ where
 {
     fn clone_value(&self, variables: &[ast::RefVariable]) -> Self {
         self.iter().map(|x| x.clone_value(variables)).collect()
+    }
+}
+
+impl<T> CloneValue for RefCell<T>
+where
+    T: CloneValue,
+{
+    fn clone_value(&self, variables: &[ast::RefVariable]) -> Self {
+        Self::new(self.borrow().clone_value(variables))
     }
 }
 
@@ -397,8 +419,9 @@ impl Link for ast::Shapes {
                         {
                             if !last_dim.is_hint() {
                                 // replace
-                                if let Some(new_dim) = new_dim.get_hint() {
-                                    *new_dim.value = Some(last_dim);
+                                if new_dim.is_hint() {
+                                    let new_dim = new_dim.get_hint().unwrap();
+                                    new_dim.borrow_mut().value = Some(last_dim.clone());
                                 }
                                 // test value
                                 else {
@@ -418,7 +441,6 @@ impl Link for ast::Shapes {
                                 new_dim.borrow_mut().value = Some(last_dim.clone());
                             }
                         }
-                        todo!()
                     }
                 } else {
                     // dynamic size
@@ -427,6 +449,6 @@ impl Link for ast::Shapes {
                 }
             }
         }
-        todo!()
+        Ok(())
     }
 }

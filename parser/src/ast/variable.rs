@@ -13,6 +13,16 @@ use super::node::ExternNodeType;
 #[derive(Clone)]
 pub struct RefVariable(Rc<RefCell<Variable>>);
 
+impl RefVariable {
+    pub fn get_hint(&self) -> Option<Self> {
+        if let Some(value) = self.borrow().value.as_ref().map(|x| x.get_hint()).flatten() {
+            Some(value)
+        } else {
+            Some(self.clone())
+        }
+    }
+}
+
 impl ops::Deref for RefVariable {
     type Target = RefCell<Variable>;
 
@@ -23,12 +33,7 @@ impl ops::Deref for RefVariable {
 
 impl fmt::Debug for RefVariable {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let inner = self.0.borrow();
-        write!(f, "{}", &inner.name)?;
-        if let Some(value) = &inner.value {
-            write!(f, "={:?}", value)?;
-        }
-        Ok(())
+        self.0.borrow().fmt(f)
     }
 }
 
@@ -75,6 +80,16 @@ impl Into<RefVariable> for Variable {
 impl Into<Value> for RefVariable {
     fn into(self) -> Value {
         Value::Variable(self)
+    }
+}
+
+impl fmt::Debug for Variable {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", &self.name)?;
+        if let Some(value) = &self.value {
+            write!(f, "={:?}", value)?;
+        }
+        Ok(())
     }
 }
 
@@ -189,6 +204,13 @@ impl Value {
                 expr.lhs.is_hint() || expr.rhs.as_ref().map(|x| x.is_hint()).unwrap_or_default()
             }
             _ => false,
+        }
+    }
+
+    pub fn get_hint(&self) -> Option<RefVariable> {
+        match self {
+            Self::Variable(var) => var.get_hint(),
+            _ => None,
         }
     }
 

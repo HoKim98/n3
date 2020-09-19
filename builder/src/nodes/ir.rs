@@ -5,6 +5,7 @@ use crate::context::{Build, CloneSafe};
 use crate::error::Result;
 use crate::seed::Seed;
 use crate::tensor::{IRData, TensorGraph, TensorNode};
+use crate::variable::CloneValue;
 
 #[derive(Debug)]
 pub struct NodeIR {
@@ -52,7 +53,7 @@ impl CloneSafe for NodeIR {
         let mut cloned = Self {
             data: self.data.clone_safe(seed, variables),
             tensor_graph: self.tensor_graph.clone_safe(seed, variables),
-            repeat: self.repeat.clone_safe(seed, variables),
+            repeat: self.repeat.clone_value(variables),
         };
 
         // note: the ExternIR wrapper's graph should be cloned manually.
