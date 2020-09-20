@@ -96,23 +96,24 @@ impl Graph {
     }
 
     pub fn get(&self, name: &str) -> Result<&ast::RefVariable> {
-        match self.variables.get(name) {
-            Some(var) => Ok(var),
-            None => GraphError::NoSuchVariable {
+        self.variables.get(name).ok_or_else(|| {
+            GraphError::NoSuchVariable {
                 name: name.to_string(),
                 candidates: self.variables.keys().cloned().collect(),
             }
-            .into(),
-        }
+            .into()
+        })
     }
 
     fn build(&mut self) -> Result<()> {
         let shortcuts_map = self
             .variables
             .iter()
-            .filter_map(|(k, v)| match &v.borrow().shortcut {
-                Some(shortcut) => Some((shortcut.clone(), k.clone())),
-                None => None,
+            .filter_map(|(k, v)| {
+                v.borrow()
+                    .shortcut
+                    .as_ref()
+                    .and_then(|s| Some((s.clone(), k.clone())))
             })
             .collect();
 
@@ -204,9 +205,11 @@ impl CloneSafe for Graph {
             .collect();
         let self_shortcuts = self_variables
             .values()
-            .filter_map(|v| match &v.borrow().shortcut {
-                Some(shortcut) => Some((shortcut.clone(), v.clone())),
-                None => None,
+            .filter_map(|v| {
+                v.borrow()
+                    .shortcut
+                    .as_ref()
+                    .and_then(|s| Some((s.clone(), v.clone())))
             })
             .collect();
         for var in self_variables.values_mut() {

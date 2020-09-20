@@ -316,10 +316,9 @@ where
         variables: &Table,
         shortcuts: &HashMap<String, String>,
     ) -> Result<Self> {
-        match self {
-            Some(value) => Ok(Some(value.replace_to(names, variables, shortcuts)?)),
-            None => Ok(None),
-        }
+        self.as_ref().map_or(Ok(None), |x| {
+            Ok(Some(x.replace_to(names, variables, shortcuts)?))
+        })
     }
 }
 
@@ -403,10 +402,9 @@ where
     T: Hint,
 {
     fn hint(&self, shortcuts: &Table, out: &ast::Out, dim: usize, is_root: bool) -> Result<Self> {
-        match self {
-            Some(value) => Ok(Some(value.hint(shortcuts, out, dim, is_root)?)),
-            None => Ok(None),
-        }
+        self.as_ref().map_or(Ok(None), |x| {
+            Ok(Some(x.hint(shortcuts, out, dim, is_root)?))
+        })
     }
 }
 

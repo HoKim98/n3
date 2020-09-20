@@ -26,9 +26,6 @@ impl Parser {
         );
         let tokenizer = iter::once(Ok(marker_token)).chain(lxr);
 
-        match self.inner.parse(tokenizer) {
-            Err(err) => Err(ParseError::from(err)),
-            Ok(tree) => Ok(tree),
-        }
+        self.inner.parse(tokenizer).map_err(|e| ParseError::from(e))
     }
 }

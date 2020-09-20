@@ -164,10 +164,9 @@ fn build_transform(
     .test()?;
 
     // Step 1. get the IO
-    let inputs = match root.get_output_shapes() {
-        Some(inputs) => inputs,
-        None => return GraphCallError::GenericShapes.into(),
-    };
+    let inputs = root
+        .get_output_shapes()
+        .ok_or_else(|| GraphCallError::GenericShapes)?;
     let outputs = if linear {
         ast::Shapes::new(
             inputs
@@ -266,16 +265,12 @@ impl<'a, 'b, 'c> GraphNodeBuilder<Concat> for GraphNodeEntry<'a, 'b, 'c> {
         let axis = root.graph.borrow().replace_to(axis)?.unwrap();
         let axis = axis.build();
 
-        let mut axis = match axis.unwrap_int() {
-            Some(v) => v,
-            None => {
-                return GraphCallError::MismatchedArgType {
-                    expected: ast::LetType::UInt,
-                    given: axis.ty(),
-                }
-                .into()
-            }
-        };
+        let mut axis = axis
+            .unwrap_int()
+            .ok_or_else(|| GraphCallError::MismatchedArgType {
+                expected: ast::LetType::UInt,
+                given: axis.ty(),
+            })?;
 
         // Step 2. get the inputs
         let mut inputs = call.inputs.unwrap().unwrap_list().unwrap();
@@ -439,13 +434,10 @@ fn unwrap_dict(inputs: ast::GraphInputs) -> Result<ast::Outs> {
 }
 
 fn unwrap_value<T>(name: &str, value: Option<T>) -> Result<T> {
-    match value {
-        Some(v) => Ok(v),
-        None => {
-            return GraphCallError::GenericShape {
-                name: name.to_string(),
-            }
-            .into()
+    value.ok_or_else(|| {
+        GraphCallError::GenericShape {
+            name: name.to_string(),
         }
-    }
+        .into()
+    })
 }
