@@ -3,7 +3,7 @@ use crate::ast;
 use crate::error::{GraphCallError, Result};
 use crate::externs::ExternIR;
 use crate::graph::Graph;
-use crate::variable::Link;
+use crate::variable::{assert_equal, BuildValue, Link};
 
 pub struct GraphNodeEntry<'a, 'b, 'c>
 where
@@ -39,7 +39,7 @@ impl<'a, 'b, 'c> GraphNodeBuilder<InputNode> for GraphNodeEntry<'a, 'b, 'c> {
 
         let ir = ExternIR::new(
             IR_NAME.to_string(),
-            Graph::new(self.root.ctx.root.seed.generate()).into(),
+            make_empty_graph(&self.root).into(),
             None,
             node.shapes,
         );
@@ -109,11 +109,11 @@ impl<'a, 'b, 'c> GraphNodeBuilder<DefaultNode> for GraphNodeEntry<'a, 'b, 'c> {
                     last_outputs.link_to(new_inputs)?;
 
                     // identity
-                    let new_inputs_borrowed = new_inputs.0.borrow();
                     if let Some(new_outputs) = callee.get_output_shapes() {
                         let mut new_outputs_borrowed = new_outputs.0.borrow_mut();
                         for (name, out) in new_outputs_borrowed.iter_mut() {
                             if out.is_none() {
+                                let new_inputs_borrowed = new_inputs.0.borrow();
                                 *out = new_inputs_borrowed[name].clone();
                             }
                         }
@@ -142,26 +142,17 @@ impl<'a, 'b, 'c> GraphNodeBuilder<DefaultNode> for GraphNodeEntry<'a, 'b, 'c> {
     }
 }
 
-fn unwrap_dict(inputs: ast::GraphInputs) -> Result<ast::Outs> {
-    let given = inputs.ty();
-    inputs.unwrap_dict().ok_or_else(|| {
-        GraphCallError::MismatchedInputs {
-            expected: ast::GraphInputsType::Dict,
-            given,
-        }
-        .into()
-    })
-}
-
 // ----------------------
 //  BEGIN Built-in nodes
 // ----------------------
 
 fn build_transform(
     entry: GraphNodeEntry,
-    names: &'static [&'static str],
+    names: &'static [&'static str; 1],
     linear: bool,
 ) -> Result<()> {
+    const IR_NAME: &str = "Transform";
+
     let root = entry.root;
     let node = entry.node;
 
@@ -187,20 +178,63 @@ fn build_transform(
                 .0
                 .borrow()
                 .iter()
-                .map(|(k, v)| {
-                    (
-                        k.clone(),
-                        v.as_ref().map(|x| ast::Shape(vec![x.0.iter().product()])),
-                    )
-                })
+                .map(|(k, v)| (k.clone(), v.as_ref().map(|x| ast::Shape(vec![x.product()]))))
                 .collect(),
         )
     } else {
         node.shapes.unwrap()
     };
 
-    // Step 2. match the tuple
-    todo!()
+    if !linear {
+        // Step 2. match the tuple
+        let inputs = inputs.0.borrow();
+        let outputs = outputs.0.borrow();
+
+        if inputs.len() != outputs.len() || inputs.keys().any(|x| !outputs.contains_key(x)) {
+            return GraphCallError::MismatchedShapeKeys {
+                expected: inputs.keys().cloned().collect(),
+                given: outputs.keys().cloned().collect(),
+            }
+            .into();
+        }
+
+        // Step 3. match the size
+        for ((name, input), output) in inputs.iter().zip(outputs.values()) {
+            let input = unwrap_value(name, input.as_ref())?.product().build();
+            let output = unwrap_value(name, output.as_ref())?.product().build();
+            assert_equal(input, output)?;
+        }
+    }
+
+    // Step 4. store variables
+    let mut graph = make_empty_graph(&root);
+    graph.add(
+        ast::Variable::with_name_value(
+            "output shapes".to_string(),
+            Some(ast::Value::Map(
+                outputs
+                    .0
+                    .borrow()
+                    .iter()
+                    .map(|(k, v)| (k.clone(), v.as_ref().map(|x| x.0.clone().into())))
+                    .collect(),
+            )),
+        )
+        .into(),
+    )?;
+
+    // Step 4. store
+    let ir = ExternIR::new(
+        IR_NAME.to_string(),
+        graph.into(),
+        Some(inputs.clone()),
+        Some(outputs),
+    );
+    root.tensor_graph.push(ir.into());
+
+    // Step 5. store id
+    root.last_tensor_id = entry.id;
+    Ok(())
 }
 
 struct Transform;
@@ -265,4 +299,31 @@ where
     Self: Sized,
 {
     fn build(self) -> Result<()>;
+}
+
+fn make_empty_graph(root: &NodeEntry) -> Graph {
+    Graph::new(root.ctx.root.seed.generate())
+}
+
+fn unwrap_dict(inputs: ast::GraphInputs) -> Result<ast::Outs> {
+    let given = inputs.ty();
+    inputs.unwrap_dict().ok_or_else(|| {
+        GraphCallError::MismatchedInputs {
+            expected: ast::GraphInputsType::Dict,
+            given,
+        }
+        .into()
+    })
+}
+
+fn unwrap_value<T>(name: &str, value: Option<T>) -> Result<T> {
+    match value {
+        Some(v) => Ok(v),
+        None => {
+            return GraphCallError::GenericShape {
+                name: name.to_string(),
+            }
+            .into()
+        }
+    }
 }

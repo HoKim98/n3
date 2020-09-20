@@ -62,6 +62,8 @@ impl CloneValue for ast::Value {
         match self {
             Self::Variable(value) => Self::Variable(value.clone_value(variables)),
             Self::Expr(value) => Self::Expr(value.clone_value(variables).into()),
+            Self::List(value) => Self::List(value.clone_value(variables).into()),
+            Self::Map(value) => Self::Map(value.clone_value(variables).into()),
             _ => self.clone(),
         }
     }
@@ -154,6 +156,8 @@ impl Estimable for ast::Value {
         match self {
             Self::Variable(value) => value.is_estimable(),
             Self::Expr(value) => value.is_estimable(),
+            Self::List(value) => value.is_estimable(),
+            Self::Map(value) => value.is_estimable(),
             _ => true,
         }
     }
@@ -162,6 +166,24 @@ impl Estimable for ast::Value {
 impl Estimable for ast::Expr {
     fn is_estimable(&self) -> bool {
         self.lhs.is_estimable() && self.rhs.as_ref().map(|x| x.is_estimable()).unwrap_or(true)
+    }
+}
+
+impl<K, V> Estimable for BTreeMap<K, V>
+where
+    V: Estimable,
+{
+    fn is_estimable(&self) -> bool {
+        self.values().all(|x| x.is_estimable())
+    }
+}
+
+impl<T> Estimable for Vec<T>
+where
+    T: Estimable,
+{
+    fn is_estimable(&self) -> bool {
+        self.iter().all(|x| x.is_estimable())
     }
 }
 
@@ -229,6 +251,8 @@ impl Replace for ast::Value {
         match self {
             Self::Variable(value) => Ok(value.replace_to(names, variables, shortcuts)?.into()),
             Self::Expr(value) => Ok(value.replace_to(names, variables, shortcuts)?.into()),
+            Self::List(value) => Ok(value.replace_to(names, variables, shortcuts)?.into()),
+            Self::Map(value) => Ok(value.replace_to(names, variables, shortcuts)?.into()),
             _ => Ok(self.clone()),
         }
     }
@@ -246,6 +270,39 @@ impl Replace for ast::Expr {
             lhs: self.lhs.replace_to(names, variables, shortcuts)?,
             rhs: self.rhs.replace_to(names, variables, shortcuts)?,
         })
+    }
+}
+
+impl<K, V> Replace for BTreeMap<K, V>
+where
+    K: Clone + Ord,
+    V: Replace,
+{
+    fn replace_to(
+        &self,
+        names: &mut Vec<String>,
+        variables: &Table,
+        shortcuts: &HashMap<String, String>,
+    ) -> Result<Self> {
+        self.iter()
+            .map(|(k, v)| Ok((k.clone(), v.replace_to(names, variables, shortcuts)?)))
+            .collect()
+    }
+}
+
+impl<T> Replace for Vec<T>
+where
+    T: Replace,
+{
+    fn replace_to(
+        &self,
+        names: &mut Vec<String>,
+        variables: &Table,
+        shortcuts: &HashMap<String, String>,
+    ) -> Result<Self> {
+        self.iter()
+            .map(|x| x.replace_to(names, variables, shortcuts))
+            .collect()
     }
 }
 
@@ -300,6 +357,8 @@ impl Hint for ast::Value {
         match self {
             Self::Variable(value) => Ok(value.hint(shortcuts, out, dim, is_root)?.into()),
             Self::Expr(value) => Ok(value.hint(shortcuts, out, dim, is_root)?.into()),
+            Self::List(value) => Ok(value.hint(shortcuts, out, dim, is_root)?.into()),
+            Self::Map(value) => Ok(value.hint(shortcuts, out, dim, is_root)?.into()),
             _ => Ok(self.clone()),
         }
     }
@@ -313,6 +372,29 @@ impl Hint for ast::Expr {
             rhs: self.rhs.hint(shortcuts, out, dim, is_root)?,
         }
         .into())
+    }
+}
+
+impl<K, V> Hint for BTreeMap<K, V>
+where
+    K: Clone + Ord,
+    V: Hint,
+{
+    fn hint(&self, shortcuts: &Table, out: &ast::Out, dim: usize, is_root: bool) -> Result<Self> {
+        self.iter()
+            .map(|(k, v)| Ok((k.clone(), v.hint(shortcuts, out, dim, is_root)?)))
+            .collect()
+    }
+}
+
+impl<T> Hint for Vec<T>
+where
+    T: Hint,
+{
+    fn hint(&self, shortcuts: &Table, out: &ast::Out, dim: usize, is_root: bool) -> Result<Self> {
+        self.iter()
+            .map(|x| x.hint(shortcuts, out, dim, is_root))
+            .collect()
     }
 }
 
@@ -330,18 +412,29 @@ where
 
 impl BuildValue for ast::RefVariable {
     fn build(&self) -> ast::Value {
-        self.borrow().value.build()
+        match &self.borrow().value {
+            Some(value) => value.build(),
+            None => ast::Value::Variable(self.clone()),
+        }
     }
 }
 
 impl BuildValue for ast::Value {
     fn build(&self) -> Self {
         match self {
-            Self::Bool(_) | Self::UInt(_) | Self::Int(_) | Self::Real(_) => self.clone(),
+            Self::Bool(_) | Self::UInt(_) | Self::Int(_) | Self::Real(_) | Self::Dim(_) => {
+                self.clone()
+            }
             Self::Node(_) => unreachable!("node variable should be pruned."),
-            Self::Dim(_) => unreachable!("The value should have already been checked."),
             Self::Variable(value) => value.build(),
             Self::Expr(value) => value.build(),
+            Self::List(value) => Self::List(value.iter().map(|x| x.build()).collect()),
+            Self::Map(value) => Self::Map(
+                value
+                    .iter()
+                    .map(|(k, v)| (k.clone(), v.as_ref().map(|x| x.build())))
+                    .collect(),
+            ),
         }
     }
 }
@@ -370,18 +463,6 @@ impl BuildValue for ast::Expr {
                 ast::Operator::Neg => -lhs,
                 _ => unreachable!("expected unary operators"),
             }
-        }
-    }
-}
-
-impl<T> BuildValue for Option<T>
-where
-    T: BuildValue,
-{
-    fn build(&self) -> ast::Value {
-        match self {
-            Some(value) => value.build(),
-            None => unreachable!("The value should have already been checked."),
         }
     }
 }
@@ -427,13 +508,7 @@ impl Link for ast::Shapes {
                                 else {
                                     let last_dim = last_dim.build();
                                     let new_dim = new_dim.build();
-                                    if last_dim != new_dim {
-                                        return LinkError::MismatchedDim {
-                                            expected: last_dim,
-                                            given: new_dim,
-                                        }
-                                        .into();
-                                    }
+                                    assert_equal(last_dim, new_dim)?;
                                 }
                             }
                             // link
@@ -449,6 +524,18 @@ impl Link for ast::Shapes {
                 }
             }
         }
+        Ok(())
+    }
+}
+
+pub fn assert_equal(last_dim: ast::Value, new_dim: ast::Value) -> Result<()> {
+    if last_dim != new_dim {
+        return LinkError::MismatchedDim {
+            expected: last_dim,
+            given: new_dim,
+        }
+        .into();
+    } else {
         Ok(())
     }
 }

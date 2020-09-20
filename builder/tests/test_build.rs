@@ -104,8 +104,19 @@ node MyNode:
 fn test_build_lenet5() {
     let root = NodeRoot::new();
 
-    let model = root.get("LeNet5").unwrap();
+    let ir = root.get("LeNet5").unwrap();
 
     // manually define shapes
-    dbg!(model);
+    {
+        let mut shapes = ir.get_input_shapes().unwrap().0.borrow_mut();
+        let shape = shapes.get_mut("x").map(|x| x.as_mut()).flatten().unwrap();
+
+        if let [channel, width, height] = &mut shape.0.as_mut_slice() {
+            channel.as_variable().borrow_mut().value = Some(1u64.into());
+            width.as_variable().borrow_mut().value = Some(28u64.into());
+            height.as_variable().borrow_mut().value = Some(28u64.into());
+        }
+    }
+
+    ir.build(&root).unwrap();
 }

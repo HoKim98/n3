@@ -171,6 +171,9 @@ pub enum Value {
     Dim(OutDim),
     Variable(RefVariable),
     Expr(Box<Expr>),
+
+    List(Vec<Self>),
+    Map(BTreeMap<String, Option<Self>>),
 }
 
 impl Into<Value> for bool {
@@ -194,6 +197,18 @@ impl Into<Value> for i64 {
 impl Into<Value> for f64 {
     fn into(self) -> Value {
         Value::Real(self)
+    }
+}
+
+impl Into<Value> for Vec<Value> {
+    fn into(self) -> Value {
+        Value::List(self)
+    }
+}
+
+impl Into<Value> for BTreeMap<String, Option<Value>> {
+    fn into(self) -> Value {
+        Value::Map(self)
     }
 }
 
@@ -271,6 +286,13 @@ impl Value {
         }
     }
 
+    pub fn as_variable(&self) -> &RefVariable {
+        match self {
+            Self::Variable(var) => &var,
+            _ => unreachable!("The value should be variable."),
+        }
+    }
+
     pub fn try_as_dim(&self) -> Option<&RefVariable> {
         match self {
             Self::Variable(var) => {
@@ -307,6 +329,24 @@ impl fmt::Debug for Value {
             Self::Dim(value) => write!(f, "{:?}", value),
             Self::Variable(value) => write!(f, "{:?}", value),
             Self::Expr(value) => write!(f, "{:?}", value),
+            Self::List(value) => {
+                write!(f, "[")?;
+                for v in value {
+                    write!(f, "{:?}, ", v)?;
+                }
+                write!(f, "]")
+            }
+            Self::Map(value) => {
+                write!(f, "{{")?;
+                for (k, v) in value {
+                    write!(f, "{}", k)?;
+                    if let Some(v) = v {
+                        write!(f, ": {:?}", v)?;
+                    }
+                    write!(f, ", ")?;
+                }
+                write!(f, "}}")
+            }
         }
     }
 }
@@ -377,13 +417,18 @@ impl ops::Neg for Value {
             Self::UInt(value) => Self::Int(value as i64),
             Self::Int(value) => Self::Int(-value),
             Self::Real(value) => Self::Real(-value),
-            _ => error_value_not_built(),
+            _ => Expr {
+                op: Operator::Neg,
+                lhs: self,
+                rhs: None,
+            }
+            .into(),
         }
     }
 }
 
 macro_rules! impl_binary_op_arith(
-    ($trait:ty, $f:ident) => {
+    ($trait:ty, $f:ident, $op:expr) => {
         impl $trait for Value {
             type Output = Self;
 
@@ -405,7 +450,11 @@ macro_rules! impl_binary_op_arith(
                     (Self::Real(lhs), Self::UInt(rhs)) => Self::Real(lhs.$f(rhs as f64)),
                     (Self::Real(lhs), Self::Int(rhs)) => Self::Real(lhs.$f(rhs as f64)),
                     (Self::Real(lhs), Self::Real(rhs)) => Self::Real(lhs.$f(rhs)),
-                    _ => error_value_not_built(),
+                    (lhs, rhs) => Expr {
+                        op: $op,
+                        lhs,
+                        rhs: Some(rhs),
+                    }.into(),
                 }
             }
         }
@@ -413,7 +462,7 @@ macro_rules! impl_binary_op_arith(
 );
 
 macro_rules! impl_binary_op_logical(
-    ($trait:ty, $f:ident) => {
+    ($trait:ty, $f:ident, $op:expr) => {
         impl $trait for Value {
             type Output = Self;
 
@@ -435,7 +484,11 @@ macro_rules! impl_binary_op_logical(
                     (Self::Real(lhs), Self::UInt(rhs)) => Self::Int((lhs as i64).$f(rhs as i64)),
                     (Self::Real(lhs), Self::Int(rhs)) => Self::Int((lhs as i64).$f(rhs)),
                     (Self::Real(lhs), Self::Real(rhs)) => Self::Int((lhs as i64).$f(rhs as i64)),
-                    _ => error_value_not_built(),
+                    (lhs, rhs) => Expr {
+                        op: $op,
+                        lhs,
+                        rhs: Some(rhs),
+                    }.into(),
                 }
             }
         }
@@ -487,17 +540,21 @@ impl PartialEq for Value {
             (Self::Real(lhs), Self::UInt(rhs)) => *lhs == *rhs as f64,
             (Self::Real(lhs), Self::Int(rhs)) => *lhs == *rhs as f64,
             (Self::Real(lhs), Self::Real(rhs)) => lhs.eq(rhs),
-            _ => error_value_not_built(),
+            _ => {
+                // TODO: FUTURE: implement comparing hinted values
+                println!("warning: comparing hinted values is not supported yet!");
+                true
+            }
         }
     }
 }
 
-impl_binary_op_arith!(ops::Add, add);
-impl_binary_op_arith!(ops::Sub, sub);
-impl_binary_op_arith!(ops::Mul, mul);
-impl_binary_op_arith!(ops::Div, div);
-impl_binary_op_arith!(ops::Rem, rem);
+impl_binary_op_arith!(ops::Add, add, Operator::Add);
+impl_binary_op_arith!(ops::Sub, sub, Operator::Sub);
+impl_binary_op_arith!(ops::Mul, mul, Operator::Mul);
+impl_binary_op_arith!(ops::Div, div, Operator::Div);
+impl_binary_op_arith!(ops::Rem, rem, Operator::Mod);
 
-impl_binary_op_logical!(ops::BitAnd, bitand);
-impl_binary_op_logical!(ops::BitOr, bitor);
-impl_binary_op_logical!(ops::BitXor, bitxor);
+impl_binary_op_logical!(ops::BitAnd, bitand, Operator::And);
+impl_binary_op_logical!(ops::BitOr, bitor, Operator::Or);
+impl_binary_op_logical!(ops::BitXor, bitxor, Operator::Xor);

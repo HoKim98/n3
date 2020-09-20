@@ -117,19 +117,11 @@ impl TensorGraph {
 
 impl TensorNode {
     pub fn is_input(&self) -> bool {
-        match self {
-            Self::Node(node) => node.data.id == 0,
-            Self::Extern(_) => false,
-            Self::Exec(_) => false,
-        }
+        self.get_data().id == 0
     }
 
     pub fn name(&self) -> &str {
-        match self {
-            Self::Node(node) => &node.data.name,
-            Self::Extern(node) => &node.data.name,
-            Self::Exec(node) => &node.data.name,
-        }
+        &self.get_data().name
     }
 
     fn ty(&self) -> ast::FinalNodeType {
@@ -140,19 +132,11 @@ impl TensorNode {
     }
 
     pub fn get_id(&self) -> u64 {
-        match self {
-            Self::Node(node) => node.data.id,
-            Self::Extern(node) => node.data.id,
-            Self::Exec(node) => node.data.id,
-        }
+        self.get_data().id
     }
 
     pub fn set_id(&mut self, id: u64) {
-        match self {
-            Self::Node(node) => node.data.id = id,
-            Self::Extern(node) => node.data.id = id,
-            Self::Exec(node) => node.data.id = id,
-        }
+        self.get_data_mut().id = id;
     }
 
     pub fn set_repeat(&mut self, value: Option<ast::Value>) {
@@ -166,7 +150,7 @@ impl TensorNode {
         match self {
             Self::Node(node) => &node.data,
             Self::Extern(node) => &node.data,
-            Self::Exec(_) => exec_node_cannot_have_data(),
+            Self::Exec(node) => &node.data,
         }
     }
 
@@ -174,7 +158,7 @@ impl TensorNode {
         match self {
             Self::Node(node) => &mut node.data,
             Self::Extern(node) => &mut node.data,
-            Self::Exec(_) => exec_node_cannot_have_data(),
+            Self::Exec(node) => &mut node.data,
         }
     }
 
@@ -202,7 +186,7 @@ impl TensorNode {
         match self {
             Self::Node(node) => node.get_input_shapes(),
             Self::Extern(node) => node.get_input_shapes(),
-            Self::Exec(_) => exec_node_cannot_have_data(),
+            Self::Exec(_) => exec_node_cannot_have_shapes(),
         }
     }
 
@@ -210,7 +194,7 @@ impl TensorNode {
         match self {
             Self::Node(node) => node.get_output_shapes(),
             Self::Extern(node) => node.get_output_shapes(),
-            Self::Exec(_) => exec_node_cannot_have_data(),
+            Self::Exec(_) => exec_node_cannot_have_shapes(),
         }
     }
 
@@ -245,8 +229,8 @@ impl TensorNode {
     }
 }
 
-fn exec_node_cannot_have_data() -> ! {
-    unreachable!("The exec node cannot have the IRData");
+fn exec_node_cannot_have_shapes() -> ! {
+    unreachable!("The exec node cannot have the shapes");
 }
 
 impl CloneSafe for TensorGraph {

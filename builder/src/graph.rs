@@ -1,5 +1,5 @@
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::rc::Rc;
 
 use n3_parser::ast;
@@ -18,7 +18,7 @@ pub struct Graph {
     variables: Table,
 }
 
-pub(crate) type Table = HashMap<String, ast::RefVariable>;
+pub(crate) type Table = BTreeMap<String, ast::RefVariable>;
 
 impl Graph {
     pub fn new(id: u64) -> Self {
@@ -188,7 +188,7 @@ impl Into<RefGraph> for Graph {
 
 impl Estimable for Graph {
     fn is_estimable(&self) -> bool {
-        self.variables.values().all(|x| x.is_estimable())
+        self.variables.is_estimable()
     }
 }
 
@@ -197,7 +197,7 @@ impl CloneSafe for Graph {
         let id = seed.generate();
 
         // Step 1. get the copies
-        let mut self_variables: HashMap<_, _> = self
+        let mut self_variables: Table = self
             .variables
             .iter()
             .map(|(k, v)| (k.clone(), v.detach(id)))

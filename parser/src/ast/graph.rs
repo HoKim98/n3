@@ -55,6 +55,16 @@ impl fmt::Debug for Out {
 #[derive(Clone)]
 pub struct Shape(pub Vec<Value>);
 
+impl Shape {
+    pub fn sum(&self) -> Value {
+        self.0.iter().sum()
+    }
+
+    pub fn product(&self) -> Value {
+        self.0.iter().product()
+    }
+}
+
 impl fmt::Debug for Shape {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for dim in &self.0 {
