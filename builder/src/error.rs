@@ -72,6 +72,10 @@ pub enum GraphNodeError {
 
 #[derive(Debug, PartialEq)]
 pub enum GraphCallError {
+    EmptyInputs,
+    GenericListInputShape {
+        index: usize,
+    },
     GenericShape {
         name: String,
     },
@@ -84,7 +88,7 @@ pub enum GraphCallError {
         expected: Vec<&'static str>,
         given: usize,
     },
-    MismatchedInputs {
+    MismatchedInputsType {
         expected: ast::GraphInputsType,
         given: ast::GraphInputsType,
     },
@@ -92,9 +96,22 @@ pub enum GraphCallError {
         expected: bool,
         given: bool,
     },
+    MismatchedAxis {
+        val_min: i64,
+        val_max: i64,
+        given: i64,
+    },
+    MismatchedArgType {
+        expected: ast::LetType,
+        given: Option<ast::LetType>,
+    },
     MismatchedArgs {
         expected: &'static [&'static str],
         given: Vec<String>,
+    },
+    MismatchedShapes {
+        expected: usize,
+        given: usize,
     },
     MismatchedShapeKeys {
         expected: Vec<String>,

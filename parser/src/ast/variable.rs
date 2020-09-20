@@ -1,5 +1,6 @@
 use std::cell::RefCell;
 use std::collections::BTreeMap;
+use std::convert::TryInto;
 use std::fmt;
 use std::iter::{Product, Sum};
 use std::ops;
@@ -81,6 +82,12 @@ impl Into<RefVariable> for Variable {
 impl Into<Value> for RefVariable {
     fn into(self) -> Value {
         Value::Variable(self)
+    }
+}
+
+impl Into<Value> for Variable {
+    fn into(self) -> Value {
+        RefVariable::from(self.into()).into()
     }
 }
 
@@ -239,6 +246,26 @@ impl<'a> Product<&'a Self> for Value {
 }
 
 impl Value {
+    pub fn ty(&self) -> Option<LetType> {
+        match self {
+            Self::Bool(_) => Some(LetType::Bool),
+            Self::UInt(_) => Some(LetType::UInt),
+            Self::Int(_) => Some(LetType::Int),
+            Self::Real(_) => Some(LetType::Real),
+            Self::Variable(var) => var.borrow().ty,
+            Self::Node(_) => err_value_not_pruned(),
+            // TODO: [proposal] add the other types
+            _ => unimplemented!(),
+        }
+    }
+
+    pub fn is_atomic(&self) -> bool {
+        match self {
+            Self::Bool(_) | Self::UInt(_) | Self::Int(_) | Self::Real(_) => true,
+            _ => false,
+        }
+    }
+
     pub fn is_hint(&self) -> bool {
         match self {
             Self::Variable(value) => value.borrow().is_hint(),
@@ -256,33 +283,33 @@ impl Value {
         }
     }
 
-    pub fn into_uint(self) -> Self {
+    pub fn unwrap_uint(&self) -> Option<u64> {
         match self {
-            Self::Bool(value) => Self::UInt(value as u64),
-            Self::UInt(value) => Self::UInt(value),
-            Self::Int(value) => Self::UInt(value as u64),
-            Self::Real(value) => Self::UInt(value as u64),
-            _ => error_value_not_built(),
+            Self::Bool(value) => (*value).try_into().ok(),
+            Self::UInt(value) => Some(*value),
+            Self::Int(value) => (*value).try_into().ok(),
+            Self::Real(value) => Some(*value as u64),
+            _ => None,
         }
     }
 
-    pub fn into_int(self) -> Self {
+    pub fn unwrap_int(&self) -> Option<i64> {
         match self {
-            Self::Bool(value) => Self::Int(value as i64),
-            Self::UInt(value) => Self::Int(value as i64),
-            Self::Int(value) => Self::Int(value),
-            Self::Real(value) => Self::Int(value as i64),
-            _ => error_value_not_built(),
+            Self::Bool(value) => (*value).try_into().ok(),
+            Self::UInt(value) => (*value).try_into().ok(),
+            Self::Int(value) => Some(*value),
+            Self::Real(value) => Some(*value as i64),
+            _ => None,
         }
     }
 
-    pub fn into_real(self) -> Self {
+    pub fn unwrap_real(&self) -> Option<f64> {
         match self {
-            Self::Bool(value) => Self::Real(value as u8 as f64),
-            Self::UInt(value) => Self::Real(value as f64),
-            Self::Int(value) => Self::Real(value as f64),
-            Self::Real(value) => Self::Real(value),
-            _ => error_value_not_built(),
+            Self::Bool(value) => Some(*value as u8 as f64),
+            Self::UInt(value) => Some(*value as f64),
+            Self::Int(value) => Some(*value as f64),
+            Self::Real(value) => Some(*value),
+            _ => None,
         }
     }
 
@@ -306,10 +333,6 @@ impl Value {
             _ => None,
         }
     }
-}
-
-fn error_value_not_built<T>() -> T {
-    unreachable!("The value should be built.")
 }
 
 impl fmt::Debug for Value {
@@ -516,7 +539,12 @@ impl Pow<Self> for Value {
             (Self::Real(lhs), Self::UInt(rhs)) => Self::Real(lhs.pow(rhs as i32)),
             (Self::Real(lhs), Self::Int(rhs)) => Self::Real(lhs.pow(rhs as i32)),
             (Self::Real(lhs), Self::Real(rhs)) => Self::Real(lhs.pow(rhs)),
-            _ => error_value_not_built(),
+            (lhs, rhs) => Expr {
+                op: Operator::Pow,
+                lhs,
+                rhs: Some(rhs),
+            }
+            .into(),
         }
     }
 }
@@ -547,6 +575,10 @@ impl PartialEq for Value {
             }
         }
     }
+}
+
+pub fn err_value_not_pruned() -> ! {
+    unreachable!("node variable should be pruned.");
 }
 
 impl_binary_op_arith!(ops::Add, add, Operator::Add);

@@ -80,9 +80,13 @@ pub struct Shapes(pub RefCell<ShapesInner>);
 type ShapesInner = BTreeMap<String, Option<Shape>>;
 
 impl Shapes {
-    pub fn new(inner: ShapesInner) -> Self {
-        Self(RefCell::new(inner))
+    pub fn new(shapes: ShapesInner) -> Self {
+        Self(RefCell::new(shapes))
     }
+
+    // pub fn with_vec(shapes: Vec<Option<Shape>>) -> Self {
+    //     Self::new(shapes.into_iter().map(|x| ))
+    // }
 
     pub fn to_outs(&self, id: u64) -> Outs {
         self.0
@@ -144,6 +148,13 @@ impl GraphInputs {
     pub fn unwrap_dict(self) -> Option<Outs> {
         match self {
             Self::Dict(outs) => Some(outs),
+            _ => None,
+        }
+    }
+
+    pub fn unwrap_list(self) -> Option<Vec<Out>> {
+        match self {
+            Self::List(outs) => Some(outs),
             _ => None,
         }
     }

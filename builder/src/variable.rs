@@ -425,7 +425,7 @@ impl BuildValue for ast::Value {
             Self::Bool(_) | Self::UInt(_) | Self::Int(_) | Self::Real(_) | Self::Dim(_) => {
                 self.clone()
             }
-            Self::Node(_) => unreachable!("node variable should be pruned."),
+            Self::Node(_) => ast::err_value_not_pruned(),
             Self::Variable(value) => value.build(),
             Self::Expr(value) => value.build(),
             Self::List(value) => Self::List(value.iter().map(|x| x.build()).collect()),
@@ -448,7 +448,18 @@ impl BuildValue for ast::Expr {
                 ast::Operator::Add => lhs + rhs,
                 ast::Operator::Sub => lhs - rhs,
                 ast::Operator::Mul => lhs * rhs,
-                ast::Operator::MulInt => lhs.into_uint() * rhs.into_uint(),
+                ast::Operator::MulInt => {
+                    if lhs.is_atomic() && rhs.is_atomic() {
+                        (lhs.unwrap_uint().unwrap() * rhs.unwrap_uint().unwrap()).into()
+                    } else {
+                        ast::Expr {
+                            op: self.op,
+                            lhs,
+                            rhs: Some(rhs),
+                        }
+                        .into()
+                    }
+                }
                 ast::Operator::Div => lhs / rhs,
                 ast::Operator::Mod => lhs % rhs,
                 ast::Operator::Pow => lhs.pow(rhs),

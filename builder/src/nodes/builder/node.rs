@@ -111,12 +111,12 @@ impl<'a, 'b> NodeEntry<'a, 'b> {
             }
             .into()
         } else {
-            GraphNodeEntry {
-                root: self,
-                id: node.id,
-                node,
-            }
-            .build()
+            let id = node.id;
+            GraphNodeEntry { root: self, node }.build()?;
+
+            // store id
+            self.last_tensor_id = id;
+            Ok(())
         }
     }
 
@@ -403,7 +403,7 @@ impl<'a> ExternTensorGraphCondition<'a> {
         if let Some(expected) = self.ty_inputs {
             let given = call.get_inputs_ty();
             if expected != given {
-                return GraphCallError::MismatchedInputs { expected, given }.into();
+                return GraphCallError::MismatchedInputsType { expected, given }.into();
             }
         }
 

@@ -1,5 +1,6 @@
 use std::cell::RefCell;
 use std::collections::BTreeMap;
+use std::fs;
 use std::rc::Rc;
 
 use maplit::btreemap;
@@ -118,5 +119,16 @@ fn test_build_lenet5() {
         }
     }
 
+    ir.build(&root).unwrap();
+}
+
+#[test]
+fn test_build_concat() {
+    let model = fs::read_to_string("tests/data/nodes/__user__/sample/test-cat.n3").unwrap();
+
+    let root = NodeRoot::new();
+    root.add_source("TestCat".to_string(), model.to_string());
+
+    let ir = root.get("TestCat").unwrap();
     ir.build(&root).unwrap();
 }

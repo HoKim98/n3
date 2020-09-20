@@ -11,7 +11,6 @@ where
     'b: 'c,
 {
     pub root: &'c mut NodeEntry<'a, 'b>,
-    pub id: u64,
     pub node: ast::GraphNode,
 }
 
@@ -52,7 +51,7 @@ struct DefaultNode;
 impl<'a, 'b, 'c> GraphNodeBuilder<DefaultNode> for GraphNodeEntry<'a, 'b, 'c> {
     fn build(self) -> Result<()> {
         let root = self.root;
-        let id = self.id;
+        let id = self.node.id;
 
         for call in self.node.calls {
             // Step 1. get the node
@@ -135,9 +134,6 @@ impl<'a, 'b, 'c> GraphNodeBuilder<DefaultNode> for GraphNodeEntry<'a, 'b, 'c> {
                 shapes.link_to(last_outputs)?;
             }
         }
-
-        // Step 7. store id
-        root.last_tensor_id = id;
         Ok(())
     }
 }
@@ -207,23 +203,20 @@ fn build_transform(
     }
 
     // Step 4. store variables
-    let mut graph = make_empty_graph(&root);
-    graph.add(
-        ast::Variable::with_name_value(
-            "output shapes".to_string(),
-            Some(ast::Value::Map(
-                outputs
-                    .0
-                    .borrow()
-                    .iter()
-                    .map(|(k, v)| (k.clone(), v.as_ref().map(|x| x.0.clone().into())))
-                    .collect(),
-            )),
-        )
-        .into(),
-    )?;
+    let graph = make_graph_with_one_var(
+        &root,
+        "output shapes",
+        Some(ast::Value::Map(
+            outputs
+                .0
+                .borrow()
+                .iter()
+                .map(|(k, v)| (k.clone(), v.as_ref().map(|x| x.0.clone().into())))
+                .collect(),
+        )),
+    );
 
-    // Step 4. store
+    // Step 5. store
     let ir = ExternIR::new(
         IR_NAME.to_string(),
         graph.into(),
@@ -231,9 +224,6 @@ fn build_transform(
         Some(outputs),
     );
     root.tensor_graph.push(ir.into());
-
-    // Step 5. store id
-    root.last_tensor_id = entry.id;
     Ok(())
 }
 
@@ -254,7 +244,131 @@ impl<'a, 'b, 'c> GraphNodeBuilder<ToLinear> for GraphNodeEntry<'a, 'b, 'c> {
 struct Concat;
 impl<'a, 'b, 'c> GraphNodeBuilder<Concat> for GraphNodeEntry<'a, 'b, 'c> {
     fn build(self) -> Result<()> {
-        todo!()
+        let root = self.root;
+        let mut node = self.node;
+
+        ExternTensorGraphCondition {
+            nodes: &[&node].iter().map(|&x| (x.id, x.clone())).collect(),
+            names: &["Concat"],
+            ty_inputs: Some(ast::GraphInputsType::List),
+            args: Some(&["axis"]),
+            is_sized: Some(false),
+            repeatable: Some(false),
+            is_id_zero: false,
+        }
+        .test()?;
+
+        let call = node.calls.pop().unwrap();
+        let mut args = call.args.unwrap();
+
+        // Step 1. get the axis
+        let axis = args.remove("axis");
+        let axis = root.graph.borrow().replace_to(axis)?.unwrap();
+        let axis = axis.build();
+
+        let mut axis = match axis.unwrap_int() {
+            Some(v) => v,
+            None => {
+                return GraphCallError::MismatchedArgType {
+                    expected: ast::LetType::UInt,
+                    given: axis.ty(),
+                }
+                .into()
+            }
+        };
+
+        // Step 2. get the inputs
+        let mut inputs = call.inputs.unwrap().unwrap_list().unwrap();
+        let inputs: Vec<_> = inputs
+            .iter_mut()
+            .map(|x| root.fetch_shape(x))
+            .collect::<Result<_>>()?;
+
+        if inputs.is_empty() {
+            return GraphCallError::EmptyInputs.into();
+        }
+
+        // Step 3. concat the inputs
+        let mut tensor_base: Vec<_> = match &inputs[0] {
+            Some(shapes) => shapes.0.iter().map(|x| Some(x)).collect(),
+            None => return GraphCallError::GenericShapes.into(),
+        };
+        let tensor_dims = tensor_base.len() as i64;
+
+        if axis < 0 {
+            axis = -axis - tensor_dims;
+        }
+        if axis < 0 || axis >= tensor_dims {
+            return GraphCallError::MismatchedAxis {
+                val_min: 0,
+                val_max: tensor_dims - 1,
+                given: axis,
+            }
+            .into();
+        }
+
+        let axis = axis as usize;
+        let tensor_dims = tensor_base.len();
+
+        let mut target_dim = vec![tensor_base[axis].unwrap().clone()];
+        tensor_base[axis] = None;
+
+        for (index, shape) in inputs.iter().enumerate().skip(1) {
+            let shape = match shape {
+                Some(x) => &x.0,
+                None => return GraphCallError::GenericListInputShape { index }.into(),
+            };
+
+            // test tensor dimensions
+            {
+                let expected = tensor_dims;
+                let given = shape.len();
+                if expected != given {
+                    return GraphCallError::MismatchedShapes { expected, given }.into();
+                }
+            }
+
+            // test each tensor dimension
+            for (d0, d1) in tensor_base.iter().zip(shape.iter()) {
+                if let Some(d0) = d0 {
+                    let d0 = d0.build();
+                    let d1 = d0.build();
+                    assert_equal(d0, d1)?;
+                } else {
+                    target_dim.push(d1.clone());
+                }
+            }
+        }
+
+        let dim = ast::Shape(target_dim).sum();
+
+        tensor_base[axis] = Some(&dim);
+        let outputs: Vec<_> = tensor_base
+            .into_iter()
+            .map(|x| x.unwrap().clone())
+            .collect();
+
+        // Step 4. store variables
+        let graph = make_graph_with_one_var(&root, "axis", Some((axis as i64).into()));
+
+        // Step 5. store
+        let inputs = inputs
+            .iter()
+            .enumerate()
+            .map(|(i, x)| (format!("{}", i), x.as_ref().cloned()))
+            .collect();
+        let inputs = ast::Shapes::new(inputs);
+
+        let outputs = ast::Shape(outputs);
+        let outputs = [("x", outputs)]
+            .iter()
+            .map(|(k, v)| (k.to_string(), Some(v.clone())))
+            .collect();
+        let outputs = ast::Shapes::new(outputs);
+
+        let ir = ExternIR::new(call.name, graph.into(), Some(inputs), Some(outputs));
+        root.tensor_graph.push(ir.into());
+        Ok(())
     }
 }
 
@@ -273,7 +387,7 @@ macro_rules! match_builtins(
 
 impl<'a, 'b, 'c> GraphNodeEntry<'a, 'b, 'c> {
     fn is_input(&self) -> bool {
-        self.id == 0
+        self.node.id == 0
     }
 
     pub fn build(self) -> Result<()> {
@@ -305,10 +419,18 @@ fn make_empty_graph(root: &NodeEntry) -> Graph {
     Graph::new(root.ctx.root.seed.generate())
 }
 
+fn make_graph_with_one_var(root: &NodeEntry, name: &str, value: Option<ast::Value>) -> Graph {
+    let mut graph = make_empty_graph(&root);
+    graph
+        .add(ast::Variable::with_name_value(name.to_string(), value).into())
+        .unwrap();
+    graph
+}
+
 fn unwrap_dict(inputs: ast::GraphInputs) -> Result<ast::Outs> {
     let given = inputs.ty();
     inputs.unwrap_dict().ok_or_else(|| {
-        GraphCallError::MismatchedInputs {
+        GraphCallError::MismatchedInputsType {
             expected: ast::GraphInputsType::Dict,
             given,
         }

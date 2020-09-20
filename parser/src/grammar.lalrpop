@@ -84,7 +84,10 @@ graphInputs: ast::GraphInputs = {
 }
 graphInputKw: (String, ast::Out) = <k:name> "=" <v:Out> => (k, v);
 graphArgs: BTreeMap<String, ast::Value> = "(" <v:OneOrMore<graphArg, commaSep>> ")" => v.into_iter().collect();
-graphArg: (String, ast::Value) = <k:name> "=" <v:Expr> => (k, v);
+graphArg: (String, ast::Value) = {
+    <k:name> "=" <v:Expr> => (k, v),
+    <k:name> => (k.clone(), ast::Variable::with_name(k).into()),
+}
 graphRepeat: ast::Value = "*" <v:Value> => v;
 graphShapes: Option<ast::Shapes> = {
     <v:graphShape> NewLine => {
@@ -102,7 +105,13 @@ graphShape: ast::Shape = "=" <v:OneOrMore<Dim, commaSep>> => ast::Shape(v);
 
 Dim: ast::Value = Expr;
 
-Out: ast::Out = <name:name> "$" <id:uint?> => ast::Out { id, name };
+Out: ast::Out = <name:name?> "$" <id:uint?> => ast::Out {
+    id,
+    name: match name {
+        Some(name) => name,
+        None => "x".to_string(),
+    },
+};
 
 WithDef: ast::With = "with" <n:name> ":" <v:WithSuite> => ast::With {
     name: n,
