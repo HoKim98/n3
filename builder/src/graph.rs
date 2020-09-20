@@ -74,6 +74,27 @@ impl Graph {
         Ok(())
     }
 
+    pub fn apply(&self, variables: Table, shortcut: bool) -> Result<()> {
+        let self_variables = if shortcut {
+            &self.shortcuts
+        } else {
+            &self.variables
+        };
+
+        for (name, v) in variables.into_iter() {
+            if let Some(var) = self_variables.get(&name) {
+                var.borrow_mut().value = Some(v.into());
+            } else {
+                return GraphError::NoSuchVariable {
+                    name,
+                    candidates: self_variables.keys().cloned().collect(),
+                }
+                .into();
+            }
+        }
+        Ok(())
+    }
+
     pub fn get(&self, name: &str) -> Result<&ast::RefVariable> {
         match self.variables.get(name) {
             Some(var) => Ok(var),

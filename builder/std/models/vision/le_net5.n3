@@ -17,6 +17,6 @@ node LeNet5:
     0. Input                    =  C, W  , H
     1. MyConv                   = 32, W/2, H/2
     2. MyConv                   = 64, W/4, H/4
-    3. Transform                = 64* W/4* H/4
+    3. ToLinear
     4. Linear + Relu + Dropout  = 1024
     5. Linear                   = 10

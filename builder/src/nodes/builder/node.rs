@@ -80,7 +80,7 @@ impl<'a, 'b> NodeEntry<'a, 'b> {
                 })
                 .collect::<Result<_>>()?
         };
-        node.apply_variables(args)?;
+        node.apply_variables(args, false)?;
 
         // Step 3. store
         self.children.insert(name, node);
@@ -259,6 +259,7 @@ impl<'a, 'b> ExternNodeEntry<'a, 'b> {
             args: Some(&[]),
             is_sized: None,
             repeatable: Some(false),
+            is_id_zero: true,
         }
         .test()
     }
@@ -337,6 +338,7 @@ pub struct ExternTensorGraphCondition<'a> {
     pub args: Option<&'static [&'static str]>,
     pub is_sized: Option<bool>,
     pub repeatable: Option<bool>,
+    pub is_id_zero: bool,
 }
 
 impl<'a> ExternTensorGraphCondition<'a> {
@@ -375,7 +377,7 @@ impl<'a> ExternTensorGraphCondition<'a> {
         }
 
         // Step 2. test the node id
-        {
+        if self.is_id_zero {
             if id != node.id {
                 return GraphNodeError::MismatchedId {
                     expected: id,

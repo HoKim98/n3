@@ -33,6 +33,7 @@ impl<'a, 'b, 'c> GraphNodeBuilder<InputNode> for GraphNodeEntry<'a, 'b, 'c> {
             args: Some(&[]),
             is_sized: Some(true),
             repeatable: Some(false),
+            is_id_zero: true,
         }
         .test()?;
 
@@ -71,7 +72,7 @@ impl<'a, 'b, 'c> GraphNodeBuilder<DefaultNode> for GraphNodeEntry<'a, 'b, 'c> {
                         Ok((k, var.into()))
                     })
                     .collect::<Result<_>>()?;
-                callee.apply_variables(args)?;
+                callee.apply_variables(args, true)?;
             }
 
             // Step 3. apply IO
@@ -156,17 +157,63 @@ fn unwrap_dict(inputs: ast::GraphInputs) -> Result<ast::Outs> {
 //  BEGIN Built-in nodes
 // ----------------------
 
+fn build_transform(
+    entry: GraphNodeEntry,
+    names: &'static [&'static str],
+    linear: bool,
+) -> Result<()> {
+    let root = entry.root;
+    let node = entry.node;
+
+    ExternTensorGraphCondition {
+        nodes: &[&node].iter().map(|&x| (x.id, x.clone())).collect(),
+        names,
+        ty_inputs: Some(ast::GraphInputsType::UseLast),
+        args: Some(&[]),
+        is_sized: Some(!linear),
+        repeatable: Some(false),
+        is_id_zero: false,
+    }
+    .test()?;
+
+    // Step 1. get the IO
+    let inputs = match root.get_output_shapes() {
+        Some(inputs) => inputs,
+        None => return GraphCallError::GenericShapes.into(),
+    };
+    let outputs = if linear {
+        ast::Shapes::new(
+            inputs
+                .0
+                .borrow()
+                .iter()
+                .map(|(k, v)| {
+                    (
+                        k.clone(),
+                        v.as_ref().map(|x| ast::Shape(vec![x.0.iter().product()])),
+                    )
+                })
+                .collect(),
+        )
+    } else {
+        node.shapes.unwrap()
+    };
+
+    // Step 2. match the tuple
+    todo!()
+}
+
 struct Transform;
 impl<'a, 'b, 'c> GraphNodeBuilder<Transform> for GraphNodeEntry<'a, 'b, 'c> {
     fn build(self) -> Result<()> {
-        todo!()
+        build_transform(self, &["Transform"], false)
     }
 }
 
 struct ToLinear;
 impl<'a, 'b, 'c> GraphNodeBuilder<ToLinear> for GraphNodeEntry<'a, 'b, 'c> {
     fn build(self) -> Result<()> {
-        todo!()
+        build_transform(self, &["ToLinear"], true)
     }
 }
 

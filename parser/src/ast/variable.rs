@@ -1,6 +1,7 @@
 use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::fmt;
+use std::iter::{Product, Sum};
 use std::ops;
 use std::rc::Rc;
 
@@ -193,6 +194,32 @@ impl Into<Value> for i64 {
 impl Into<Value> for f64 {
     fn into(self) -> Value {
         Value::Real(self)
+    }
+}
+
+impl<'a> Sum<&'a Self> for Value {
+    fn sum<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
+        iter.fold(Self::UInt(0), |lhs, rhs| {
+            Expr {
+                op: Operator::Add,
+                lhs,
+                rhs: Some(rhs.clone()),
+            }
+            .into()
+        })
+    }
+}
+
+impl<'a> Product<&'a Self> for Value {
+    fn product<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
+        iter.fold(Self::UInt(1), |lhs, rhs| {
+            Expr {
+                op: Operator::Mul,
+                lhs,
+                rhs: Some(rhs.clone()),
+            }
+            .into()
+        })
     }
 }
 

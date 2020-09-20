@@ -72,6 +72,7 @@ pub enum GraphNodeError {
 
 #[derive(Debug, PartialEq)]
 pub enum GraphCallError {
+    GenericShapes,
     MismatchedName {
         expected: Vec<&'static str>,
         given: String,

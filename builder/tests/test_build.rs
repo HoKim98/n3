@@ -99,3 +99,13 @@ node MyNode:
     let ir = root.get("MyNode").unwrap();
     ir.build(&root).unwrap();
 }
+
+#[test]
+fn test_build_lenet5() {
+    let root = NodeRoot::new();
+
+    let model = root.get("LeNet5").unwrap();
+
+    // manually define shapes
+    dbg!(model);
+}
