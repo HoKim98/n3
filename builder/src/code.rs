@@ -2,6 +2,7 @@ use crate::execs::Program;
 use crate::externs::ExternCode;
 use crate::nodes::NodeCode;
 
+#[derive(Debug)]
 pub enum Code {
     Node(NodeCode),
     Extern(ExternCode),

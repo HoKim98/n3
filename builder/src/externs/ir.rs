@@ -67,6 +67,7 @@ impl ExternIR {
         Ok(ExternCode {
             script: root.get_extern(&self.data.name)?,
             name: self.data.name,
+            graph: self.data.graph,
             input: self.data.input,
             output: self.data.output,
         })
@@ -75,9 +76,9 @@ impl ExternIR {
 
 impl CloneSafe for ExternIR {
     fn clone_safe(&self, seed: &Seed, variables: &mut Vec<ast::RefVariable>) -> Self {
-        // note: DO NOT clone_safe GRAPH, because it is already cloned by parent NodeIR
+        // note: ordered (data -> shapes)
         Self {
-            data: self.data.clone(),
+            data: self.data.clone_safe(seed, variables),
             shapes: self.shapes.clone_safe(seed, variables),
         }
     }

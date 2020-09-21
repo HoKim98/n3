@@ -1,7 +1,7 @@
 use n3_builder::*;
 
 pub fn get_simple_graph() -> Graph {
-    let mut graph = Graph::new(1);
+    let mut graph = Graph::with_id(1);
 
     let a: ast::RefVariable = ast::Variable::with_name("a".to_string()).into();
     let b: ast::RefVariable =

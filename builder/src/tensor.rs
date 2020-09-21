@@ -7,7 +7,7 @@ use crate::error::{Result, TensorNodeError};
 use crate::execs::ExecIR;
 use crate::externs::ExternIR;
 use crate::graph::{RefGraph, Table};
-use crate::nodes::{ASTBuild, NodeIR, NodeRoot};
+use crate::nodes::{builtins, ASTBuild, NodeIR, NodeRoot};
 use crate::seed::Seed;
 
 #[derive(Default, Debug)]
@@ -68,6 +68,10 @@ impl Into<TensorNode> for ExecIR {
 }
 
 impl TensorGraph {
+    pub fn empty() -> Self {
+        Self(vec![])
+    }
+
     pub fn new_one(node: TensorNode) -> Self {
         Self(vec![node])
     }
@@ -99,12 +103,12 @@ impl TensorGraph {
                 return Some(shapes);
             }
         }
-        self.0.last().unwrap().get_output_shapes()
+        self.0.last().map(|x| x.get_output_shapes()).flatten()
     }
 
-    pub fn try_borrow_mut_extern_node(&mut self) -> Option<&mut ExternIR> {
+    pub fn try_borrow_extern_node(&self) -> Option<&ExternIR> {
         if self.0.len() == 1 {
-            self.0[0].try_borrow_mut_extern()
+            self.0[0].try_borrow_extern()
         } else {
             None
         }
@@ -117,7 +121,7 @@ impl TensorGraph {
 
 impl TensorNode {
     pub fn is_input(&self) -> bool {
-        self.get_data().id == 0
+        builtins::INPUTS.contains(&self.name())
     }
 
     pub fn name(&self) -> &str {
@@ -162,7 +166,7 @@ impl TensorNode {
         }
     }
 
-    fn get_graph(&self) -> &RefGraph {
+    pub fn get_graph(&self) -> &RefGraph {
         &self.get_data().graph
     }
 
@@ -221,7 +225,7 @@ impl TensorNode {
         }
     }
 
-    pub fn try_borrow_mut_extern(&mut self) -> Option<&mut ExternIR> {
+    pub fn try_borrow_extern(&self) -> Option<&ExternIR> {
         match self {
             Self::Extern(node) => Some(node),
             _ => None,

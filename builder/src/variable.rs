@@ -487,10 +487,8 @@ where
 
 impl Link for ast::Shapes {
     fn link_to(&self, to: &Self) -> Result<()> {
-        let mut to_borrowed = to.0.borrow_mut();
-
         for (name, last_output) in self.0.borrow().iter() {
-            if let Some(new_input) = to_borrowed.get_mut(name) {
+            if let Some(new_input) = to.0.borrow().get(name) {
                 if let Some(new_input) = new_input {
                     if let Some(last_output) = last_output {
                         // test the tensor size
@@ -505,8 +503,7 @@ impl Link for ast::Shapes {
                             .into();
                         }
 
-                        for (last_dim, new_dim) in last_output.0.iter().zip(new_input.0.iter_mut())
-                        {
+                        for (last_dim, new_dim) in last_output.0.iter().zip(new_input.0.iter()) {
                             if !last_dim.is_hint() {
                                 // replace
                                 if new_dim.is_hint() {
@@ -527,13 +524,28 @@ impl Link for ast::Shapes {
                         }
                     }
                 } else {
+                    // release borrowing for 'borrow_mut'
+                    drop(new_input);
+
                     // dynamic size
-                    *new_input = last_output.clone();
+                    *to.0.borrow_mut().get_mut(name).unwrap() = last_output.clone();
                     continue;
                 }
             }
         }
         Ok(())
+    }
+}
+
+impl<'a, T> Link for Option<&'a T>
+where
+    T: Link,
+{
+    fn link_to(&self, to: &Self) -> Result<()> {
+        match self.zip(to.as_ref()) {
+            Some((a, &b)) => a.link_to(b),
+            None => Ok(()),
+        }
     }
 }
 

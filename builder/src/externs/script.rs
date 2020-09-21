@@ -4,7 +4,7 @@ use crate::error::Result;
 use crate::nodes::NodeRoot;
 use crate::seed::Seed;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct PythonScript {
     name: String,
     source: String,

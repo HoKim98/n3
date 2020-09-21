@@ -19,14 +19,27 @@ pub struct Graph {
 }
 
 pub(crate) type Table = BTreeMap<String, ast::RefVariable>;
+type Values = BTreeMap<String, Option<ast::Value>>;
 
 impl Graph {
-    pub fn new(id: u64) -> Self {
+    pub fn with_id(id: u64) -> Self {
         Self {
             id,
             shortcuts: Table::new(),
             variables: Table::new(),
         }
+    }
+
+    pub fn new(seed: &Seed) -> Self {
+        Self::with_id(seed.generate())
+    }
+
+    pub fn with_one_var(seed: &Seed, name: &str, value: Option<ast::Value>) -> Self {
+        let mut graph = Self::new(&seed);
+        graph
+            .add(ast::Variable::with_name_value(name.to_string(), value).into())
+            .unwrap();
+        graph
     }
 
     pub fn try_with_variables<I>(id: u64, variables: I) -> Result<Self>
@@ -177,6 +190,25 @@ impl Graph {
             }
         } else {
             Ok(None)
+        }
+    }
+
+    pub fn unload_dims(&mut self) -> Values {
+        self.variables
+            .iter_mut()
+            .filter(|(_, v)| v.borrow().ty == Some(ast::LetType::Dim))
+            .map(|(k, v)| (k.clone(), v.borrow_mut().value.take()))
+            .collect()
+    }
+
+    pub fn load_dims_weakly(&mut self, values: Values) {
+        for (name, value) in values {
+            let var = &self.variables[&name];
+            let mut var_ref = var.borrow_mut();
+
+            if var_ref.value.is_none() {
+                var_ref.value = value;
+            }
         }
     }
 }

@@ -49,7 +49,7 @@ fn test_tensor_graph() {
     let graph_2 = make_graph((2, 64), (3, 10));
 
     let name = "MyNode".to_string();
-    let graph = Rc::new(RefCell::new(Graph::new(1)));
+    let graph = Rc::new(RefCell::new(Graph::with_id(1)));
     let tensor_graph = vec![graph_1.into(), graph_2.into()].into();
 
     let ir = NodeIR {
@@ -130,5 +130,27 @@ fn test_build_concat() {
     root.add_source("TestCat".to_string(), model.to_string());
 
     let ir = root.get("TestCat").unwrap();
+    ir.build(&root).unwrap();
+}
+
+#[test]
+fn test_build_repeat() {
+    let model = "
+node MyNode:
+    let zero = int 0
+    let one = int 1
+    let two = int 2
+
+    0. Input            = 10
+    1. Linear           = 20
+    2. Linear * zero    = 20
+    3. Linear * one     = 30
+    4. Linear * two     = 40
+";
+
+    let root = NodeRoot::new();
+    root.add_source("MyNode".to_string(), model.to_string());
+
+    let ir = root.get("MyNode").unwrap();
     ir.build(&root).unwrap();
 }

@@ -282,16 +282,16 @@ impl<'a, 'b> ExternNodeEntry<'a, 'b> {
     }
 
     fn build(mut self) -> NodeIR {
-        let extern_node = ExternIR::new(
-            self.inner.name.pop().unwrap(),
-            self.inner.graph,
-            self.input,
-            self.output,
-        );
+        let name = self.inner.name.pop().unwrap();
+
+        let extern_node = ExternIR::new(name.clone(), self.inner.graph, self.input, self.output);
+        let graph = extern_node.data.graph.clone();
+
+        let tensor_graph = TensorGraph::new_one(extern_node.into());
 
         NodeIR {
-            data: extern_node.data.clone(),
-            tensor_graph: TensorGraph::new_one(extern_node.into()),
+            data: IRData::with_tensor_graph(name, graph, &tensor_graph),
+            tensor_graph,
             repeat: None,
         }
     }

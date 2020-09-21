@@ -84,10 +84,6 @@ impl Shapes {
         Self(RefCell::new(shapes))
     }
 
-    // pub fn with_vec(shapes: Vec<Option<Shape>>) -> Self {
-    //     Self::new(shapes.into_iter().map(|x| ))
-    // }
-
     pub fn to_outs(&self, id: u64) -> Outs {
         self.0
             .borrow()

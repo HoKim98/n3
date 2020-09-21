@@ -5,6 +5,17 @@ use crate::externs::ExternIR;
 use crate::graph::Graph;
 use crate::variable::{assert_equal, BuildValue, Link};
 
+#[allow(non_upper_case_globals)]
+pub mod builtins {
+    pub const INPUTS: &[&str] = &[INPUT_NAME];
+    pub(super) const INPUT_NAME: &str = "AssertShape";
+
+    pub(super) const NODE__Transform: &str = "Transform";
+    pub(super) const NODE__ToLinear: &str = "ToLinear";
+    pub(super) const NODE__Concat: &str = "Concat";
+}
+use builtins::*;
+
 pub struct GraphNodeEntry<'a, 'b, 'c>
 where
     'a: 'b,
@@ -21,8 +32,6 @@ where
 struct InputNode;
 impl<'a, 'b, 'c> GraphNodeBuilder<InputNode> for GraphNodeEntry<'a, 'b, 'c> {
     fn build(self) -> Result<()> {
-        const IR_NAME: &str = "AssertShape";
-
         let node = self.node;
 
         ExternTensorGraphCondition {
@@ -37,7 +46,7 @@ impl<'a, 'b, 'c> GraphNodeBuilder<InputNode> for GraphNodeEntry<'a, 'b, 'c> {
         .test()?;
 
         let ir = ExternIR::new(
-            IR_NAME.to_string(),
+            INPUT_NAME.to_string(),
             make_empty_graph(&self.root).into(),
             None,
             node.shapes,
@@ -109,11 +118,11 @@ impl<'a, 'b, 'c> GraphNodeBuilder<DefaultNode> for GraphNodeEntry<'a, 'b, 'c> {
 
                     // identity
                     if let Some(new_outputs) = callee.get_output_shapes() {
-                        let mut new_outputs_borrowed = new_outputs.0.borrow_mut();
-                        for (name, out) in new_outputs_borrowed.iter_mut() {
+                        let mut new_outputs_ref = new_outputs.0.borrow_mut();
+                        for (name, out) in new_outputs_ref.iter_mut() {
                             if out.is_none() {
-                                let new_inputs_borrowed = new_inputs.0.borrow();
-                                *out = new_inputs_borrowed[name].clone();
+                                let new_outputs_ref = new_inputs.0.borrow();
+                                *out = new_outputs_ref[name].clone();
                             }
                         }
                     }
@@ -147,8 +156,6 @@ fn build_transform(
     names: &'static [&'static str; 1],
     linear: bool,
 ) -> Result<()> {
-    const IR_NAME: &str = "Transform";
-
     let root = entry.root;
     let node = entry.node;
 
@@ -217,7 +224,7 @@ fn build_transform(
 
     // Step 5. store
     let ir = ExternIR::new(
-        IR_NAME.to_string(),
+        NODE__Transform.to_string(),
         graph.into(),
         Some(inputs.clone()),
         Some(outputs),
@@ -229,14 +236,14 @@ fn build_transform(
 struct Transform;
 impl<'a, 'b, 'c> GraphNodeBuilder<Transform> for GraphNodeEntry<'a, 'b, 'c> {
     fn build(self) -> Result<()> {
-        build_transform(self, &["Transform"], false)
+        build_transform(self, &[NODE__Transform], false)
     }
 }
 
 struct ToLinear;
 impl<'a, 'b, 'c> GraphNodeBuilder<ToLinear> for GraphNodeEntry<'a, 'b, 'c> {
     fn build(self) -> Result<()> {
-        build_transform(self, &["ToLinear"], true)
+        build_transform(self, &[NODE__ToLinear], true)
     }
 }
 
@@ -248,7 +255,7 @@ impl<'a, 'b, 'c> GraphNodeBuilder<Concat> for GraphNodeEntry<'a, 'b, 'c> {
 
         ExternTensorGraphCondition {
             nodes: &[&node].iter().map(|&x| (x.id, x.clone())).collect(),
-            names: &["Concat"],
+            names: &[NODE__Concat],
             ty_inputs: Some(ast::GraphInputsType::List),
             args: Some(&["axis"]),
             is_sized: Some(false),
@@ -411,15 +418,11 @@ where
 }
 
 fn make_empty_graph(root: &NodeEntry) -> Graph {
-    Graph::new(root.ctx.root.seed.generate())
+    Graph::new(&root.ctx.root.seed)
 }
 
 fn make_graph_with_one_var(root: &NodeEntry, name: &str, value: Option<ast::Value>) -> Graph {
-    let mut graph = make_empty_graph(&root);
-    graph
-        .add(ast::Variable::with_name_value(name.to_string(), value).into())
-        .unwrap();
-    graph
+    Graph::with_one_var(&root.ctx.root.seed, name, value)
 }
 
 fn unwrap_dict(inputs: ast::GraphInputs) -> Result<ast::Outs> {
