@@ -87,7 +87,7 @@ impl<'a, 'b> NodeEntry<'a, 'b> {
         Ok(())
     }
 
-    fn add_child(&mut self, name: String, child: ast::Node) -> Result<()> {
+    fn add_child(&mut self, child: ast::Node) -> Result<()> {
         // Step 1. convert to file
         let file = ast::File {
             uses: Default::default(),
@@ -212,8 +212,8 @@ impl<'a> ASTBuild<'a> for ast::File {
         }
 
         // Step 5. build children nodes
-        for (name, child) in node.children {
-            entry.add_child(name, child)?;
+        for (_, child) in node.children {
+            entry.add_child(child)?;
         }
 
         // Step 6. make a tensor graph

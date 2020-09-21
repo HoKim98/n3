@@ -176,6 +176,7 @@ impl PartialEq for LinkError {
     }
 }
 
+#[allow(unreachable_patterns)]
 impl PartialEq for ExternalError {
     fn eq(&self, other: &Self) -> bool {
         // note: only test the types
