@@ -1,17 +1,9 @@
 [package]
-name = "n3"
+name = "n3-exec"
 version = "0.1.0"
-authors = ["h <besqer996@gnu.ac.kr>"]
+authors = ["h <ho.kim@gnu.ac.kr>"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-n3-builder = { path = "builder" }
-
-[workspace]
-members = [
-    "builder",
-    "exec",
-    "parser",
-]
