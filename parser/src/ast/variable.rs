@@ -68,26 +68,29 @@ impl Variable {
     }
 
     pub fn is_hint(&self) -> bool {
-        self.ty.map(|x| x == LetType::Dim).unwrap_or_default()
+        self.ty
+            .as_ref()
+            .map(|x| x == &LetType::Dim)
+            .unwrap_or_default()
             || self.value.as_ref().map(|x| x.is_hint()).unwrap_or_default()
     }
 }
 
-impl Into<RefVariable> for Variable {
-    fn into(self) -> RefVariable {
-        RefVariable(Rc::new(RefCell::new(self)))
+impl From<Variable> for RefVariable {
+    fn from(var: Variable) -> Self {
+        Self(Rc::new(RefCell::new(var)))
     }
 }
 
-impl Into<Value> for RefVariable {
-    fn into(self) -> Value {
-        Value::Variable(self)
+impl From<RefVariable> for Value {
+    fn from(var: RefVariable) -> Self {
+        Self::Variable(var)
     }
 }
 
-impl Into<Value> for Variable {
-    fn into(self) -> Value {
-        RefVariable::from(self.into()).into()
+impl From<Variable> for Value {
+    fn from(var: Variable) -> Self {
+        RefVariable::from(var).into()
     }
 }
 
@@ -101,14 +104,19 @@ impl fmt::Debug for Variable {
     }
 }
 
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub enum LetType {
     Bool,
     UInt,
     Int,
     Real,
-    Node(LetNodeType),
+    String,
+    Node(Option<LetNodeType>),
     Dim,
+
+    List(Box<LetType>),
+    // assume that key is String
+    Map(Box<LetType>),
 }
 
 impl fmt::Debug for LetType {
@@ -117,8 +125,12 @@ impl fmt::Debug for LetType {
             Self::Bool => write!(f, "bool"),
             Self::UInt | Self::Int => write!(f, "int"),
             Self::Real => write!(f, "real"),
-            Self::Node(ty) => write!(f, "{:?}node", &ty),
+            Self::String => write!(f, "str"),
+            Self::Node(ty) => write!(f, "{:?}node", &ty.or(Some(LetNodeType::Default)).unwrap()),
             Self::Dim => write!(f, "dim"),
+            // TODO: [proposal] add the other types
+            Self::List(ty) => write!(f, "{:?}*", &ty),
+            Self::Map(ty) => write!(f, "{:?}#", &ty),
         }
     }
 }
@@ -174,6 +186,7 @@ pub enum Value {
     UInt(u64),
     Int(i64),
     Real(f64),
+    String(String),
     Node(String),
     Dim(OutDim),
     Variable(RefVariable),
@@ -183,39 +196,45 @@ pub enum Value {
     Map(BTreeMap<String, Option<Self>>),
 }
 
-impl Into<Value> for bool {
-    fn into(self) -> Value {
-        Value::Bool(self)
+impl From<bool> for Value {
+    fn from(value: bool) -> Self {
+        Self::Bool(value)
     }
 }
 
-impl Into<Value> for u64 {
-    fn into(self) -> Value {
-        Value::UInt(self)
+impl From<u64> for Value {
+    fn from(value: u64) -> Self {
+        Self::UInt(value)
     }
 }
 
-impl Into<Value> for i64 {
-    fn into(self) -> Value {
-        Value::Int(self)
+impl From<i64> for Value {
+    fn from(value: i64) -> Self {
+        Self::Int(value)
     }
 }
 
-impl Into<Value> for f64 {
-    fn into(self) -> Value {
-        Value::Real(self)
+impl From<f64> for Value {
+    fn from(value: f64) -> Self {
+        Self::Real(value)
     }
 }
 
-impl Into<Value> for Vec<Value> {
-    fn into(self) -> Value {
-        Value::List(self)
+impl From<String> for Value {
+    fn from(value: String) -> Self {
+        Self::Node(value)
     }
 }
 
-impl Into<Value> for BTreeMap<String, Option<Value>> {
-    fn into(self) -> Value {
-        Value::Map(self)
+impl From<Vec<Value>> for Value {
+    fn from(value: Vec<Value>) -> Self {
+        Self::List(value)
+    }
+}
+
+impl From<BTreeMap<String, Option<Value>>> for Value {
+    fn from(value: BTreeMap<String, Option<Value>>) -> Self {
+        Self::Map(value)
     }
 }
 
@@ -252,8 +271,9 @@ impl Value {
             Self::UInt(_) => Some(LetType::UInt),
             Self::Int(_) => Some(LetType::Int),
             Self::Real(_) => Some(LetType::Real),
-            Self::Variable(var) => var.borrow().ty,
-            Self::Node(_) => err_value_not_pruned(),
+            Self::String(_) => Some(LetType::String),
+            Self::Variable(var) => var.borrow().ty.clone(),
+            Self::Node(_) => Some(LetType::Node(None)),
             // TODO: [proposal] add the other types
             _ => unimplemented!(),
         }
@@ -313,6 +333,13 @@ impl Value {
         }
     }
 
+    pub fn unwrap_string(&self) -> Option<&str> {
+        match self {
+            Self::String(value) => Some(value),
+            _ => None,
+        }
+    }
+
     pub fn as_variable(&self) -> &RefVariable {
         match self {
             Self::Variable(var) => &var,
@@ -323,8 +350,7 @@ impl Value {
     pub fn try_as_dim(&self) -> Option<&RefVariable> {
         match self {
             Self::Variable(var) => {
-                let dim = var.borrow().ty;
-                if dim == Some(LetType::Dim) {
+                if var.borrow().ty == Some(LetType::Dim) {
                     Some(var)
                 } else {
                     None
@@ -348,6 +374,7 @@ impl fmt::Debug for Value {
             Self::UInt(value) => write!(f, "{}", value),
             Self::Int(value) => write!(f, "{}", value),
             Self::Real(value) => write!(f, "{}", value),
+            Self::String(value) => write!(f, "{:?}", value),
             Self::Node(value) => write!(f, "{}", value),
             Self::Dim(value) => write!(f, "{:?}", value),
             Self::Variable(value) => write!(f, "{:?}", value),
@@ -381,9 +408,9 @@ pub struct Expr {
     pub rhs: Option<Value>,
 }
 
-impl Into<Value> for Expr {
-    fn into(self) -> Value {
-        Value::Expr(Box::new(self))
+impl From<Expr> for Value {
+    fn from(value: Expr) -> Self {
+        Self::Expr(Box::new(value))
     }
 }
 
@@ -575,10 +602,6 @@ impl PartialEq for Value {
             }
         }
     }
-}
-
-pub fn err_value_not_pruned() -> ! {
-    unreachable!("node variable should be pruned.");
 }
 
 impl_binary_op_arith!(ops::Add, add, Operator::Add);

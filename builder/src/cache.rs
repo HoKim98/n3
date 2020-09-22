@@ -25,6 +25,10 @@ impl<T: Build> NodeCache<T> {
         self.caches_source.borrow_mut().insert(name, source);
     }
 
+    pub fn add_path(&self, name: String, path: String) {
+        self.paths.borrow_mut().insert(name, path);
+    }
+
     pub fn get(&self, name: &str, root: &NodeRoot) -> Result<T::Output> {
         if let Some(cache) = self.caches.borrow().get(name) {
             let mut variables = vec![];

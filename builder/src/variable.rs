@@ -138,7 +138,7 @@ impl Detach for ast::RefVariable {
             id_old: this.id,
             name: this.name.clone(),
             shortcut: this.shortcut.clone(),
-            ty: this.ty,
+            ty: this.ty.clone(),
             value: this.value.clone(),
         };
         cloned.into()
@@ -420,10 +420,13 @@ impl BuildValue for ast::RefVariable {
 impl BuildValue for ast::Value {
     fn build(&self) -> Self {
         match self {
-            Self::Bool(_) | Self::UInt(_) | Self::Int(_) | Self::Real(_) | Self::Dim(_) => {
-                self.clone()
-            }
-            Self::Node(_) => ast::err_value_not_pruned(),
+            Self::Bool(_)
+            | Self::UInt(_)
+            | Self::Int(_)
+            | Self::Real(_)
+            | Self::Dim(_)
+            | Self::String(_) => self.clone(),
+            Self::Node(_) => unreachable!("node variable should be pruned."),
             Self::Variable(value) => value.build(),
             Self::Expr(value) => value.build(),
             Self::List(value) => Self::List(value.iter().map(|x| x.build()).collect()),

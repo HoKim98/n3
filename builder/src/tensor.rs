@@ -43,27 +43,27 @@ pub struct IRData {
     pub output: ast::Outs,
 }
 
-impl Into<TensorNode> for NodeIR {
-    fn into(self) -> TensorNode {
-        TensorNode::Node(self)
+impl From<NodeIR> for TensorNode {
+    fn from(node: NodeIR) -> Self {
+        Self::Node(node)
     }
 }
 
-impl Into<TensorGraph> for Vec<TensorNode> {
-    fn into(self) -> TensorGraph {
-        TensorGraph(self)
+impl From<ExternIR> for TensorNode {
+    fn from(node: ExternIR) -> Self {
+        Self::Extern(node)
     }
 }
 
-impl Into<TensorNode> for ExternIR {
-    fn into(self) -> TensorNode {
-        TensorNode::Extern(self)
+impl From<ExecIR> for TensorNode {
+    fn from(node: ExecIR) -> Self {
+        Self::Exec(node)
     }
 }
 
-impl Into<TensorNode> for ExecIR {
-    fn into(self) -> TensorNode {
-        TensorNode::Exec(self)
+impl From<Vec<TensorNode>> for TensorGraph {
+    fn from(nodes: Vec<TensorNode>) -> Self {
+        Self(nodes)
     }
 }
 

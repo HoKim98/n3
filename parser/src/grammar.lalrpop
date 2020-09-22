@@ -64,9 +64,9 @@ nodeLetValue: (ast::LetType, Option<ast::Value>) = {
     "dim" => (ast::LetType::Dim, None),
 }
 nodeLetType: ast::LetType = {
-    "data" => ast::LetType::Node(ast::LetNodeType::Extern(ast::ExternNodeType::Data)),
-    "optim" => ast::LetType::Node(ast::LetNodeType::Extern(ast::ExternNodeType::Optim)),
-    => ast::LetType::Node(ast::LetNodeType::Default),
+    "data" => ast::LetType::Node(Some(ast::LetNodeType::Extern(ast::ExternNodeType::Data))),
+    "optim" => ast::LetType::Node(Some(ast::LetNodeType::Extern(ast::ExternNodeType::Optim))),
+    => ast::LetType::Node(Some(ast::LetNodeType::Default)),
 }
 
 GraphNode: ast::GraphNode = <id:graphId> <calls:GraphCalls> <shapes:graphShapes> => ast::GraphNode { id, calls, shapes };

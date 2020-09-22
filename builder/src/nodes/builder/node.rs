@@ -452,6 +452,7 @@ impl<'a> ASTBuild<'a> for ExecFile {
     type Output = TensorNode;
 
     fn build(self, ctx: &mut Context<'a>, (): Self::Args) -> Result<Self::Output> {
+        dbg!(self.0);
         todo!()
     }
 }

@@ -1,4 +1,7 @@
 use std::collections::BTreeSet;
+use std::path::PathBuf;
+
+use glob::{GlobError, PatternError};
 
 use n3_parser::error::ParseError;
 
@@ -10,6 +13,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     ParseError(ParseError),
     BuildError(BuildError),
+    ExecError(ExecError),
     ExternalError(ExternalError),
 }
 
@@ -20,6 +24,12 @@ pub enum BuildError {
     GraphNodeError(GraphNodeError),
     GraphCallError(GraphCallError),
     LinkError(LinkError),
+}
+
+#[derive(Debug, PartialEq)]
+pub enum ExecError {
+    NoSuchDirectory { path: PathBuf },
+    NotDirectory { path: PathBuf },
 }
 
 #[derive(Debug, PartialEq)]
@@ -48,6 +58,13 @@ pub enum GraphError {
     },
     CycledVariables {
         names: BTreeSet<String>,
+    },
+    EmptyValue {
+        expected: ast::LetType,
+    },
+    MismatchedType {
+        expected: ast::LetType,
+        given: Option<ast::LetType>,
     },
 }
 
@@ -134,6 +151,8 @@ pub enum LinkError {
 #[derive(Debug)]
 pub enum ExternalError {
     IOError(std::io::Error),
+    GlobError(GlobError),
+    PatternError(PatternError),
 }
 
 impl PartialEq for Error {
@@ -176,12 +195,13 @@ impl PartialEq for LinkError {
     }
 }
 
-#[allow(unreachable_patterns)]
 impl PartialEq for ExternalError {
     fn eq(&self, other: &Self) -> bool {
         // note: only test the types
         match (self, other) {
             (Self::IOError(_), Self::IOError(_)) => true,
+            (Self::GlobError(_), Self::GlobError(_)) => true,
+            (Self::PatternError(_), Self::PatternError(_)) => true,
             _ => false,
         }
     }
@@ -199,7 +219,19 @@ impl From<BuildError> for Error {
     }
 }
 
-macro_rules! impl_into_error(
+impl From<ExecError> for Error {
+    fn from(error: ExecError) -> Self {
+        Self::ExecError(error)
+    }
+}
+
+impl<T> From<ExecError> for Result<T> {
+    fn from(error: ExecError) -> Self {
+        Err(Error::from(error))
+    }
+}
+
+macro_rules! impl_into_build_error(
     ($t:ident) => {
         impl From<$t> for BuildError {
             fn from(error: $t) -> Self {
@@ -221,11 +253,30 @@ macro_rules! impl_into_error(
     }
 );
 
-impl_into_error!(TensorNodeError);
-impl_into_error!(GraphError);
-impl_into_error!(GraphNodeError);
-impl_into_error!(GraphCallError);
-impl_into_error!(LinkError);
+macro_rules! impl_into_external_error(
+    ($t:ident) => {
+        impl From<$t> for ExternalError {
+            fn from(error: $t) -> Self {
+                Self::$t(error)
+            }
+        }
+
+        impl From<$t> for Error {
+            fn from(error: $t) -> Self {
+                Self::ExternalError(error.into())
+            }
+        }
+    }
+);
+
+impl_into_build_error!(TensorNodeError);
+impl_into_build_error!(GraphError);
+impl_into_build_error!(GraphNodeError);
+impl_into_build_error!(GraphCallError);
+impl_into_build_error!(LinkError);
+
+impl_into_external_error!(GlobError);
+impl_into_external_error!(PatternError);
 
 impl From<std::io::Error> for Error {
     fn from(error: std::io::Error) -> Self {

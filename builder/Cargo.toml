@@ -6,12 +6,21 @@ edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+default = ["cli"]
+
+cli = ["dialoguer"]
+
 [dependencies]
 n3-parser = { path = "../parser" }
 
 include_dir = "0.6"
 Inflector = "0.11"
 num-traits = "0.2"
+
+dialoguer = { version = "0.6", optional = true }
+dirs = "3.0"
+glob = "0.3"
 
 [dev-dependencies]
 maplit = "1.0"

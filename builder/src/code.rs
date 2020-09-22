@@ -9,20 +9,20 @@ pub enum Code {
     Exec(Program),
 }
 
-impl Into<Code> for NodeCode {
-    fn into(self) -> Code {
-        Code::Node(self)
+impl From<NodeCode> for Code {
+    fn from(code: NodeCode) -> Self {
+        Self::Node(code)
     }
 }
 
-impl Into<Code> for ExternCode {
-    fn into(self) -> Code {
-        Code::Extern(self)
+impl From<ExternCode> for Code {
+    fn from(code: ExternCode) -> Self {
+        Self::Extern(code)
     }
 }
 
-impl Into<Code> for Program {
-    fn into(self) -> Code {
-        Code::Exec(self)
+impl From<Program> for Code {
+    fn from(code: Program) -> Self {
+        Self::Exec(code)
     }
 }

@@ -213,9 +213,9 @@ impl Graph {
     }
 }
 
-impl Into<RefGraph> for Graph {
-    fn into(self) -> RefGraph {
-        Rc::new(RefCell::new(self))
+impl From<Graph> for RefGraph {
+    fn from(graph: Graph) -> Self {
+        Rc::new(RefCell::new(graph))
     }
 }
 

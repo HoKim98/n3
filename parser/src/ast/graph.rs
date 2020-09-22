@@ -13,9 +13,9 @@ pub struct OutDim {
     pub dim: usize,
 }
 
-impl Into<Value> for OutDim {
-    fn into(self) -> Value {
-        Value::Dim(self)
+impl From<OutDim> for Value {
+    fn from(value: OutDim) -> Self {
+        Self::Dim(value)
     }
 }
 

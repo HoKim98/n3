@@ -24,7 +24,7 @@ fn get_files(extension: &'static str) -> HashMap<String, String> {
         .collect()
 }
 
-fn trim_path(path: &Path) -> String {
+pub fn trim_path(path: &Path) -> String {
     let filename = path.file_name().unwrap().to_str().unwrap();
     let filename = filename.split(".").next().unwrap();
     let filename = filename.replace("_", "-").to_pascal_case();

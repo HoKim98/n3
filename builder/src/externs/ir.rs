@@ -20,23 +20,23 @@ pub struct ExternIRShapes {
     output: Option<ast::Shapes>,
 }
 
-impl Into<ExternIR> for IRData {
-    fn into(self) -> ExternIR {
-        ExternIR {
-            shapes: (&self).into(),
-            data: self,
+impl From<IRData> for ExternIR {
+    fn from(data: IRData) -> Self {
+        Self {
+            shapes: (&data).into(),
+            data,
         }
     }
 }
 
-impl<'a> Into<ExternIRShapes> for &'a IRData {
-    fn into(self) -> ExternIRShapes {
-        ExternIRShapes {
+impl<'a> From<&'a IRData> for ExternIRShapes {
+    fn from(data: &'a IRData) -> Self {
+        Self {
             input: Some(ast::Shapes::new(
-                self.input.keys().map(|x| (x.clone(), None)).collect(),
+                data.input.keys().map(|x| (x.clone(), None)).collect(),
             )),
             output: Some(ast::Shapes::new(
-                self.output.keys().map(|x| (x.clone(), None)).collect(),
+                data.output.keys().map(|x| (x.clone(), None)).collect(),
             )),
         }
     }

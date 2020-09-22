@@ -31,6 +31,14 @@ impl NodeRoot {
         self.sources.add_source(name, source);
     }
 
+    pub fn add_source_path(&self, name: String, path: String) {
+        self.sources.add_path(name, path);
+    }
+
+    pub fn add_extern_path(&self, name: String, path: String) {
+        self.externs.add_path(name, path);
+    }
+
     pub fn get(&self, name: &str) -> Result<NodeIR> {
         self.sources.get(name, self)?.unwrap_node()
     }
