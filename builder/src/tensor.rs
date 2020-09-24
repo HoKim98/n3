@@ -206,7 +206,7 @@ impl TensorNode {
         match self {
             Self::Node(node) => Ok(node.build(root)?.into()),
             Self::Extern(node) => Ok(node.build(root)?.into()),
-            Self::Exec(node) => Ok(node.build(root)?.into()),
+            Self::Exec(_) => unreachable!("The ExecIR should be built using ExecIR::build."),
         }
     }
 
@@ -219,6 +219,17 @@ impl TensorNode {
             Self::Node(node) => Ok(node),
             _ => TensorNodeError::MismatchedType {
                 expected: ast::FinalNodeType::Default,
+                given: self.ty(),
+            }
+            .into(),
+        }
+    }
+
+    pub fn unwrap_exec(self) -> Result<ExecIR> {
+        match self {
+            Self::Exec(node) => Ok(node),
+            _ => TensorNodeError::MismatchedType {
+                expected: ast::FinalNodeType::Exec,
                 given: self.ty(),
             }
             .into(),
@@ -295,6 +306,16 @@ impl IRData {
             graph,
             input: shapes_to_outs(0, input),
             output: shapes_to_outs(1, output),
+        }
+    }
+
+    pub fn with_no_shapes(name: String, graph: RefGraph) -> Self {
+        Self {
+            id: 0,
+            name,
+            graph,
+            input: Default::default(),
+            output: Default::default(),
         }
     }
 }

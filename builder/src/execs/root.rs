@@ -29,8 +29,8 @@ impl ExecRoot {
     }
 
     pub fn get(&self, name: &str, args: Vars) -> Result<Program> {
-        let ir = self.node_root.get(name)?;
-        todo!()
+        let ir = self.node_root.get_exec(name)?;
+        ir.build(&self.node_root, args)
     }
 
     fn create_root_dir(&self) -> Result<()> {

@@ -74,6 +74,10 @@ impl Variable {
             .unwrap_or_default()
             || self.value.as_ref().map(|x| x.is_hint()).unwrap_or_default()
     }
+
+    pub fn is_node(&self) -> bool {
+        self.ty.as_ref().map(|x| x.is_node()).unwrap_or_default()
+    }
 }
 
 impl From<Variable> for RefVariable {
@@ -117,6 +121,16 @@ pub enum LetType {
     List(Box<LetType>),
     // assume that key is String
     Map(Box<LetType>),
+}
+
+impl LetType {
+    pub fn is_node(&self) -> bool {
+        if let Self::Node(_) = self {
+            true
+        } else {
+            false
+        }
+    }
 }
 
 impl fmt::Debug for LetType {
@@ -329,6 +343,13 @@ impl Value {
             Self::UInt(value) => Some(*value as f64),
             Self::Int(value) => Some(*value as f64),
             Self::Real(value) => Some(*value),
+            _ => None,
+        }
+    }
+
+    pub fn unwrap_node_name(&self) -> Option<&str> {
+        match self {
+            Self::Node(value) => Some(value),
             _ => None,
         }
     }

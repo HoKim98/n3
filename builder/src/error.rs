@@ -13,6 +13,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     ParseError(ParseError),
     BuildError(BuildError),
+    ExecBuildError(ExecBuildError),
     ExecError(ExecError),
     ExternalError(ExternalError),
 }
@@ -24,6 +25,17 @@ pub enum BuildError {
     GraphNodeError(GraphNodeError),
     GraphCallError(GraphCallError),
     LinkError(LinkError),
+}
+
+#[derive(Debug, PartialEq)]
+pub enum ExecBuildError {
+    UnexpectedWiths,
+    UnexpectedChildren,
+    UnexpectedGraph,
+    MismatchedNodeType {
+        expected: ast::LetNodeType,
+        given: ast::LetNodeType,
+    },
 }
 
 #[derive(Debug, PartialEq)]
@@ -219,9 +231,21 @@ impl From<BuildError> for Error {
     }
 }
 
+impl From<ExecBuildError> for Error {
+    fn from(error: ExecBuildError) -> Self {
+        Self::ExecBuildError(error)
+    }
+}
+
 impl From<ExecError> for Error {
     fn from(error: ExecError) -> Self {
         Self::ExecError(error)
+    }
+}
+
+impl<T> From<ExecBuildError> for Result<T> {
+    fn from(error: ExecBuildError) -> Self {
+        Err(Error::from(error))
     }
 }
 

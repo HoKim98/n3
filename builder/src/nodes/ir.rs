@@ -10,6 +10,7 @@ use crate::variable::{BuildValue, CloneValue, Link};
 #[derive(Debug)]
 pub struct NodeIR {
     pub data: IRData,
+    pub ty: ast::LetNodeType,
     pub tensor_graph: TensorGraph,
     pub repeat: Option<ast::Value>,
 }
@@ -117,10 +118,10 @@ impl Build for NodeIR {
 
 impl CloneSafe for NodeIR {
     fn clone_safe(&self, seed: &Seed, variables: &mut Vec<ast::RefVariable>) -> Self {
-        match self.tensor_graph.try_borrow_extern_node() {
+        match self.ty {
             // extern node wrapper
             // note: ordered (extern_node -> graph(copy) -> data -> repeat)
-            Some(_) => {
+            ast::LetNodeType::Extern(_) => {
                 let tensor_graph = self.tensor_graph.clone_safe(seed, variables);
                 let node = tensor_graph.try_borrow_extern_node().unwrap();
                 let graph = node.data.graph.clone();
@@ -130,13 +131,15 @@ impl CloneSafe for NodeIR {
 
                 Self {
                     data,
+                    ty: self.ty,
                     tensor_graph,
                     repeat: self.repeat.clone_value(variables),
                 }
             }
             // note: ordered (data -> tensor_graph -> repeat)
-            None => Self {
+            ast::LetNodeType::Default => Self {
                 data: self.data.clone_safe(seed, variables),
+                ty: self.ty,
                 tensor_graph: self.tensor_graph.clone_safe(seed, variables),
                 repeat: self.repeat.clone_value(variables),
             },

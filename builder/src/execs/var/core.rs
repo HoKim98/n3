@@ -57,19 +57,33 @@ impl Vars {
         })
     }
 
+    pub fn get_node_name(&self, name: &str, ty: ast::LetNodeType) -> Result<String> {
+        self.get_and_cast(name, ast::LetType::Node(Some(ty)), |x| {
+            x.unwrap_node_name().map(|x| x.to_string())
+        })
+    }
+
     pub fn get_string(&self, name: &str) -> Result<String> {
+        self.get_and_cast(name, ast::LetType::String, |x| {
+            x.unwrap_string().map(|x| x.to_string())
+        })
+    }
+
+    fn get_and_cast<T>(
+        &self,
+        name: &str,
+        expected: ast::LetType,
+        f: impl Fn(&ast::Value) -> Option<T>,
+    ) -> Result<T> {
         match self.get(name)?.borrow().value.as_ref() {
-            Some(value) => Ok(value
-                .unwrap_string()
-                .ok_or_else(|| GraphError::MismatchedType {
-                    expected: ast::LetType::String,
+            Some(value) => f(value).ok_or_else(|| {
+                GraphError::MismatchedType {
+                    expected,
                     given: value.ty(),
-                })?
-                .to_string()),
-            None => GraphError::EmptyValue {
-                expected: ast::LetType::String,
-            }
-            .into(),
+                }
+                .into()
+            }),
+            None => GraphError::EmptyValue { expected }.into(),
         }
     }
 

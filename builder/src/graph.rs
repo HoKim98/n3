@@ -211,6 +211,14 @@ impl Graph {
             }
         }
     }
+
+    pub fn variables(&self) -> &Table {
+        &self.variables
+    }
+
+    pub fn into_variables(self) -> Table {
+        self.variables
+    }
 }
 
 impl From<Graph> for RefGraph {

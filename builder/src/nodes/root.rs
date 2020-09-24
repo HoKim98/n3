@@ -3,6 +3,7 @@ use std::cell::UnsafeCell;
 use super::ir::NodeIR;
 use crate::cache::NodeCache;
 use crate::error::Result;
+use crate::execs::ExecIR;
 use crate::externs::PythonScript;
 use crate::n3_std;
 use crate::seed::Seed;
@@ -41,6 +42,10 @@ impl NodeRoot {
 
     pub fn get(&self, name: &str) -> Result<NodeIR> {
         self.sources.get(name, self)?.unwrap_node()
+    }
+
+    pub fn get_exec(&self, name: &str) -> Result<ExecIR> {
+        self.sources.get(name, self)?.unwrap_exec()
     }
 
     pub fn get_extern(&self, name: &str) -> Result<PythonScript> {

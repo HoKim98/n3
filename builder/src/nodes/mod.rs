@@ -67,6 +67,7 @@ mod tests {
         let tensor_graph = vec![graph_1.into(), graph_2.into()].into();
         let ir = NodeIR {
             data: IRData::with_tensor_graph(name, graph, &tensor_graph),
+            ty: ast::LetNodeType::Default,
             tensor_graph,
             repeat: None,
         };

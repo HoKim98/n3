@@ -4,7 +4,8 @@ use super::super::ir::NodeIR;
 use super::graph::GraphNodeEntry;
 use crate::ast;
 use crate::context::{CloneSafe, Context, NodeName};
-use crate::error::{GraphCallError, GraphNodeError, Result};
+use crate::error::{ExecBuildError, GraphCallError, GraphNodeError, Result};
+use crate::execs::ExecIR;
 use crate::externs::ExternIR;
 use crate::graph::{Graph, RefGraph};
 use crate::tensor::{IRData, TensorGraph, TensorNode};
@@ -127,6 +128,7 @@ impl<'a, 'b> NodeEntry<'a, 'b> {
                 self.graph,
                 &self.tensor_graph,
             ),
+            ty: ast::LetNodeType::Default,
             tensor_graph: self.tensor_graph,
             repeat: None,
         }
@@ -183,7 +185,7 @@ impl<'a> ASTBuild<'a> for ast::File {
             return Ok(ExternFile(self).build(ctx, ())?.into());
         }
         if self.node.ty.is_exec() {
-            return ExecFile(self).build(ctx, ());
+            return Ok(ExecFile(self).build(ctx, ())?.into());
         }
 
         let mut node = self.node;
@@ -291,6 +293,7 @@ impl<'a, 'b> ExternNodeEntry<'a, 'b> {
 
         NodeIR {
             data: IRData::with_tensor_graph(name, graph, &tensor_graph),
+            ty: ast::LetNodeType::Extern(self.ty),
             tensor_graph,
             repeat: None,
         }
@@ -309,8 +312,7 @@ impl<'a> ASTBuild<'a> for ExternFile {
         let ty = node.ty.unwrap_extern();
 
         // Step 1. make a graph
-        let graph: RefGraph =
-            Graph::try_with_variables(ctx.root.seed.generate(), node.graph)?.into();
+        let graph = Graph::try_with_variables(ctx.root.seed.generate(), node.graph)?.into();
 
         let entry = NodeEntry::new(vec![node.name], graph, ctx);
         let mut entry = ExternNodeEntry::new(entry, ty);
@@ -446,13 +448,47 @@ impl<'a> ExternTensorGraphCondition<'a> {
     }
 }
 
+struct ExecNodeEntry {
+    name: String,
+    graph: RefGraph,
+}
+
+impl ExecNodeEntry {
+    fn new(name: String, graph: RefGraph) -> Self {
+        Self { name, graph }
+    }
+
+    fn build(self) -> ExecIR {
+        ExecIR {
+            data: IRData::with_no_shapes(self.name, self.graph),
+        }
+    }
+}
+
 struct ExecFile(ast::File);
 impl<'a> ASTBuild<'a> for ExecFile {
     type Args = ();
-    type Output = TensorNode;
+    type Output = ExecIR;
 
     fn build(self, ctx: &mut Context<'a>, (): Self::Args) -> Result<Self::Output> {
-        dbg!(self.0);
-        todo!()
+        let node = self.0.node;
+
+        if !node.withs.is_empty() {
+            return ExecBuildError::UnexpectedWiths.into();
+        }
+        if !node.children.is_empty() {
+            return ExecBuildError::UnexpectedChildren.into();
+        }
+        if !node.tensor_graph.is_empty() {
+            return ExecBuildError::UnexpectedGraph.into();
+        }
+
+        // Step 1. make a graph
+        let graph = Graph::try_with_variables(ctx.root.seed.generate(), node.graph)?.into();
+
+        let entry = ExecNodeEntry::new(node.name, graph);
+
+        // Step 2. store
+        Ok(entry.build())
     }
 }
