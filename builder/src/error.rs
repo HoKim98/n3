@@ -72,9 +72,11 @@ pub enum GraphError {
         names: BTreeSet<String>,
     },
     EmptyValue {
+        name: String,
         expected: ast::LetType,
     },
     MismatchedType {
+        name: String,
         expected: ast::LetType,
         given: Option<ast::LetType>,
     },

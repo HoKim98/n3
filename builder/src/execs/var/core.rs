@@ -2,7 +2,7 @@ use crate::ast;
 use crate::error::{GraphError, Result};
 use crate::graph::Table;
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct Vars {
     inner: Table,
 }
@@ -57,6 +57,39 @@ impl Vars {
         })
     }
 
+    pub fn try_get_checked(
+        &self,
+        name: &str,
+        expected: ast::LetType,
+    ) -> Result<Option<&ast::RefVariable>> {
+        match self.inner.get(name) {
+            Some(var) => {
+                let var_ref = var.borrow();
+
+                if let Some(value) = var_ref.value.as_ref() {
+                    let value_ty = value.ty();
+                    if value_ty.as_ref() == Some(&expected) {
+                        Ok(Some(var))
+                    } else {
+                        GraphError::MismatchedType {
+                            name: name.to_string(),
+                            expected,
+                            given: value_ty,
+                        }
+                        .into()
+                    }
+                } else {
+                    GraphError::EmptyValue {
+                        name: name.to_string(),
+                        expected,
+                    }
+                    .into()
+                }
+            }
+            None => Ok(None),
+        }
+    }
+
     pub fn get_node_name(&self, name: &str, ty: ast::LetNodeType) -> Result<String> {
         self.get_and_cast(name, ast::LetType::Node(Some(ty)), |x| {
             x.unwrap_node_name().map(|x| x.to_string())
@@ -78,12 +111,17 @@ impl Vars {
         match self.get(name)?.borrow().value.as_ref() {
             Some(value) => f(value).ok_or_else(|| {
                 GraphError::MismatchedType {
+                    name: name.to_string(),
                     expected,
                     given: value.ty(),
                 }
                 .into()
             }),
-            None => GraphError::EmptyValue { expected }.into(),
+            None => GraphError::EmptyValue {
+                name: name.to_string(),
+                expected,
+            }
+            .into(),
         }
     }
 

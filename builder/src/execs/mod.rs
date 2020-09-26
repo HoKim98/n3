@@ -27,8 +27,8 @@ mod tests {
         let args = btreemap! {
             "data".to_string() => ast::Value::from("Mnist".to_string()),
             "model".to_string() => "LeNet6".to_string().into(),
-            "epoch".to_string() => 1u64.into(),
-            "batch size".to_string() => 10u64.into(),
+            "epoch".to_string() => 1i64.into(),
+            "batch size".to_string() => 10i64.into(),
         };
         let args = Vars::new(
             args.into_iter()
