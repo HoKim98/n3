@@ -426,7 +426,7 @@ impl BuildValue for ast::Value {
             | Self::Real(_)
             | Self::Dim(_)
             | Self::String(_) => self.clone(),
-            Self::Node(_) => unreachable!("node variable should be pruned."),
+            Self::Node(_) => node_variable_should_be_pruned(),
             Self::Variable(value) => value.build(),
             Self::Expr(value) => value.build(),
             Self::List(value) => Self::List(value.iter().map(|x| x.build()).collect()),
@@ -438,6 +438,10 @@ impl BuildValue for ast::Value {
             ),
         }
     }
+}
+
+pub fn node_variable_should_be_pruned() -> ! {
+    unreachable!("node variable should be pruned.")
 }
 
 impl BuildValue for ast::Expr {

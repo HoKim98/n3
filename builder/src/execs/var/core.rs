@@ -40,6 +40,8 @@ impl Vars {
                         .map(|v| Self::convert(v, Some(&ty)));
 
                     let mut var = ast::Variable::with_name_value(name.clone(), value);
+                    var.id = Some(0);
+                    var.id_old = Some(0);
                     var.ty = Some(ty);
                     (name, var.into())
                 })

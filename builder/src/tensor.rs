@@ -6,7 +6,7 @@ use crate::context::{Build, CloneSafe, Context};
 use crate::error::{Result, TensorNodeError};
 use crate::execs::ExecIR;
 use crate::externs::ExternIR;
-use crate::graph::{RefGraph, Table};
+use crate::graph::{RefGraph, Values};
 use crate::nodes::{builtins, ASTBuild, NodeIR, NodeRoot};
 use crate::seed::Seed;
 
@@ -210,7 +210,7 @@ impl TensorNode {
         }
     }
 
-    pub fn apply_variables(&mut self, variables: Table, shortcut: bool) -> Result<()> {
+    pub fn apply_variables(&mut self, variables: Values, shortcut: bool) -> Result<()> {
         self.get_graph().borrow().apply(variables, shortcut)
     }
 

@@ -1,6 +1,7 @@
 use std::collections::BTreeSet;
 use std::path::PathBuf;
 
+use bincode::ErrorKind as BincodeError;
 use glob::{GlobError, PatternError};
 
 use n3_parser::error::ParseError;
@@ -167,6 +168,7 @@ pub enum ExternalError {
     IOError(std::io::Error),
     GlobError(GlobError),
     PatternError(PatternError),
+    BincodeError(BincodeError),
 }
 
 impl PartialEq for Error {
@@ -216,6 +218,7 @@ impl PartialEq for ExternalError {
             (Self::IOError(_), Self::IOError(_)) => true,
             (Self::GlobError(_), Self::GlobError(_)) => true,
             (Self::PatternError(_), Self::PatternError(_)) => true,
+            (Self::BincodeError(_), Self::BincodeError(_)) => true,
             _ => false,
         }
     }
@@ -303,6 +306,16 @@ impl_into_build_error!(LinkError);
 
 impl_into_external_error!(GlobError);
 impl_into_external_error!(PatternError);
+impl_into_external_error!(BincodeError);
+
+impl<T> From<Box<T>> for Error
+where
+    T: Into<Self>,
+{
+    fn from(error: Box<T>) -> Self {
+        (*error).into()
+    }
+}
 
 impl From<std::io::Error> for Error {
     fn from(error: std::io::Error) -> Self {

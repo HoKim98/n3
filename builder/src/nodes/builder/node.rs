@@ -75,9 +75,8 @@ impl<'a, 'b> NodeEntry<'a, 'b> {
             with.graph
                 .into_iter()
                 .map(|(k, v)| {
-                    let v = graph.replace_to(Some(v))?;
-                    let var = ast::Variable::with_name_value(k.clone(), v);
-                    Ok((k, var.into()))
+                    let value = graph.replace_to(Some(v))?;
+                    Ok((k, value))
                 })
                 .collect::<Result<_>>()?
         };

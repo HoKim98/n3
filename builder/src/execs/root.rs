@@ -33,6 +33,22 @@ impl ExecRoot {
         ir.build(&self.node_root, args)
     }
 
+    pub fn compact_into<W>(&self, writer: W, program: &Program) -> Result<()>
+    where
+        W: std::io::Write,
+    {
+        let program = program.compact(&self.node_root)?;
+        bincode::serialize_into(writer, &program).map_err(|e| e.into())
+    }
+
+    pub fn decompact_from<R>(&self, reader: R) -> Result<Program>
+    where
+        R: std::io::Read,
+    {
+        let program = bincode::deserialize_from(reader)?;
+        Program::decompact(&self.node_root, program)
+    }
+
     fn create_root_dir(&self) -> Result<()> {
         let path = self.env.root_dir();
 

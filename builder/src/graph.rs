@@ -13,13 +13,13 @@ pub type RefGraph = Rc<RefCell<Graph>>;
 
 #[derive(Debug)]
 pub struct Graph {
-    id: u64,
+    pub id: u64,
     shortcuts: Table,
     variables: Table,
 }
 
-pub(crate) type Table = BTreeMap<String, ast::RefVariable>;
-type Values = BTreeMap<String, Option<ast::Value>>;
+pub type Table = BTreeMap<String, ast::RefVariable>;
+pub type Values = BTreeMap<String, Option<ast::Value>>;
 
 impl Graph {
     pub fn with_id(id: u64) -> Self {
@@ -36,9 +36,12 @@ impl Graph {
 
     pub fn with_one_var(seed: &Seed, name: &str, value: Option<ast::Value>) -> Self {
         let mut graph = Self::new(&seed);
-        graph
-            .add(ast::Variable::with_name_value(name.to_string(), value).into())
-            .unwrap();
+
+        let mut value = ast::Variable::with_name_value(name.to_string(), value);
+        value.id = Some(graph.id);
+        value.id_old = Some(graph.id);
+
+        graph.add(value.into()).unwrap();
         graph
     }
 
@@ -87,7 +90,7 @@ impl Graph {
         Ok(())
     }
 
-    pub fn apply(&self, variables: Table, shortcut: bool) -> Result<()> {
+    pub fn apply(&self, variables: Values, shortcut: bool) -> Result<()> {
         let self_variables = if shortcut {
             &self.shortcuts
         } else {
@@ -96,7 +99,7 @@ impl Graph {
 
         for (name, v) in variables.into_iter() {
             if let Some(var) = self_variables.get(&name) {
-                var.borrow_mut().value = Some(v.into());
+                var.borrow_mut().value = v;
             } else {
                 return GraphError::NoSuchVariable {
                     name,

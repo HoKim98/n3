@@ -1,10 +1,12 @@
+use serde::{Deserialize, Serialize};
+
 use crate::ast;
 use crate::context::{Build, CloneSafe};
 use crate::error::Result;
 use crate::nodes::NodeRoot;
 use crate::seed::Seed;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PythonScript {
     name: String,
     source: String,

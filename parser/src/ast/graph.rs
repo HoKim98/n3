@@ -2,12 +2,14 @@ use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::fmt;
 
+use serde::{Deserialize, Serialize};
+
 use super::fmt::FmtGuard;
 use super::variable::{Keywords, Value};
 
 pub type Outs = BTreeMap<String, Out>;
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct OutDim {
     pub out: Out,
     pub dim: usize,
@@ -25,7 +27,7 @@ impl fmt::Debug for OutDim {
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct Out {
     pub id: Option<u64>,
     pub name: String,

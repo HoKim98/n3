@@ -11,13 +11,13 @@ use crate::variable::CloneValue;
 #[derive(Debug)]
 pub struct ExternIR {
     pub data: IRData,
-    shapes: ExternIRShapes,
+    pub shapes: ExternIRShapes,
 }
 
 #[derive(Debug)]
 pub struct ExternIRShapes {
-    input: Option<ast::Shapes>,
-    output: Option<ast::Shapes>,
+    pub input: Option<ast::Shapes>,
+    pub output: Option<ast::Shapes>,
 }
 
 impl From<IRData> for ExternIR {

@@ -4,6 +4,7 @@ mod n3_std;
 
 mod cache;
 mod code;
+mod compact;
 mod context;
 mod error;
 mod execs;

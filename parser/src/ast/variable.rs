@@ -7,6 +7,7 @@ use std::ops;
 use std::rc::Rc;
 
 use num_traits::Pow;
+use serde::{Deserialize, Serialize};
 
 use super::fmt::FmtGuard;
 use super::graph::OutDim;
@@ -149,7 +150,7 @@ impl fmt::Debug for LetType {
     }
 }
 
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub enum LetNodeType {
     Default,
     Extern(ExternNodeType),
@@ -444,7 +445,7 @@ impl fmt::Debug for Expr {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Operator {
     // unary
     Pos,

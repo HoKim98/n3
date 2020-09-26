@@ -1,6 +1,8 @@
 use std::collections::BTreeMap;
 use std::fmt;
 
+use serde::{Deserialize, Serialize};
+
 use super::fmt::FmtGuard;
 use super::graph::GraphNode;
 use super::variable::{Keywords, NodeLet, Value};
@@ -78,7 +80,7 @@ pub enum FinalNodeType {
     Exec,
 }
 
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub enum ExternNodeType {
     Default,
     Data,

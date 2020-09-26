@@ -75,9 +75,8 @@ impl<'a, 'b, 'c> GraphNodeBuilder<DefaultNode> for GraphNodeEntry<'a, 'b, 'c> {
                 let args = args
                     .into_iter()
                     .map(|(k, v)| {
-                        let v = graph.replace_to(Some(v))?;
-                        let var = ast::Variable::with_name_value(k.clone(), v);
-                        Ok((k, var.into()))
+                        let value = graph.replace_to(Some(v))?;
+                        Ok((k, value))
                     })
                     .collect::<Result<_>>()?;
                 callee.apply_variables(args, true)?;

@@ -5,7 +5,7 @@ mod root;
 mod var;
 
 pub use self::ir::ExecIR;
-pub use self::program::Program;
+pub use self::program::{Nodes, Program};
 pub use self::root::ExecRoot;
 pub use self::var::{GlobalVars, Vars};
 
@@ -32,10 +32,24 @@ mod tests {
         };
         let args = Vars::new(
             args.into_iter()
-                .map(|(k, v)| (k.clone(), ast::Variable::with_name_value(k, Some(v)).into()))
+                .map(|(k, v)| {
+                    let name = k.clone();
+                    let mut value = ast::Variable::with_name_value(k, Some(v));
+                    value.id = Some(0);
+                    value.id_old = Some(0);
+                    (name, value.into())
+                })
                 .collect(),
         );
 
-        root.get("DummyImageClassification", args).unwrap();
+        let program = root.get("DummyImageClassification", args).unwrap();
+
+        // serialization & deserialization
+        {
+            let mut binary = vec![];
+            root.compact_into(&mut binary, &program).unwrap();
+
+            let program_decompacted = root.decompact_from(binary.as_slice()).unwrap();
+        }
     }
 }
