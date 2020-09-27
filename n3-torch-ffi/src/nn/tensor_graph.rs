@@ -1,14 +1,13 @@
 use std::ops::{Deref, DerefMut};
 
 use pyo3::prelude::*;
-use pyo3::types::PyList;
 
 use crate::machine::Torch;
 
 pub struct TensorGraph(PyObject);
 
 impl TensorGraph {
-    pub fn new(py: Python, nodes: Py<PyList>) -> PyResult<Self> {
+    pub fn new(py: Python, nodes: Vec<PyObject>) -> PyResult<Self> {
         Ok(Self {
             0: Torch(py).nn("ModuleList")?.call1((nodes,))?.into_py(py),
         })
@@ -38,7 +37,7 @@ mod tests {
     use pyo3::types::IntoPyDict;
 
     use super::*;
-    use crate::machine::GenericMachine;
+    use crate::machine::{GenericMachine, Machine};
 
     #[test]
     fn test_linear() -> Result<(), ()> {
@@ -59,7 +58,8 @@ mod tests {
         }
 
         Python::with_gil(|py| {
-            let mut machine = GenericMachine::new(py).into();
+            let mut machine: Machine = GenericMachine::new(py).into();
+            let torch = Torch(py);
 
             // get a sample tensor graph
             let tensor_graph = TensorGraph::new(
@@ -72,7 +72,7 @@ mod tests {
             )?;
 
             // get a sample 3x16 tensor
-            let mut output = machine.torch.this("zeros")?.call1((3, 16))?;
+            let mut output = torch.this("zeros")?.call1((3, 16))?;
 
             // propagate (16 -> 32 -> 64 -> 10)
             let mut nodes = tensor_graph.as_ref(py).iter()?;

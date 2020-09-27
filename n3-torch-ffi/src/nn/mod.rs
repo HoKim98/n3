@@ -24,7 +24,7 @@ impl Node {
         py: Python,
         node_input: Py<PyDict>,
         node_output: Py<PyDict>,
-        tensor_graph: Py<PyList>,
+        tensor_graph: Vec<PyObject>,
     ) -> PyResult<Self> {
         Ok(Self {
             node_input,
