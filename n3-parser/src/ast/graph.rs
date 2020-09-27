@@ -27,7 +27,7 @@ impl fmt::Debug for OutDim {
     }
 }
 
-#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct Out {
     pub id: Option<u64>,
     pub name: String,

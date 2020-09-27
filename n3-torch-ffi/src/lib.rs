@@ -1,10 +1,14 @@
+#[macro_use]
+extern crate log;
+
 mod data;
 mod exec;
-mod machine;
+pub mod machine;
 mod nn;
 mod optim;
-mod pybox;
-mod torch;
+mod tensor;
+
+use n3_builder as builder;
 
 macro_rules! add_classes {
     [ $( $ty:path ),*, ] => {
@@ -24,4 +28,4 @@ macro_rules! add_classes {
     };
 }
 
-add_classes![self::nn::Node, self::nn::NodeBase,];
+add_classes![self::nn::Node,];
