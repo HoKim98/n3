@@ -10,8 +10,4 @@ edition = "2018"
 n3-builder = { path = "builder" }
 
 [workspace]
-members = [
-    "builder",
-    "exec",
-    "parser",
-]
+members = ["builder", "parser", "torch"]
