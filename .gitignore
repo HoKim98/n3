@@ -16,6 +16,7 @@ Cargo.lock
 
 # Python
 **/*.pyc
+**/env/
 
 # Editor
 **/.vscode/

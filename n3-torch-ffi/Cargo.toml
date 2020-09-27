@@ -1,0 +1,19 @@
+[package]
+name = "n3-torch-ffi"
+version = "0.1.0"
+authors = ["h <ho.kim@gnu.ac.kr>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+name = "n3"
+crate-type = ["rlib", "cdylib"]
+
+[features]
+# default = ["pyo3/extension-module"]
+default = []
+
+[dependencies]
+pyo3 = "0.12.1"
+pyo3-mp = "0.1"
