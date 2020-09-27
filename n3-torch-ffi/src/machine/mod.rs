@@ -2,12 +2,11 @@ mod generic;
 mod torch;
 
 pub use self::generic::GenericMachine;
+pub use self::torch::Torch;
 
 use std::ops::{Deref, DerefMut};
 
 use pyo3::prelude::*;
-
-use self::torch::Torch;
 
 pub trait MachineImpl<'a>
 where

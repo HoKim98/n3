@@ -1,3 +1,4 @@
+mod ext;
 mod tensor_graph;
 
 pub use self::tensor_graph::TensorGraph;
@@ -5,69 +6,97 @@ pub use self::tensor_graph::TensorGraph;
 use std::collections::BTreeMap;
 
 use pyo3::prelude::*;
+use pyo3::types::{IntoPyDict, PyDict, PyList};
 
-use crate::builder;
-use crate::machine::Machine;
 use crate::tensor::*;
 
-#[pyclass(subclass)]
+#[pyclass]
 pub struct Node {
-    name: String,
-    node_input: builder::Outs,
-    node_output: builder::Outs,
+    #[pyo3(get)]
+    node_input: Py<PyDict>,
+    #[pyo3(get)]
+    node_output: Py<PyDict>,
     tensor_graph: TensorGraph,
 }
 
 impl Node {
     pub fn new(
-        machine: &Machine,
-        name: String,
-        node_input: builder::Outs,
-        node_output: builder::Outs,
-        tensor_graph: Vec<PyObject>,
+        py: Python,
+        node_input: Py<PyDict>,
+        node_output: Py<PyDict>,
+        tensor_graph: Py<PyList>,
     ) -> PyResult<Self> {
         Ok(Self {
-            name,
             node_input,
             node_output,
-            tensor_graph: TensorGraph::new(machine, tensor_graph)?,
+            tensor_graph: TensorGraph::new(py, tensor_graph)?,
         })
     }
 }
 
-impl NodeExecutable for Node {
-    fn forward(&self, kwargs: impl IntoIterator<Item = (String, Tensor)>) -> TensorOutput {
-        let output: BTreeMap<_, _> = kwargs
+#[pymethods]
+impl Node {
+    fn forward(&self, py: Python, input: &TensorInput) -> PyResult<TensorOutput> {
+        let output = input.to_output(py)?;
+        let output = output.as_ref(py);
+
+        let mut x_final = None;
+
+        let mut nodes = self.tensor_graph.as_ref(py).iter()?;
+        while let Some(node) = nodes.next() {
+            let node = node?;
+
+            let x = PyDict::new(py);
+            for (k, n) in node
+                .getattr("node_input")?
+                .extract::<BTreeMap<String, _>>()?
+            {
+                let idx = index(py, &output, n)?;
+                x.set_item(k, idx)?;
+            }
+
+            let mut x = node.call((), Some(x))?;
+            if !x.get_type().is_subclass::<pyo3::types::PyDict>()? {
+                x = [("x", x)].into_py_dict(py);
+            }
+
+            for (k, n) in node
+                .getattr("node_output")?
+                .extract::<BTreeMap<String, PyObject>>()?
+            {
+                let (k, n) = (n, x.get_item(k).unwrap());
+                output.set_item(k, n)?;
+            }
+
+            x_final = Some(x);
+        }
+
+        let x = x_final
+            .unwrap()
+            .into_py(py)
+            .extract::<BTreeMap<Out, PyObject>>(py)?
             .into_iter()
-            .map(|(k, v)| (Out::new(0, k), v))
-            .collect();
+            .map(|(k, v)| (k.name, v))
+            .into_py_dict(py)
+            .into_py(py);
+        Ok(TensorOutput::new(x))
+    }
 
-        // for node in (*self.tensor_graph).iter() {
-
-        // }
-
-        todo!()
+    fn parameters(&self, py: Python) -> PyResult<PyObject> {
+        self.tensor_graph.parameters(py)
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use pyo3::{py_run, wrap_pymodule};
+fn index(py: Python, data: &PyDict, key: PyObject) -> PyResult<PyObject> {
+    let key = key.as_ref(py);
+    if key.get_type().is_subclass::<pyo3::types::PyList>()? {
+        let list = PyList::empty(py);
 
-//     use super::*;
-//     use crate::PyInit_n3;
-
-//     #[test]
-//     fn test_subclass() {
-//         Python::with_gil(|py| {
-//             let n3 = wrap_pymodule!(n3)(py);
-
-//             py_run!(py, n3 n3, r#"
-// class CustomNode(n3.NodeBase):
-//     pass
-
-// assert CustomNode.name() == 'CustomNode'
-//             "#);
-//         })
-//     }
-// }
+        for key in key.extract::<Vec<PyObject>>()? {
+            list.append(index(py, data, key)?)?;
+        }
+        Ok(list.into_py(py))
+    } else {
+        Ok(data.get_item(key).unwrap().into_py(py))
+    }
+}

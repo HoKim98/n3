@@ -15,9 +15,10 @@ mod seed;
 mod tensor;
 mod variable;
 
+pub use self::ast::{Out, Outs};
 pub use self::error::{Error, Result};
 pub use self::execs::ExecRoot;
-pub use self::ast::{Out, Outs};
+pub use self::graph::Table;
 
 use n3_parser::{ast, Parser};
 

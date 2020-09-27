@@ -1,20 +1,21 @@
 use std::ops::{Deref, DerefMut};
 
 use pyo3::prelude::*;
+use pyo3::types::PyList;
 
-use crate::machine::Machine;
+use crate::machine::Torch;
 
 pub struct TensorGraph(PyObject);
 
 impl TensorGraph {
-    pub fn new(machine: &Machine, nodes: impl Into<Vec<PyObject>>) -> PyResult<Self> {
+    pub fn new(py: Python, nodes: Py<PyList>) -> PyResult<Self> {
         Ok(Self {
-            0: machine
-                .torch
-                .nn("ModuleList")?
-                .call1((nodes.into(),))?
-                .into_py(machine.py),
+            0: Torch(py).nn("ModuleList")?.call1((nodes,))?.into_py(py),
         })
+    }
+
+    pub fn parameters(&self, py: Python) -> PyResult<PyObject> {
+        self.0.call_method0(py, "parameters")
     }
 }
 
@@ -41,15 +42,8 @@ mod tests {
 
     #[test]
     fn test_linear() -> Result<(), ()> {
-        fn linear<'a>(
-            machine: &'a Machine,
-            input_channels: usize,
-            output_channels: usize,
-        ) -> PyResult<PyObject> {
-            let py = machine.py;
-
-            Ok(machine
-                .torch
+        fn linear(py: Python, input_channels: usize, output_channels: usize) -> PyResult<PyObject> {
+            Ok(Torch(py)
                 .nn("Linear")?
                 .call(
                     (),
@@ -69,11 +63,11 @@ mod tests {
 
             // get a sample tensor graph
             let tensor_graph = TensorGraph::new(
-                &machine,
+                py,
                 vec![
-                    linear(&machine, 16, 32)?,
-                    linear(&machine, 32, 64)?,
-                    linear(&machine, 64, 10)?,
+                    linear(py, 16, 32)?,
+                    linear(py, 32, 64)?,
+                    linear(py, 64, 10)?,
                 ],
             )?;
 

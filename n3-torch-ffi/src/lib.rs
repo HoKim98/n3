@@ -8,8 +8,6 @@ mod nn;
 mod optim;
 mod tensor;
 
-use n3_builder as builder;
-
 macro_rules! add_classes {
     [ $( $ty:path ),*, ] => {
         $(
