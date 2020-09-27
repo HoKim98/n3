@@ -26,7 +26,7 @@ impl Program {
         Ok(ctx.build())
     }
 
-    pub fn decompact(self, root: &mut NodeRoot) -> crate::execs::Program {
+    pub fn decompact(self, root: &NodeRoot) -> crate::execs::Program {
         let mut ctx = DecompactContext::new(root, &self.graphs);
 
         // note: ordered (graphs -> args -> scripts)

@@ -18,11 +18,14 @@ mod tests {
 
     #[test]
     fn test_build_ic() {
-        let envs = GlobalVars::default();
-        envs.set("root".to_string(), "tests/data/".to_string().into())
-            .unwrap();
+        fn make_root() -> ExecRoot {
+            let envs = GlobalVars::default();
+            envs.set("root".to_string(), "tests/data/".to_string().into())
+                .unwrap();
+            ExecRoot::try_new(envs).unwrap()
+        };
 
-        let mut root = ExecRoot::try_new(envs).unwrap();
+        let root = make_root();
 
         let args = btreemap! {
             "data".to_string() => ast::Value::from("Mnist".to_string()),
@@ -49,6 +52,7 @@ mod tests {
             let mut binary = vec![];
             root.compact_into(&mut binary, &program).unwrap();
 
+            let root = make_root();
             let program_decompacted = root.decompact_from(&*binary).unwrap();
 
             assert_eq!(program, program_decompacted);

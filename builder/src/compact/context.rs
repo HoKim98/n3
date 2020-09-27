@@ -55,12 +55,12 @@ impl<'a> CompactContext<'a> {
 
 pub struct DecompactContext<'a> {
     pub seed: u64,
-    root: &'a mut NodeRoot,
+    root: &'a NodeRoot,
     graphs: Graphs<crate::graph::RefGraph>,
 }
 
 impl<'a> DecompactContext<'a> {
-    pub fn new(root: &'a mut NodeRoot, graphs: &[Graph]) -> Self {
+    pub fn new(root: &'a NodeRoot, graphs: &[Graph]) -> Self {
         Self {
             seed: root.seed.alloc(graphs.len() as u64),
             root,

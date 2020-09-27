@@ -42,12 +42,12 @@ impl ExecRoot {
         bincode::serialize_into(writer, &program).map_err(|e| e.into())
     }
 
-    pub fn decompact_from<R>(&mut self, reader: R) -> Result<Program>
+    pub fn decompact_from<R>(&self, reader: R) -> Result<Program>
     where
         R: std::io::Read,
     {
         let program: CompactedProgram = bincode::deserialize_from(reader)?;
-        Ok(program.decompact(&mut self.node_root))
+        Ok(program.decompact(&self.node_root))
     }
 
     fn create_root_dir(&self) -> Result<()> {
