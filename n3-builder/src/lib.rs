@@ -17,6 +17,7 @@ mod variable;
 
 pub use self::error::{Error, Result};
 pub use self::execs::ExecRoot;
+pub use self::ast::Outs;
 
 use n3_parser::{ast, Parser};
 

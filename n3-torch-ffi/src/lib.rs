@@ -3,9 +3,11 @@ mod exec;
 mod machine;
 mod nn;
 mod optim;
+mod pybox;
+mod torch;
 
 macro_rules! add_classes {
-    ( $( $ty:path ),*, ) => {
+    [ $( $ty:path ),*, ] => {
         $(
             pub use $ty;
         )*
@@ -22,4 +24,4 @@ macro_rules! add_classes {
     };
 }
 
-add_classes!(self::nn::Node,);
+add_classes![self::nn::Node, self::nn::NodeBase,];
