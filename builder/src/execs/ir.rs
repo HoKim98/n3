@@ -11,7 +11,7 @@ use crate::nodes::NodeRoot;
 use crate::seed::Seed;
 use crate::tensor::IRData;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct ExecIR {
     pub data: IRData,
 }
@@ -21,9 +21,9 @@ impl ExecIR {
         let data = self.data;
 
         // prune graph
-        let (graph, nodes) = prune_graph(root, data.graph, &args)?;
+        let (graph, nodes) = prune_graph(root, data.graph, args)?;
 
-        Ok(Program { graph, nodes, args })
+        Ok(Program { graph, nodes })
     }
 }
 
@@ -35,7 +35,7 @@ impl CloneSafe for ExecIR {
     }
 }
 
-fn prune_graph(root: &NodeRoot, graph: RefGraph, args: &Vars) -> Result<(Table, Nodes)> {
+fn prune_graph(root: &NodeRoot, graph: RefGraph, args: Vars) -> Result<(Table, Nodes)> {
     let mut nodes = BTreeMap::new();
 
     let graph = Rc::try_unwrap(graph)
@@ -85,7 +85,8 @@ fn prune_graph(root: &NodeRoot, graph: RefGraph, args: &Vars) -> Result<(Table, 
             else {
                 match args.try_get_checked(&var_name, ty.clone()) {
                     Ok(Some(value)) => {
-                        var_ref.value = Some(value.clone().into());
+                        let value = value.borrow().value.clone();
+                        var_ref.value = value;
                     }
                     Ok(None) => {}
                     Err(e) => return Some(Err(e)),

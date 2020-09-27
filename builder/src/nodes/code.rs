@@ -2,7 +2,7 @@ use crate::ast;
 use crate::code::Code;
 use crate::graph::RefGraph;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct NodeCode {
     pub name: String,
     pub graph: RefGraph,

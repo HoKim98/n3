@@ -2,7 +2,7 @@ use super::script::PythonScript;
 use crate::ast;
 use crate::graph::RefGraph;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct ExternCode {
     pub name: String,
     pub graph: RefGraph,

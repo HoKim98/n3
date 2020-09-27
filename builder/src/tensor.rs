@@ -10,7 +10,7 @@ use crate::graph::{RefGraph, Values};
 use crate::nodes::{builtins, ASTBuild, NodeIR, NodeRoot};
 use crate::seed::Seed;
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, PartialEq)]
 pub struct TensorGraph(Vec<TensorNode>);
 
 impl Deref for TensorGraph {
@@ -27,7 +27,7 @@ impl DerefMut for TensorGraph {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum TensorNode {
     Node(NodeIR),
     Extern(ExternIR),
@@ -41,6 +41,16 @@ pub struct IRData {
     pub graph: RefGraph,
     pub input: ast::Outs,
     pub output: ast::Outs,
+}
+
+impl PartialEq for IRData {
+    fn eq(&self, other: &Self) -> bool {
+        // id should not be compared
+        self.name.eq(&other.name)
+            && self.graph.eq(&other.graph)
+            && self.input.eq(&other.input)
+            && self.output.eq(&other.output)
+    }
 }
 
 impl From<NodeIR> for TensorNode {
@@ -74,6 +84,10 @@ impl TensorGraph {
 
     pub fn new_one(node: TensorNode) -> Self {
         Self(vec![node])
+    }
+
+    pub fn new(nodes: Vec<TensorNode>) -> Self {
+        Self(nodes)
     }
 
     pub fn is_some(&self) -> bool {
@@ -264,6 +278,18 @@ impl CloneSafe for TensorNode {
     }
 }
 
+impl CloneSafe for IRData {
+    fn clone_safe(&self, seed: &Seed, variables: &mut Vec<ast::RefVariable>) -> Self {
+        Self {
+            id: self.id,
+            name: self.name.clone(),
+            graph: self.graph.clone_safe(seed, variables),
+            input: self.input.clone(),
+            output: self.output.clone(),
+        }
+    }
+}
+
 impl Build for TensorNode {
     type Output = Self;
 
@@ -328,17 +354,5 @@ fn shapes_to_outs(id: u64, shapes: Option<&ast::Shapes>) -> ast::Outs {
             .map(|x| x.to_string())
             .map(|x| (x.clone(), ast::Out::new(id, x)))
             .collect(),
-    }
-}
-
-impl CloneSafe for IRData {
-    fn clone_safe(&self, seed: &Seed, variables: &mut Vec<ast::RefVariable>) -> Self {
-        Self {
-            id: self.id,
-            name: self.name.clone(),
-            graph: self.graph.clone_safe(seed, variables),
-            input: self.input.clone(),
-            output: self.output.clone(),
-        }
     }
 }

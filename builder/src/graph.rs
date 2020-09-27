@@ -74,6 +74,16 @@ impl Graph {
         Ok(graph)
     }
 
+    pub fn with_variables(id: u64, variables: Table) -> Self {
+        let mut graph = Graph {
+            id,
+            shortcuts: Table::new(),
+            variables,
+        };
+        graph.build().unwrap();
+        graph
+    }
+
     pub fn add(&mut self, variable: ast::RefVariable) -> Result<()> {
         let mut var_ref = variable.borrow_mut();
         let name = var_ref.name.clone();
@@ -144,20 +154,7 @@ impl Graph {
             .collect::<Result<_>>()?;
 
         self.variables = variables;
-        self.shortcuts = self
-            .variables
-            .values()
-            .map(|var| {
-                let borrowed = var.borrow();
-                let name = borrowed
-                    .shortcut
-                    .as_ref()
-                    .or_else(|| Some(&borrowed.name))
-                    .cloned()
-                    .unwrap();
-                (name, var.clone())
-            })
-            .collect();
+        self.shortcuts = to_shortcuts(&self.variables);
 
         Ok(())
     }
@@ -224,6 +221,12 @@ impl Graph {
     }
 }
 
+impl PartialEq for Graph {
+    fn eq(&self, other: &Self) -> bool {
+        self.variables.eq(&other.variables)
+    }
+}
+
 impl From<Graph> for RefGraph {
     fn from(graph: Graph) -> Self {
         Rc::new(RefCell::new(graph))
@@ -246,26 +249,40 @@ impl CloneSafe for Graph {
             .iter()
             .map(|(k, v)| (k.clone(), v.detach(id)))
             .collect();
-        let self_shortcuts = self_variables
-            .values()
-            .filter_map(|v| {
-                v.borrow()
-                    .shortcut
-                    .as_ref()
-                    .and_then(|s| Some((s.clone(), v.clone())))
-            })
-            .collect();
-        for var in self_variables.values_mut() {
+        let self_shortcuts = to_shortcuts(&self_variables);
+
+        // Step 2. register the copied variables
+        for var in self_variables.values() {
             variables.push(var.clone());
-            // Step 2. replace the olds into the news
+        }
+
+        // Step 3. replace the olds into the news
+        for var in self_variables.values_mut() {
             let new_var = var.borrow().value.clone_value(variables);
             var.borrow_mut().value = new_var;
         }
-        // Step 3. store
+
+        // Step 4. store
         Graph {
             id,
             shortcuts: self_shortcuts,
             variables: self_variables,
         }
     }
+}
+
+fn to_shortcuts(variables: &Table) -> Table {
+    variables
+        .values()
+        .map(|var| {
+            let borrowed = var.borrow();
+            let name = borrowed
+                .shortcut
+                .as_ref()
+                .or_else(|| Some(&borrowed.name))
+                .cloned()
+                .unwrap();
+            (name, var.clone())
+        })
+        .collect()
 }

@@ -8,13 +8,13 @@ use crate::seed::Seed;
 use crate::tensor::IRData;
 use crate::variable::CloneValue;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct ExternIR {
     pub data: IRData,
     pub shapes: ExternIRShapes,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct ExternIRShapes {
     pub input: Option<ast::Shapes>,
     pub output: Option<ast::Shapes>,

@@ -26,6 +26,12 @@ impl RefVariable {
     }
 }
 
+impl PartialEq for RefVariable {
+    fn eq(&self, other: &Self) -> bool {
+        self.0.eq(&other.0)
+    }
+}
+
 impl ops::Deref for RefVariable {
     type Target = RefCell<Variable>;
 
@@ -81,6 +87,13 @@ impl Variable {
     }
 }
 
+impl PartialEq for Variable {
+    fn eq(&self, other: &Self) -> bool {
+        // only test the name and value
+        self.name.eq(&other.name) && self.value.eq(&other.value)
+    }
+}
+
 impl From<Variable> for RefVariable {
     fn from(var: Variable) -> Self {
         Self(Rc::new(RefCell::new(var)))
@@ -109,7 +122,7 @@ impl fmt::Debug for Variable {
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub enum LetType {
     Bool,
     UInt,
@@ -297,6 +310,18 @@ impl Value {
     pub fn is_atomic(&self) -> bool {
         match self {
             Self::Bool(_) | Self::UInt(_) | Self::Int(_) | Self::Real(_) => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_numeric(&self) -> bool {
+        match self {
+            Self::Bool(_)
+            | Self::UInt(_)
+            | Self::Int(_)
+            | Self::Real(_)
+            | Self::Variable(_)
+            | Self::Expr(_) => true,
             _ => false,
         }
     }
@@ -617,10 +642,20 @@ impl PartialEq for Value {
             (Self::Real(lhs), Self::UInt(rhs)) => *lhs == *rhs as f64,
             (Self::Real(lhs), Self::Int(rhs)) => *lhs == *rhs as f64,
             (Self::Real(lhs), Self::Real(rhs)) => lhs.eq(rhs),
+            (Self::String(lhs), Self::String(rhs)) => lhs.eq(rhs),
+            (Self::Node(lhs), Self::Node(rhs)) => lhs.eq(rhs),
+            (Self::Dim(lhs), Self::Dim(rhs)) => lhs.eq(rhs),
+            (Self::Variable(lhs), Self::Variable(rhs)) => lhs.eq(rhs),
+            (Self::List(lhs), Self::List(rhs)) => lhs.eq(rhs),
+            (Self::Map(lhs), Self::Map(rhs)) => lhs.eq(rhs),
             _ => {
-                // TODO: FUTURE: implement comparing hinted values
-                println!("warning: comparing hinted values is not supported yet!");
-                true
+                if self.is_numeric() && other.is_numeric() {
+                    // TODO: FUTURE: implement comparing hinted values
+                    println!("warning: comparing hinted values is not supported yet!");
+                    true
+                } else {
+                    false
+                }
             }
         }
     }

@@ -54,7 +54,7 @@ impl fmt::Debug for Out {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct Shape(pub Vec<Value>);
 
 impl Shape {
@@ -76,7 +76,7 @@ impl fmt::Debug for Shape {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct Shapes(pub RefCell<ShapesInner>);
 
 type ShapesInner = BTreeMap<String, Option<Shape>>;

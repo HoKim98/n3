@@ -7,7 +7,7 @@ use crate::seed::Seed;
 use crate::tensor::{IRData, TensorGraph, TensorNode};
 use crate::variable::{BuildValue, CloneValue, Link};
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct NodeIR {
     pub data: IRData,
     pub ty: ast::LetNodeType,
@@ -125,6 +125,14 @@ impl CloneSafe for NodeIR {
                 let tensor_graph = self.tensor_graph.clone_safe(seed, variables);
                 let node = tensor_graph.try_borrow_extern_node().unwrap();
                 let graph = node.data.graph.clone();
+
+                if &self.data.name == "Conv2D" {
+                    for var in graph.borrow().variables().values() {
+                        if var.borrow().id == Some(9) {
+                            todo!();
+                        }
+                    }
+                }
 
                 let mut data = self.data.clone();
                 data.graph = graph;

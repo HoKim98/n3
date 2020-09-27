@@ -22,7 +22,7 @@ mod tests {
         envs.set("root".to_string(), "tests/data/".to_string().into())
             .unwrap();
 
-        let root = ExecRoot::try_new(envs).unwrap();
+        let mut root = ExecRoot::try_new(envs).unwrap();
 
         let args = btreemap! {
             "data".to_string() => ast::Value::from("Mnist".to_string()),
@@ -44,12 +44,14 @@ mod tests {
 
         let program = root.get("DummyImageClassification", args).unwrap();
 
-        // serialization & deserialization
+        // compacting & decompacting
         {
             let mut binary = vec![];
             root.compact_into(&mut binary, &program).unwrap();
 
-            let program_decompacted = root.decompact_from(binary.as_slice()).unwrap();
+            let program_decompacted = root.decompact_from(&*binary).unwrap();
+
+            assert_eq!(program, program_decompacted);
         }
     }
 }

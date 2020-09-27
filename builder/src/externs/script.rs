@@ -6,10 +6,10 @@ use crate::error::Result;
 use crate::nodes::NodeRoot;
 use crate::seed::Seed;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct PythonScript {
-    name: String,
-    source: String,
+    pub name: String,
+    pub source: String,
 }
 
 impl CloneSafe for PythonScript {

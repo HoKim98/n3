@@ -4,6 +4,7 @@ use std::path::Path;
 use super::dirs::*;
 use super::program::Program;
 use super::var::{GlobalVars, Vars};
+use crate::compact::Program as CompactedProgram;
 use crate::error::{ExecError, Result};
 use crate::n3_std::trim_path;
 use crate::nodes::NodeRoot;
@@ -37,16 +38,16 @@ impl ExecRoot {
     where
         W: std::io::Write,
     {
-        let program = program.compact(&self.node_root)?;
+        let program = CompactedProgram::compact(&self.node_root, program)?;
         bincode::serialize_into(writer, &program).map_err(|e| e.into())
     }
 
-    pub fn decompact_from<R>(&self, reader: R) -> Result<Program>
+    pub fn decompact_from<R>(&mut self, reader: R) -> Result<Program>
     where
         R: std::io::Read,
     {
-        let program = bincode::deserialize_from(reader)?;
-        Program::decompact(&self.node_root, program)
+        let program: CompactedProgram = bincode::deserialize_from(reader)?;
+        Ok(program.decompact(&mut self.node_root))
     }
 
     fn create_root_dir(&self) -> Result<()> {
