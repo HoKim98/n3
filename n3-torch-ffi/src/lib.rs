@@ -29,6 +29,8 @@ macro_rules! add_classes {
             }
             let base = wrap_pymodule!(_base)(py);
 
+            let builtins = py.import("builtins")?;
+
             let torch = self::machine::Torch(py);
             let module = torch.nn("Module")?;
 
@@ -36,7 +38,7 @@ macro_rules! add_classes {
                 let node_name = &stringify!($ty_nn).split("::").last().unwrap()[1..];
                 let node_base = base.getattr(py, node_name)?;
 
-                let node = py.import("builtins")?.get("type")?.call(
+                let node = builtins.get("type")?.call(
                     (node_name, (module, node_base), PyDict::new(py)),
                     None,
                 )?;
