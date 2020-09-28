@@ -14,6 +14,10 @@ impl TensorGraph {
         })
     }
 
+    pub fn empty(py: Python) -> PyResult<Self> {
+        Self::new(py, vec![])
+    }
+
     pub fn children(&self, py: Python) -> PyResult<PyObject> {
         self.0.call_method0(py, "children")
     }

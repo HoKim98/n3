@@ -11,7 +11,7 @@ use pyo3::types::{IntoPyDict, PyDict, PyList};
 
 use crate::tensor::*;
 
-#[pyclass]
+#[pyclass(subclass)]
 pub struct Node {
     #[pyo3(get)]
     node_input: Py<PyDict>,
@@ -20,18 +20,30 @@ pub struct Node {
     tensor_graph: TensorGraph,
 }
 
+#[pymethods]
 impl Node {
-    pub fn new(
+    #[new]
+    pub fn new(py: Python) -> PyResult<Self> {
+        Ok(Self {
+            node_input: PyDict::new(py).into_py(py),
+            node_output: PyDict::new(py).into_py(py),
+            tensor_graph: TensorGraph::empty(py)?,
+        })
+    }
+}
+
+impl Node {
+    pub fn init_node(
+        &mut self,
         py: Python,
         node_input: Py<PyDict>,
         node_output: Py<PyDict>,
         tensor_graph: Vec<PyObject>,
-    ) -> PyResult<Self> {
-        Ok(Self {
-            node_input,
-            node_output,
-            tensor_graph: TensorGraph::new(py, tensor_graph)?,
-        })
+    ) -> PyResult<()> {
+        self.node_input = node_input;
+        self.node_output = node_output;
+        self.tensor_graph = TensorGraph::new(py, tensor_graph)?;
+        Ok(())
     }
 }
 

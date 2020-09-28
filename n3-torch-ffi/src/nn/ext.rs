@@ -47,22 +47,24 @@ mod tests {
             let nn = torch.this("nn")?.into_py(py);
             let zeros = torch.this("zeros")?.into_py(py);
 
-            // get a sample tensor graph
             py.run(
                 r#"
-class MyExternNode(n3.ExternNode, nn.Module):
+class MyExternNode(n3.ExternNode):
     def __init__(self):
-        super(n3.ExternNode, self).__init__()
-        super(nn.Module, self).__init__()
-
-        self.inner = nn.Linear(32, 10)
+        super().__init__()
+        self.inner1 = nn.Linear(32, 64)
+        self.inner2 = nn.Linear(64, 10, bias=False)
 
     def forward(self, x):
-        return self.inner(x)
+        x = self.inner1(x)
+        x = self.inner2(x)
+        return x
 
 
 node = MyExternNode()
 node.init_node({}, {})
+
+assert len(list(node.parameters())) == 3
 
 x = zeros(3, 32)
 y = node(x)
