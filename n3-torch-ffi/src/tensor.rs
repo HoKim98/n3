@@ -16,8 +16,11 @@ impl Deref for TensorInput {
     }
 }
 
-#[pymethods]
 impl TensorInput {
+    pub fn new(inner: Py<PyDict>) -> Self {
+        Self { inner }
+    }
+
     pub fn to_output(&self, py: Python) -> PyResult<TensorOutput> {
         let inner = PyDict::new(py);
 

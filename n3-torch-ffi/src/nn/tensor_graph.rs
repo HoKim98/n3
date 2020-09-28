@@ -1,6 +1,7 @@
 use std::ops::{Deref, DerefMut};
 
 use pyo3::prelude::*;
+use pyo3::types::PyDict;
 
 use crate::machine::Torch;
 
@@ -13,8 +14,29 @@ impl TensorGraph {
         })
     }
 
+    pub fn children(&self, py: Python) -> PyResult<PyObject> {
+        self.0.call_method0(py, "children")
+    }
+
     pub fn parameters(&self, py: Python) -> PyResult<PyObject> {
         self.0.call_method0(py, "parameters")
+    }
+
+    pub fn train(&self, py: Python, mode: bool) -> PyResult<PyObject> {
+        self.0.call_method1(py, "train", (mode,))
+    }
+
+    pub fn eval(&self, py: Python) -> PyResult<PyObject> {
+        self.train(py, false)
+    }
+
+    pub fn to(&self, py: Python, device: Option<PyObject>) -> PyResult<PyObject> {
+        let kwargs = PyDict::new(py);
+        if let Some(device) = device {
+            kwargs.set_item("device", device)?;
+        }
+
+        self.0.call_method(py, "to", (), Some(kwargs))
     }
 }
 
@@ -35,9 +57,10 @@ impl DerefMut for TensorGraph {
 #[cfg(test)]
 mod tests {
     use pyo3::types::IntoPyDict;
+    use pyo3::*;
 
     use super::*;
-    use crate::machine::{GenericMachine, Machine};
+    use crate::machine::*;
 
     #[test]
     fn test_linear() -> Result<(), ()> {
@@ -57,7 +80,8 @@ mod tests {
                 .into_py(py))
         }
 
-        Python::with_gil(|py| {
+        #[pyfunction]
+        fn test_tg_linear(py: Python) -> PyResult<()> {
             let mut machine: Machine = GenericMachine::new(py).into();
             let torch = Torch(py);
 
@@ -85,6 +109,12 @@ mod tests {
             assert_eq!(output.getattr("shape")?.extract::<(_, _)>()?, (3, 10));
 
             machine.terminate()
+        }
+
+        Python::with_gil(|py| {
+            let mut process = pyo3_mp::Process::new(py)?;
+            process.spawn(wrap_pyfunction!(test_tg_linear)(py)?, (), None)?;
+            process.join()
         })
         .map_err(|e: PyErr| Python::with_gil(|py| e.print_and_set_sys_last_vars(py)))
     }

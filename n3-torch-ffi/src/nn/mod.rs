@@ -1,6 +1,7 @@
 mod ext;
 mod tensor_graph;
 
+pub use self::ext::ExternNode;
 pub use self::tensor_graph::TensorGraph;
 
 use std::collections::BTreeMap;
@@ -36,6 +37,16 @@ impl Node {
 
 #[pymethods]
 impl Node {
+    #[call]
+    #[args(kwargs = "**")]
+    fn __call__(&self, py: Python, kwargs: Option<&PyDict>) -> PyResult<TensorOutput> {
+        let kwargs = TensorInput::new(match kwargs {
+            Some(kwargs) => kwargs.into_py(py),
+            None => PyDict::new(py).into_py(py),
+        });
+        self.forward(py, &kwargs)
+    }
+
     fn forward(&self, py: Python, input: &TensorInput) -> PyResult<TensorOutput> {
         let output = input.to_output(py)?;
         let output = output.as_ref(py);
@@ -82,8 +93,24 @@ impl Node {
         Ok(TensorOutput::new(x))
     }
 
+    fn children(&self, py: Python) -> PyResult<PyObject> {
+        self.tensor_graph.children(py)
+    }
+
     fn parameters(&self, py: Python) -> PyResult<PyObject> {
         self.tensor_graph.parameters(py)
+    }
+
+    fn train(&self, py: Python, mode: bool) -> PyResult<PyObject> {
+        self.tensor_graph.train(py, mode)
+    }
+
+    fn eval(&self, py: Python) -> PyResult<PyObject> {
+        self.tensor_graph.eval(py)
+    }
+
+    fn to(&self, py: Python, device: Option<PyObject>) -> PyResult<PyObject> {
+        self.tensor_graph.to(py, device)
     }
 }
 
