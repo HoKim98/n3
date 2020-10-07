@@ -1,6 +1,6 @@
 use std::ops::Deref;
 
-const INDENT: &'static str = "    ";
+const INDENT: &str = "    ";
 
 pub struct FmtGuard<'a, T> {
     inner: &'a T,

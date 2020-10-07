@@ -23,6 +23,6 @@ pub struct Use {
 
 impl fmt::Debug for Use {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "use {}{:?}\n", &self.name, &self.by)
+        writeln!(f, "use {}{:?}", &self.name, &self.by)
     }
 }

@@ -71,13 +71,13 @@ mod tests {
             tensor_graph,
             repeat: None,
         };
-        let root = NodeRoot::new();
+        let root = NodeRoot::default();
         ir.build(&root).unwrap();
     }
 
     #[test]
     fn test_unexpected_extern_node() {
-        let root = NodeRoot::new();
+        let root = NodeRoot::default();
         assert_eq!(
             root.get_extern("FOO").err(),
             Some(
@@ -105,7 +105,7 @@ node MyNode:
     1. Linear + MyRelu = 64
     2. Linear + MyRelu = Oc
 ";
-        let root = NodeRoot::new();
+        let root = NodeRoot::default();
         root.add_source("MyNode".to_string(), model.to_string());
         let ir = root.get("MyNode").unwrap();
         ir.build(&root).unwrap();
@@ -113,7 +113,7 @@ node MyNode:
 
     #[test]
     fn test_build_lenet5() {
-        let root = NodeRoot::new();
+        let root = NodeRoot::default();
         let ir = root.get("LeNet5").unwrap();
         // manually define shapes
         {
@@ -131,8 +131,8 @@ node MyNode:
     #[test]
     fn test_build_concat() {
         let model = fs::read_to_string("tests/data/nodes/__user__/sample/test-cat.n3").unwrap();
-        let root = NodeRoot::new();
-        root.add_source("TestCat".to_string(), model.to_string());
+        let root = NodeRoot::default();
+        root.add_source("TestCat".to_string(), model);
         let ir = root.get("TestCat").unwrap();
         ir.build(&root).unwrap();
     }
@@ -151,7 +151,7 @@ node MyNode:
     3. Linear * one     = 30
     4. Linear * two     = 40
 ";
-        let root = NodeRoot::new();
+        let root = NodeRoot::default();
         root.add_source("MyNode".to_string(), model.to_string());
         let ir = root.get("MyNode").unwrap();
         ir.build(&root).unwrap();

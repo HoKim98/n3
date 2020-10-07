@@ -19,7 +19,7 @@ pub struct ExecRoot {
 impl ExecRoot {
     pub fn try_new(env: GlobalVars) -> Result<Self> {
         let root = Self {
-            node_root: NodeRoot::new(),
+            node_root: NodeRoot::default(),
             env,
         };
 

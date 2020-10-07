@@ -135,12 +135,7 @@ impl Graph {
         let shortcuts_map = self
             .variables
             .iter()
-            .filter_map(|(k, v)| {
-                v.borrow()
-                    .shortcut
-                    .as_ref()
-                    .and_then(|s| Some((s.clone(), k.clone())))
-            })
+            .filter_map(|(k, v)| v.borrow().shortcut.as_ref().map(|s| (s.clone(), k.clone())))
             .collect();
 
         let variables = self
@@ -279,7 +274,7 @@ fn to_shortcuts(variables: &Table) -> Table {
             let name = borrowed
                 .shortcut
                 .as_ref()
-                .or_else(|| Some(&borrowed.name))
+                .or(Some(&borrowed.name))
                 .cloned()
                 .unwrap();
             (name, var.clone())

@@ -62,8 +62,8 @@ impl CloneValue for ast::Value {
         match self {
             Self::Variable(value) => Self::Variable(value.clone_value(variables)),
             Self::Expr(value) => Self::Expr(value.clone_value(variables).into()),
-            Self::List(value) => Self::List(value.clone_value(variables).into()),
-            Self::Map(value) => Self::Map(value.clone_value(variables).into()),
+            Self::List(value) => Self::List(value.clone_value(variables)),
+            Self::Map(value) => Self::Map(value.clone_value(variables)),
             _ => self.clone(),
         }
     }
@@ -369,8 +369,7 @@ impl Hint for ast::Expr {
             op: self.op,
             lhs: self.lhs.hint(shortcuts, out, dim, is_root)?,
             rhs: self.rhs.hint(shortcuts, out, dim, is_root)?,
-        }
-        .into())
+        })
     }
 }
 
@@ -495,7 +494,8 @@ where
 impl Link for ast::Shapes {
     fn link_to(&self, to: &Self) -> Result<()> {
         for (name, last_output) in self.0.borrow().iter() {
-            if let Some(new_input) = to.0.borrow().get(name) {
+            let to_ref = to.0.borrow();
+            if let Some(new_input) = to_ref.get(name) {
                 if let Some(new_input) = new_input {
                     if let Some(last_output) = last_output {
                         // test the tensor size
@@ -532,7 +532,7 @@ impl Link for ast::Shapes {
                     }
                 } else {
                     // release borrowing for 'borrow_mut'
-                    drop(new_input);
+                    drop(to_ref);
 
                     // dynamic size
                     *to.0.borrow_mut().get_mut(name).unwrap() = last_output.clone();
@@ -558,11 +558,11 @@ where
 
 pub fn assert_equal(last_dim: ast::Value, new_dim: ast::Value) -> Result<()> {
     if last_dim != new_dim {
-        return LinkError::MismatchedDim {
+        LinkError::MismatchedDim {
             expected: last_dim,
             given: new_dim,
         }
-        .into();
+        .into()
     } else {
         Ok(())
     }
@@ -632,7 +632,7 @@ mod tests {
 
     #[test]
     fn test_node_root() {
-        const SOURCE: &'static str = "
+        const SOURCE: &str = "
 node MyNode:
     let c = int a + b - 1
     let a = int 4
@@ -640,7 +640,7 @@ node MyNode:
     let d = int c
 ";
 
-        let parser = crate::Parser::new();
+        let parser = crate::Parser::default();
         let file = parser.parse_file(SOURCE).unwrap();
 
         let graph = Graph::try_with_variables(1, file.node.graph).unwrap();
@@ -649,14 +649,14 @@ node MyNode:
 
     #[test]
     fn test_cycle() {
-        const SOURCE: &'static str = "
+        const SOURCE: &str = "
 node MyNode:
     let a = int b + 1
     let b = int c + 2
     let c = int a + 3
 ";
 
-        let parser = crate::Parser::new();
+        let parser = crate::Parser::default();
         let file = parser.parse_file(SOURCE).unwrap();
 
         // cycled variable: [a, b, c]

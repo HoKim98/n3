@@ -10,13 +10,15 @@ pub struct Parser {
     inner: grammar::FileInputParser,
 }
 
-impl Parser {
-    pub fn new() -> Self {
+impl Default for Parser {
+    fn default() -> Self {
         Self {
             inner: grammar::FileInputParser::new(),
         }
     }
+}
 
+impl Parser {
     pub fn parse_file(&self, source: &str) -> Result<ast::File, ParseError> {
         let lxr = lexer::make_tokenizer(source);
         let marker_token = (
@@ -26,6 +28,6 @@ impl Parser {
         );
         let tokenizer = iter::once(Ok(marker_token)).chain(lxr);
 
-        self.inner.parse(tokenizer).map_err(|e| ParseError::from(e))
+        self.inner.parse(tokenizer).map_err(ParseError::from)
     }
 }

@@ -103,8 +103,7 @@ mod tests {
             let mut output = torch.this("zeros")?.call1((3, 16))?;
 
             // propagate (16 -> 32 -> 64 -> 10)
-            let mut nodes = tensor_graph.as_ref(py).iter()?;
-            while let Some(node) = nodes.next() {
+            for node in tensor_graph.as_ref(py).iter()? {
                 let node = node?;
                 output = node.call_method1("forward", (output,))?;
             }

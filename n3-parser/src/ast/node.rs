@@ -16,7 +16,7 @@ crate::impl_debug_no_guard!(With);
 impl<'a> fmt::Debug for FmtGuard<'a, With> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let indent = self.indent();
-        write!(f, "{}with {}:\n", &indent, &self.name)?;
+        writeln!(f, "{}with {}:", &indent, &self.name)?;
 
         for (name, value) in &self.graph {
             self.child(&FmtWithSet { name, value }).fmt(f)?;
@@ -33,7 +33,7 @@ struct FmtWithSet<'a> {
 impl<'a> fmt::Debug for FmtGuard<'a, FmtWithSet<'a>> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let indent = self.indent();
-        write!(f, "{}set {} = {:?}\n", &indent, &self.name, &self.value)
+        writeln!(f, "{}set {} = {:?}", &indent, &self.name, &self.value)
     }
 }
 
@@ -46,10 +46,7 @@ pub enum NodeType {
 
 impl NodeType {
     pub fn is_extern(&self) -> bool {
-        match self {
-            Self::Extern(_) => true,
-            _ => false,
-        }
+        matches!(self, Self::Extern(_))
     }
 
     pub fn is_exec(&self) -> bool {
@@ -111,7 +108,7 @@ crate::impl_debug_no_guard!(Node);
 impl<'a> fmt::Debug for FmtGuard<'a, Node> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let indent = self.indent();
-        write!(f, "{}{:?}node {}:\n", &indent, &self.ty, &self.name)?;
+        writeln!(f, "{}{:?}node {}:", &indent, &self.ty, &self.name)?;
 
         for value in self.graph.values() {
             self.child(value).fmt(f)?;

@@ -98,7 +98,7 @@ impl<'a, 'b> NodeEntry<'a, 'b> {
         let node = file.build(self.ctx, self.name.clone())?;
 
         // Step 3. store
-        self.children.insert(node.name().to_string(), node.into());
+        self.children.insert(node.name().to_string(), node);
         Ok(())
     }
 
@@ -189,7 +189,7 @@ impl<'a> ASTBuild<'a> for ast::File {
 
         let mut node = self.node;
 
-        let mut name = parent.clone();
+        let mut name = parent;
         name.push(node.name.clone());
 
         // Step 1. make a graph
@@ -378,14 +378,12 @@ impl<'a> ExternTensorGraphCondition<'a> {
         }
 
         // Step 2. test the node id
-        if self.is_id_zero {
-            if id != node.id {
-                return GraphNodeError::MismatchedId {
-                    expected: id,
-                    given: node.id,
-                }
-                .into();
+        if self.is_id_zero && id != node.id {
+            return GraphNodeError::MismatchedId {
+                expected: id,
+                given: node.id,
             }
+            .into();
         }
 
         let call = &node.calls[0];

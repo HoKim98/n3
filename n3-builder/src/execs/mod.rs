@@ -20,7 +20,7 @@ mod tests {
     fn test_build_ic() {
         fn make_root() -> ExecRoot {
             let envs = GlobalVars::default();
-            envs.set("root".to_string(), "tests/data/".to_string().into())
+            envs.set("root".to_string(), "tests/data/".to_string())
                 .unwrap();
             ExecRoot::try_new(envs).unwrap()
         };

@@ -133,7 +133,7 @@ impl<'a, 'b, 'c> GraphNodeBuilder<DefaultNode> for GraphNodeEntry<'a, 'b, 'c> {
             }
 
             // Step 5. store
-            root.tensor_graph.push(callee.into());
+            root.tensor_graph.push(callee);
         }
 
         // Step 6. merge dedicated shapes
@@ -172,7 +172,7 @@ fn build_transform(
     // Step 1. get the IO
     let inputs = root
         .get_output_shapes()
-        .ok_or_else(|| GraphCallError::GenericShapes)?;
+        .ok_or(GraphCallError::GenericShapes)?;
     let outputs = if linear {
         ast::Shapes::new(
             inputs
@@ -291,7 +291,7 @@ impl<'a, 'b, 'c> GraphNodeBuilder<Concat> for GraphNodeEntry<'a, 'b, 'c> {
 
         // Step 3. concat the inputs
         let mut tensor_base: Vec<_> = match &inputs[0] {
-            Some(shapes) => shapes.0.iter().map(|x| Some(x)).collect(),
+            Some(shapes) => shapes.0.iter().map(Some).collect(),
             None => return GraphCallError::GenericShapes.into(),
         };
         let tensor_dims = tensor_base.len() as i64;

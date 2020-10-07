@@ -103,21 +103,21 @@ impl<'a> fmt::Debug for FmtGuard<'a, Shapes> {
         if borrowed.len() == 1 {
             if let Some(shape) = borrowed.get("x") {
                 if let Some(shape) = shape {
-                    return write!(f, " = {:?}\n", shape);
+                    return writeln!(f, " = {:?}", shape);
                 }
             }
         }
 
         let indent = self.indent();
-        write!(f, ":\n")?;
+        writeln!(f, ":")?;
 
         for (name, shape) in borrowed.iter() {
             write!(f, "{}{}", &indent, name)?;
             match shape {
-                Some(shape) => write!(f, " = {:?}\n", shape)?,
-                None => write!(f, "\n")?,
+                Some(shape) => writeln!(f, " = {:?}", shape)?,
+                None => writeln!(f)?,
             }
-            write!(f, "\n")?;
+            writeln!(f)?;
         }
         Ok(())
     }
@@ -244,7 +244,7 @@ impl<'a> fmt::Debug for FmtGuard<'a, GraphNode> {
         if let Some(shapes) = &self.shapes {
             self.child(shapes).fmt(f)
         } else {
-            write!(f, "\n")
+            writeln!(f)
         }
     }
 }

@@ -65,8 +65,7 @@ impl Node {
 
         let mut x_final = None;
 
-        let mut nodes = self.tensor_graph.as_ref(py).iter()?;
-        while let Some(node) = nodes.next() {
+        for node in self.tensor_graph.as_ref(py).iter()? {
             let node = node?;
 
             let x = PyDict::new(py);

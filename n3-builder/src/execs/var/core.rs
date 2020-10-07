@@ -34,9 +34,10 @@ impl Vars {
                 .map(|x| {
                     let name = x.name.to_string();
                     let ty = x.ty;
+                    let fn_value = x.fn_value;
                     let value = x
                         .value
-                        .or(x.fn_value.map(|f| f()).flatten())
+                        .or_else(|| fn_value.map(|f| f()).flatten())
                         .map(|v| Self::convert(v, Some(&ty)));
 
                     let mut var = ast::Variable::with_name_value(name.clone(), value);

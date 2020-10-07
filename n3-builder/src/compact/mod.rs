@@ -64,9 +64,9 @@ where
     type Args = V::Args;
     type Output = BTreeMap<K, V::Output>;
 
-    fn decompact(self, ctx: &mut DecompactContext, args: Self::Args) -> Self::Output {
+    fn decompact(self, ctx: &mut DecompactContext, (): Self::Args) -> Self::Output {
         self.into_iter()
-            .map(|(k, v)| (k, v.decompact(ctx, args)))
+            .map(|(k, v)| (k, v.decompact(ctx, ())))
             .collect()
     }
 }
@@ -98,8 +98,8 @@ where
     type Args = ();
     type Output = Vec<T::Output>;
 
-    fn decompact(self, ctx: &mut DecompactContext, args: Self::Args) -> Self::Output {
-        self.into_iter().map(|x| x.decompact(ctx, args)).collect()
+    fn decompact(self, ctx: &mut DecompactContext, (): Self::Args) -> Self::Output {
+        self.into_iter().map(|x| x.decompact(ctx, ())).collect()
     }
 }
 

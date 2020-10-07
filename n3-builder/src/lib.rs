@@ -1,4 +1,5 @@
 #![feature(is_sorted)]
+#![deny(clippy::all)]
 
 mod n3_std;
 
@@ -27,7 +28,7 @@ mod tests_recon {
     use std::fs;
 
     fn recon(source: &str) {
-        let parser = super::Parser::new();
+        let parser = super::Parser::default();
 
         let source_recon1 = format!("{:?}", parser.parse_file(source).unwrap());
         println!("{}", &source_recon1);

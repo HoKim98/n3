@@ -112,10 +112,10 @@ impl Decompact for IRData {
     fn decompact(self, ctx: &mut DecompactContext, (): Self::Args) -> Self::Output {
         Self::Output {
             id: self.id,
-            name: self.name.clone(),
+            name: self.name,
             graph: ctx.get_graph(self.graph).clone(),
-            input: self.input.clone(),
-            output: self.output.clone(),
+            input: self.input,
+            output: self.output,
         }
     }
 }

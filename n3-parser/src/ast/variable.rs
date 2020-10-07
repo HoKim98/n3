@@ -139,11 +139,7 @@ pub enum LetType {
 
 impl LetType {
     pub fn is_node(&self) -> bool {
-        if let Self::Node(_) = self {
-            true
-        } else {
-            false
-        }
+        matches!(self, Self::Node(_))
     }
 }
 
@@ -202,7 +198,7 @@ impl<'a> fmt::Debug for FmtGuard<'a, NodeLet> {
                 None => write!(f, " *")?,
             }
         }
-        write!(f, "\n")
+        writeln!(f)
     }
 }
 
@@ -308,22 +304,16 @@ impl Value {
     }
 
     pub fn is_atomic(&self) -> bool {
-        match self {
-            Self::Bool(_) | Self::UInt(_) | Self::Int(_) | Self::Real(_) => true,
-            _ => false,
-        }
+        matches!(self, Self::Bool(_) | Self::UInt(_) | Self::Int(_) | Self::Real(_))
     }
 
     pub fn is_numeric(&self) -> bool {
-        match self {
-            Self::Bool(_)
+        matches!(self, Self::Bool(_)
             | Self::UInt(_)
             | Self::Int(_)
             | Self::Real(_)
             | Self::Variable(_)
-            | Self::Expr(_) => true,
-            _ => false,
-        }
+            | Self::Expr(_))
     }
 
     pub fn is_hint(&self) -> bool {
