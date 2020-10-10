@@ -416,7 +416,10 @@ impl<'a> ExternTensorGraphCondition<'a> {
 
         // Step 6. test the args
         if let Some(expected) = self.args {
-            assert!(expected.is_sorted(), "the args should be sorted");
+            #[cfg(feature = "test-nightly")]
+            {
+                assert!(expected.is_sorted(), "the args should be sorted");
+            }
 
             // note: the keywords are already sorted according to BTreeMap.
             let given = match &call.args {

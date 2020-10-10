@@ -10,6 +10,7 @@ edition = "2018"
 default = ["cli"]
 
 cli = ["dialoguer"]
+test-nightly = []
 
 [dependencies]
 n3-parser = { path = "../n3-parser" }

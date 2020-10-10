@@ -12,7 +12,7 @@ crate-type = ["rlib", "cdylib"]
 
 [features]
 # default = ["pyo3/extension-module"]
-default = ["pyo3/nightly"]
+default = []
 
 [dependencies]
 n3-builder = { path = "../n3-builder" }

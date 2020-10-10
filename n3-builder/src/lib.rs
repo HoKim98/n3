@@ -1,4 +1,4 @@
-#![feature(is_sorted)]
+#![cfg_attr(feature = "test-nightly", feature(is_sorted))]
 #![deny(clippy::all)]
 
 mod n3_std;
