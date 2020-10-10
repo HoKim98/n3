@@ -91,6 +91,6 @@ assert y.shape == (3, 10)
             process.spawn(wrap_pyfunction!(test_ext_subclass)(py)?, (), None)?;
             process.join()
         })
-        .map_err(|e: PyErr| Python::with_gil(|py| e.print_and_set_sys_last_vars(py)))
+        .map_err(|e| Python::with_gil(|py| e.print_and_set_sys_last_vars(py)))
     }
 }

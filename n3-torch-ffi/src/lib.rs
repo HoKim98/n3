@@ -44,7 +44,7 @@ macro_rules! add_classes_dyn {
                     }
 
                     let base = wrap_pymodule!(_base)(py);
-                    let mut base_path: Vec<_> = stringify!($base).split(" :: ").collect();
+                    let mut base_path: Vec<_> = stringify!($base).split("::").collect();
                     let base_name = base_path.pop().unwrap();
 
                     // get the base module & type
@@ -52,7 +52,7 @@ macro_rules! add_classes_dyn {
                     let base_ty = base_module.get(base_name)?.into_py(py);
 
                     $(
-                        let node_name = stringify!($ty_child).split(" :: ").last().unwrap();
+                        let node_name = stringify!($ty_child).split("::").last().unwrap();
                         let node_base = base.getattr(py, &node_name)?;
                         let node = ty.call(
                             (node_name, (&base_ty, node_base), PyDict::new(py)),
