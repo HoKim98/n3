@@ -5,7 +5,7 @@ mod root;
 mod var;
 
 pub use self::ir::ExecIR;
-pub use self::program::{Nodes, Program};
+pub use self::program::Program;
 pub use self::root::ExecRoot;
 pub use self::var::{GlobalVars, Vars};
 

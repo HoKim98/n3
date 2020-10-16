@@ -1,12 +1,12 @@
 use std::collections::BTreeMap;
 use std::rc::Rc;
 
-use super::program::{Nodes, Program};
+use super::program::Program;
 use super::var::Vars;
 use crate::ast;
 use crate::context::CloneSafe;
 use crate::error::{ExecBuildError, Result};
-use crate::graph::{RefGraph, Table};
+use crate::graph::RefGraph;
 use crate::nodes::NodeRoot;
 use crate::seed::Seed;
 use crate::tensor::IRData;
@@ -18,12 +18,7 @@ pub struct ExecIR {
 
 impl ExecIR {
     pub fn build(self, root: &NodeRoot, args: Vars) -> Result<Program> {
-        let data = self.data;
-
-        // prune graph
-        let (graph, nodes) = prune_graph(root, data.graph, args)?;
-
-        Ok(Program { graph, nodes })
+        prune_graph(root, self.data.graph, args)
     }
 }
 
@@ -35,7 +30,7 @@ impl CloneSafe for ExecIR {
     }
 }
 
-fn prune_graph(root: &NodeRoot, graph: RefGraph, args: Vars) -> Result<(Table, Nodes)> {
+fn prune_graph(root: &NodeRoot, graph: RefGraph, args: Vars) -> Result<Program> {
     let mut nodes = BTreeMap::new();
 
     let graph = Rc::try_unwrap(graph)
@@ -98,5 +93,5 @@ fn prune_graph(root: &NodeRoot, graph: RefGraph, args: Vars) -> Result<(Table, N
         })
         .collect::<Result<_>>()?;
 
-    Ok((graph, nodes))
+    Ok(Program { graph, nodes })
 }
