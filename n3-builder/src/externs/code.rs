@@ -11,8 +11,10 @@ pub struct ExternCode {
 impl ExternCode {
     pub fn add_script(&self, root: &NodeRoot, scripts: &mut PythonScripts) -> Result<()> {
         let name = &self.data.name;
-        let script = root.get_extern(name)?;
-        scripts.insert(name.clone(), script);
+        if !scripts.contains_key(name) {
+            let script = root.get_extern(name)?;
+            scripts.insert(name.clone(), script);
+        }
         Ok(())
     }
 }
