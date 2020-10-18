@@ -226,23 +226,26 @@ impl From<bool> for Value {
     }
 }
 
-impl From<u64> for Value {
-    fn from(value: u64) -> Self {
-        Self::UInt(value)
-    }
+macro_rules! impl_from_value {
+    ($to:ty, $name:ident; $ty:ty) => {
+        impl From<$ty> for Value {
+            fn from(value: $ty) -> Self {
+                Self::$name(value as $to)
+            }
+        }
+    };
 }
 
-impl From<i64> for Value {
-    fn from(value: i64) -> Self {
-        Self::Int(value)
-    }
-}
-
-impl From<f64> for Value {
-    fn from(value: f64) -> Self {
-        Self::Real(value)
-    }
-}
+impl_from_value!(u64, UInt; u8);
+impl_from_value!(u64, UInt; u16);
+impl_from_value!(u64, UInt; u32);
+impl_from_value!(u64, UInt; u64);
+impl_from_value!(i64, Int; i8);
+impl_from_value!(i64, Int; i16);
+impl_from_value!(i64, Int; i32);
+impl_from_value!(i64, Int; i64);
+impl_from_value!(f64, Real; f32);
+impl_from_value!(f64, Real; f64);
 
 impl From<String> for Value {
     fn from(value: String) -> Self {
