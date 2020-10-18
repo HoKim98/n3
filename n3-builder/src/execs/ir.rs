@@ -5,7 +5,7 @@ use super::program::Program;
 use super::var::Vars;
 use crate::ast;
 use crate::context::CloneSafe;
-use crate::error::{ExecBuildError, Result};
+use crate::error::{ExecBuildError, GraphError, Result};
 use crate::nodes::NodeRoot;
 use crate::seed::Seed;
 use crate::tensor::IRData;
@@ -24,7 +24,11 @@ impl PartialEq for ExecIR {
 }
 
 impl ExecIR {
-    pub fn build(self, root: &NodeRoot, args: Vars) -> Result<Program> {
+    pub fn args(&self) -> Vars {
+        Vars::from(self.data.graph.borrow().variables().clone())
+    }
+
+    pub fn build(self, root: &NodeRoot) -> Result<Program> {
         // prune graph
         let mut nodes = BTreeMap::new();
 
@@ -34,7 +38,7 @@ impl ExecIR {
             .into_variables()
             .into_iter()
             .filter_map(|(var_name, var)| {
-                let mut var_ref = var.borrow_mut();
+                let var_ref = var.borrow();
                 let ty = var_ref.ty.as_ref().unwrap();
 
                 // prune the nodes
@@ -42,10 +46,15 @@ impl ExecIR {
                     let ty = *ty;
                     let name = match &var_ref.value.as_ref().and_then(|x| x.unwrap_node_name()) {
                         Some(name) => name.to_string(),
-                        None => match args.get_node_name(&var_name, ty) {
-                            Ok(x) => x,
-                            Err(e) => return Some(Err(e)),
-                        },
+                        None => {
+                            return Some(
+                                GraphError::EmptyValue {
+                                    name: var_name,
+                                    expected: ast::LetType::Node(Some(ty)),
+                                }
+                                .into(),
+                            )
+                        }
                     };
 
                     let node = match root.get(&name) {
@@ -70,18 +79,7 @@ impl ExecIR {
 
                     nodes.insert(var_name, node);
                     None
-                }
-                // otherwise, update the variables
-                else {
-                    match args.try_get_checked(&var_name, ty.clone()) {
-                        Ok(Some(value)) => {
-                            let value = value.borrow().value.clone();
-                            var_ref.value = value;
-                        }
-                        Ok(None) => {}
-                        Err(e) => return Some(Err(e)),
-                    };
-
+                } else {
                     drop(var_ref);
                     Some(Ok((var_name, var)))
                 }

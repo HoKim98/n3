@@ -69,6 +69,11 @@ pub enum GraphError {
     UnexpectedNodeVariable {
         name: String,
     },
+    UnparsableString {
+        name: String,
+        value: String,
+        ty: Option<ast::LetType>,
+    },
     DuplicatedVariable {
         name: String,
     },

@@ -1,6 +1,7 @@
 use std::ops::Deref;
 
 use super::core::{Query, Vars};
+use crate::error::Result;
 
 use inflector::Inflector;
 
@@ -17,16 +18,16 @@ impl Deref for EnvVars {
 }
 
 impl EnvVars {
-    pub fn load(mut query: Vec<Query>) -> Self {
+    pub fn load(mut query: Vec<Query>) -> Result<Self> {
         for entry in &mut query {
             if entry.value.is_none() {
                 entry.value = Self::load_from_env(entry.name);
             }
         }
 
-        Self {
-            inner: Vars::load(query),
-        }
+        Ok(Self {
+            inner: Vars::load(query)?,
+        })
     }
 
     fn load_from_env(key: &str) -> Option<String> {

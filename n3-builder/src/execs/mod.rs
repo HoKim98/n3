@@ -11,42 +11,21 @@ pub use self::var::{GlobalVars, Vars};
 
 #[cfg(test)]
 mod tests {
-    use maplit::btreemap;
-
     use super::*;
-    use crate::ast;
 
     #[test]
     fn test_build_ic() {
-        fn make_root() -> ExecRoot {
-            let envs = GlobalVars::default();
-            envs.set("root".to_string(), "tests/data/".to_string())
-                .unwrap();
-            ExecRoot::try_new(envs).unwrap()
-        };
+        let envs = GlobalVars::default();
+        envs.set("root", "tests/data/").unwrap();
+        let mut root = ExecRoot::try_new(envs).unwrap();
 
-        let root = make_root();
+        let args = root.get("DummyImageClassification").unwrap();
+        args.set("data", "Mnist").unwrap();
+        args.set("model", "LeNet5").unwrap();
+        args.set("epoch", "1").unwrap();
+        args.set("batch size", "10").unwrap();
 
-        let args = btreemap! {
-            "data".to_string() => ast::Value::from("Mnist".to_string()),
-            "model".to_string() => "LeNet5".to_string().into(),
-            // "model".to_string() => "LeNet6".to_string().into(),
-            "epoch".to_string() => 1i64.into(),
-            "batch size".to_string() => 10i64.into(),
-        };
-        let args = Vars::new(
-            args.into_iter()
-                .map(|(k, v)| {
-                    let name = k.clone();
-                    let mut value = ast::Variable::with_name_value(k, Some(v));
-                    value.id = Some(0);
-                    value.id_old = Some(0);
-                    (name, value.into())
-                })
-                .collect(),
-        );
-
-        let program = root.get("DummyImageClassification", args).unwrap();
+        let program = args.build().unwrap();
 
         // compacting & decompacting
         {

@@ -19,7 +19,7 @@ const QUERY: &[Query] = &[Query {
 impl Default for GlobalVars {
     fn default() -> Self {
         Self {
-            inner: EnvVars::load(QUERY.to_vec()),
+            inner: EnvVars::load(QUERY.to_vec()).unwrap(),
         }
     }
 }

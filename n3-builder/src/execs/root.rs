@@ -1,7 +1,9 @@
 use std::fs;
+use std::ops::Deref;
 use std::path::Path;
 
 use super::dirs::*;
+use super::ir::ExecIR;
 use super::program::Program;
 use super::var::{GlobalVars, Vars};
 use crate::error::{ExecError, Result};
@@ -28,9 +30,15 @@ impl ExecRoot {
         Ok(root)
     }
 
-    pub fn get(&self, name: &str, args: Vars) -> Result<Program> {
+    pub fn get(&mut self, name: &str) -> Result<Args> {
         let ir = self.node_root.get_exec(name)?;
-        ir.build(&self.node_root, args)
+        let args = ir.args();
+
+        Ok(Args {
+            root: self,
+            ir,
+            args,
+        })
     }
 
     fn create_root_dir(&self) -> Result<()> {
@@ -105,4 +113,24 @@ fn no_such_directory(path: &Path) -> Result<()> {
         path: path.to_path_buf(),
     }
     .into()
+}
+
+pub struct Args<'a> {
+    root: &'a mut ExecRoot,
+    ir: ExecIR,
+    args: Vars,
+}
+
+impl<'a> Deref for Args<'a> {
+    type Target = Vars;
+
+    fn deref(&self) -> &Self::Target {
+        &self.args
+    }
+}
+
+impl<'a> Args<'a> {
+    pub fn build(self) -> Result<Program> {
+        self.ir.build(&self.root.node_root)
+    }
 }
