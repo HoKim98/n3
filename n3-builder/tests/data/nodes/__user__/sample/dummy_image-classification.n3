@@ -7,3 +7,5 @@ exec node DummyImageClassification:
 
     let epoch = int *
     let batch size = int *
+
+    1. data + model + loss + optimizer

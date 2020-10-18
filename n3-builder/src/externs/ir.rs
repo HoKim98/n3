@@ -1,9 +1,9 @@
 use super::code::ExternCode;
 use crate::ast;
+use crate::code::CodeData;
 use crate::context::CloneSafe;
 use crate::error::Result;
 use crate::graph::RefGraph;
-use crate::nodes::NodeRoot;
 use crate::seed::Seed;
 use crate::tensor::IRData;
 use crate::variable::CloneValue;
@@ -63,13 +63,9 @@ impl ExternIR {
         self.shapes.output.as_ref()
     }
 
-    pub fn build(self, root: &NodeRoot) -> Result<ExternCode> {
+    pub fn build(self) -> Result<ExternCode> {
         Ok(ExternCode {
-            script: root.get_extern(&self.data.name)?,
-            name: self.data.name,
-            graph: self.data.graph,
-            input: self.data.input,
-            output: self.data.output,
+            data: CodeData::from_ir(self.data),
         })
     }
 }

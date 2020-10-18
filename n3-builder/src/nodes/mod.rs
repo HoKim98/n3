@@ -46,7 +46,7 @@ mod tests {
                     )
                 })
                 .collect::<BTreeMap<_, _>>();
-            let graph = Graph::try_with_variables(1, graph).unwrap();
+            let graph = Graph::try_with_variables(1, graph, false).unwrap();
             IRData {
                 id: ix,
                 name: "Linear".to_string(),

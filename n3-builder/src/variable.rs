@@ -4,7 +4,7 @@ use std::collections::{BTreeMap, HashMap};
 use num_traits::Pow;
 
 use super::error::{GraphError, LinkError, Result};
-use super::graph::Table;
+use super::graph::Variables;
 use crate::ast;
 
 pub trait CloneValue {
@@ -31,7 +31,7 @@ pub(crate) trait Replace {
     fn replace_to(
         &self,
         names: &mut Vec<String>,
-        variables: &Table,
+        variables: &Variables,
         shortcuts: &HashMap<String, String>,
     ) -> Result<Self>
     where
@@ -39,7 +39,13 @@ pub(crate) trait Replace {
 }
 
 pub(crate) trait Hint {
-    fn hint(&self, shortcuts: &Table, out: &ast::Out, dim: usize, is_root: bool) -> Result<Self>
+    fn hint(
+        &self,
+        shortcuts: &Variables,
+        out: &ast::Out,
+        dim: usize,
+        is_root: bool,
+    ) -> Result<Self>
     where
         Self: Sized;
 }
@@ -200,7 +206,7 @@ impl Replace for ast::RefVariable {
     fn replace_to(
         &self,
         names: &mut Vec<String>,
-        variables: &Table,
+        variables: &Variables,
         shortcuts: &HashMap<String, String>,
     ) -> Result<Self> {
         let raise_cycled_variables = || {
@@ -245,7 +251,7 @@ impl Replace for ast::Value {
     fn replace_to(
         &self,
         names: &mut Vec<String>,
-        variables: &Table,
+        variables: &Variables,
         shortcuts: &HashMap<String, String>,
     ) -> Result<Self> {
         match self {
@@ -262,7 +268,7 @@ impl Replace for ast::Expr {
     fn replace_to(
         &self,
         names: &mut Vec<String>,
-        variables: &Table,
+        variables: &Variables,
         shortcuts: &HashMap<String, String>,
     ) -> Result<Self> {
         Ok(Self {
@@ -281,7 +287,7 @@ where
     fn replace_to(
         &self,
         names: &mut Vec<String>,
-        variables: &Table,
+        variables: &Variables,
         shortcuts: &HashMap<String, String>,
     ) -> Result<Self> {
         self.iter()
@@ -297,7 +303,7 @@ where
     fn replace_to(
         &self,
         names: &mut Vec<String>,
-        variables: &Table,
+        variables: &Variables,
         shortcuts: &HashMap<String, String>,
     ) -> Result<Self> {
         self.iter()
@@ -313,7 +319,7 @@ where
     fn replace_to(
         &self,
         names: &mut Vec<String>,
-        variables: &Table,
+        variables: &Variables,
         shortcuts: &HashMap<String, String>,
     ) -> Result<Self> {
         self.as_ref().map_or(Ok(None), |x| {
@@ -323,7 +329,13 @@ where
 }
 
 impl Hint for ast::RefVariable {
-    fn hint(&self, shortcuts: &Table, out: &ast::Out, dim: usize, is_root: bool) -> Result<Self> {
+    fn hint(
+        &self,
+        shortcuts: &Variables,
+        out: &ast::Out,
+        dim: usize,
+        is_root: bool,
+    ) -> Result<Self> {
         let this = self.borrow();
         let name = &this.name;
 
@@ -352,7 +364,13 @@ impl Hint for ast::RefVariable {
 }
 
 impl Hint for ast::Value {
-    fn hint(&self, shortcuts: &Table, out: &ast::Out, dim: usize, is_root: bool) -> Result<Self> {
+    fn hint(
+        &self,
+        shortcuts: &Variables,
+        out: &ast::Out,
+        dim: usize,
+        is_root: bool,
+    ) -> Result<Self> {
         match self {
             Self::Variable(value) => Ok(value.hint(shortcuts, out, dim, is_root)?.into()),
             Self::Expr(value) => Ok(value.hint(shortcuts, out, dim, is_root)?.into()),
@@ -364,7 +382,13 @@ impl Hint for ast::Value {
 }
 
 impl Hint for ast::Expr {
-    fn hint(&self, shortcuts: &Table, out: &ast::Out, dim: usize, is_root: bool) -> Result<Self> {
+    fn hint(
+        &self,
+        shortcuts: &Variables,
+        out: &ast::Out,
+        dim: usize,
+        is_root: bool,
+    ) -> Result<Self> {
         Ok(ast::Expr {
             op: self.op,
             lhs: self.lhs.hint(shortcuts, out, dim, is_root)?,
@@ -378,7 +402,13 @@ where
     K: Clone + Ord,
     V: Hint,
 {
-    fn hint(&self, shortcuts: &Table, out: &ast::Out, dim: usize, is_root: bool) -> Result<Self> {
+    fn hint(
+        &self,
+        shortcuts: &Variables,
+        out: &ast::Out,
+        dim: usize,
+        is_root: bool,
+    ) -> Result<Self> {
         self.iter()
             .map(|(k, v)| Ok((k.clone(), v.hint(shortcuts, out, dim, is_root)?)))
             .collect()
@@ -389,7 +419,13 @@ impl<T> Hint for Vec<T>
 where
     T: Hint,
 {
-    fn hint(&self, shortcuts: &Table, out: &ast::Out, dim: usize, is_root: bool) -> Result<Self> {
+    fn hint(
+        &self,
+        shortcuts: &Variables,
+        out: &ast::Out,
+        dim: usize,
+        is_root: bool,
+    ) -> Result<Self> {
         self.iter()
             .map(|x| x.hint(shortcuts, out, dim, is_root))
             .collect()
@@ -400,7 +436,13 @@ impl<T> Hint for Option<T>
 where
     T: Hint,
 {
-    fn hint(&self, shortcuts: &Table, out: &ast::Out, dim: usize, is_root: bool) -> Result<Self> {
+    fn hint(
+        &self,
+        shortcuts: &Variables,
+        out: &ast::Out,
+        dim: usize,
+        is_root: bool,
+    ) -> Result<Self> {
         self.as_ref().map_or(Ok(None), |x| {
             Ok(Some(x.hint(shortcuts, out, dim, is_root)?))
         })
@@ -643,7 +685,7 @@ node MyNode:
         let parser = crate::Parser::default();
         let file = parser.parse_file(SOURCE).unwrap();
 
-        let graph = Graph::try_with_variables(1, file.node.graph).unwrap();
+        let graph = Graph::try_with_variables(1, file.node.graph, false).unwrap();
         assert_eq!(graph.is_estimable(), true);
     }
 
@@ -661,7 +703,7 @@ node MyNode:
 
         // cycled variable: [a, b, c]
         assert_eq!(
-            Graph::try_with_variables(1, file.node.graph).err(),
+            Graph::try_with_variables(1, file.node.graph, false).err(),
             Some(
                 GraphError::CycledVariables {
                     names: ["a", "b", "c"].iter().map(|x| x.to_string()).collect(),

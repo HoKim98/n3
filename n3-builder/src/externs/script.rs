@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use serde::{Deserialize, Serialize};
 
 use crate::ast;
@@ -6,10 +8,18 @@ use crate::error::Result;
 use crate::nodes::NodeRoot;
 use crate::seed::Seed;
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub type PythonScripts = BTreeMap<String, PythonScript>;
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PythonScript {
     pub name: String,
     pub source: String,
+}
+
+impl PartialEq for PythonScript {
+    fn eq(&self, other: &Self) -> bool {
+        self.name.eq(&other.name)
+    }
 }
 
 impl CloneSafe for PythonScript {

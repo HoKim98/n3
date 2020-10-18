@@ -1,12 +1,18 @@
-use super::script::PythonScript;
-use crate::ast;
-use crate::graph::RefGraph;
+use super::script::PythonScripts;
+use crate::code::CodeData;
+use crate::error::Result;
+use crate::nodes::NodeRoot;
 
 #[derive(Debug, PartialEq)]
 pub struct ExternCode {
-    pub name: String,
-    pub graph: RefGraph,
-    pub input: ast::Outs,
-    pub output: ast::Outs,
-    pub script: PythonScript,
+    pub data: CodeData,
+}
+
+impl ExternCode {
+    pub fn add_script(&self, root: &NodeRoot, scripts: &mut PythonScripts) -> Result<()> {
+        let name = &self.data.name;
+        let script = root.get_extern(name)?;
+        scripts.insert(name.clone(), script);
+        Ok(())
+    }
 }

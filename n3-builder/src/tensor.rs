@@ -149,6 +149,10 @@ impl TensorNode {
         }
     }
 
+    pub fn is_extern(&self) -> bool {
+        matches!(self, Self::Extern(_))
+    }
+
     pub fn get_id(&self) -> u64 {
         self.get_data().id
     }
@@ -218,8 +222,8 @@ impl TensorNode {
 
     pub fn build_to_code(self, root: &NodeRoot) -> Result<Code> {
         match self {
-            Self::Node(node) => Ok(node.build(root)?.into()),
-            Self::Extern(node) => Ok(node.build(root)?.into()),
+            Self::Node(node) => node.build(root),
+            Self::Extern(node) => Ok(node.build()?.into()),
             Self::Exec(_) => unreachable!("The ExecIR should be built using ExecIR::build."),
         }
     }
@@ -231,6 +235,17 @@ impl TensorNode {
     pub fn unwrap_node(self) -> Result<NodeIR> {
         match self {
             Self::Node(node) => Ok(node),
+            _ => TensorNodeError::MismatchedType {
+                expected: ast::FinalNodeType::Default,
+                given: self.ty(),
+            }
+            .into(),
+        }
+    }
+
+    pub fn unwrap_extern(self) -> Result<ExternIR> {
+        match self {
+            Self::Extern(node) => Ok(node),
             _ => TensorNodeError::MismatchedType {
                 expected: ast::FinalNodeType::Default,
                 given: self.ty(),

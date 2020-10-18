@@ -1,8 +1,10 @@
 use super::code::NodeCode;
 use super::root::NodeRoot;
 use crate::ast;
+use crate::code::{Code, CodeData};
 use crate::context::{Build, CloneSafe};
 use crate::error::{GraphCallError, Result};
+use crate::graph::Graph;
 use crate::seed::Seed;
 use crate::tensor::{IRData, TensorGraph, TensorNode};
 use crate::variable::{BuildValue, CloneValue, Link};
@@ -24,7 +26,7 @@ impl NodeIR {
         self.tensor_graph.get_output_shapes()
     }
 
-    pub fn build(mut self, root: &NodeRoot) -> Result<NodeCode> {
+    pub fn build(mut self, root: &NodeRoot) -> Result<Code> {
         if let Some(repeat) = &self.repeat {
             let repeat = repeat.build();
             let repeat = repeat
@@ -96,15 +98,33 @@ impl NodeIR {
             }
         }
 
+        // extern node
+        if let ast::LetNodeType::Extern(_) = self.ty {
+            // drop reference count
+            drop(self.data.graph);
+
+            // repeat
+            if self.tensor_graph.len() == 1 {
+                let mut node = self.tensor_graph.pop().unwrap().unwrap_extern().unwrap();
+
+                // pass the IO Outs
+                node.data.input = self.data.input;
+                node.data.output = self.data.output;
+
+                return Ok(node.build()?.into());
+            } else {
+                // re-define graph
+                self.data.graph = Graph::new(&root.seed).into();
+            }
+        }
+
         let tensor_graph = self.tensor_graph.build(root)?;
 
         Ok(NodeCode {
-            name: self.data.name,
-            graph: self.data.graph,
-            input: self.data.input,
-            output: self.data.output,
+            data: CodeData::from_ir(self.data),
             tensor_graph,
-        })
+        }
+        .into())
     }
 }
 

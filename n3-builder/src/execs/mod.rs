@@ -29,7 +29,8 @@ mod tests {
 
         let args = btreemap! {
             "data".to_string() => ast::Value::from("Mnist".to_string()),
-            "model".to_string() => "LeNet6".to_string().into(),
+            "model".to_string() => "LeNet5".to_string().into(),
+            // "model".to_string() => "LeNet6".to_string().into(),
             "epoch".to_string() => 1i64.into(),
             "batch size".to_string() => 10i64.into(),
         };
@@ -50,10 +51,18 @@ mod tests {
         // compacting & decompacting
         {
             let mut binary = vec![];
-            root.compact_into(&mut binary, &program).unwrap();
+            program.save(&mut binary).unwrap();
 
-            let root = make_root();
-            let program_decompacted = root.decompact_from(&*binary).unwrap();
+            let program_decompacted = Program::load(&*binary).unwrap();
+
+            // manipulate values to varify RefVariable
+            fn manipulate_values(program: &Program) {
+                let model = &program.nodes["model"];
+                let kernel_size = model.data().graph.variables.get("kernel size").unwrap();
+                kernel_size.borrow_mut().value = Some(7u64.into());
+            }
+            manipulate_values(&program);
+            manipulate_values(&program_decompacted);
 
             assert_eq!(program, program_decompacted);
         }

@@ -10,10 +10,12 @@ use crate::seed::Seed;
 use crate::tensor::TensorNode;
 
 pub type NodeName = Vec<String>;
+type NodeNameRef<'a> = &'a [String];
 
 pub struct Context<'a> {
     pub root: &'a NodeRoot,
     parent: BTreeMap<NodeName, RefGraph>,
+    children: BTreeMap<NodeName, BTreeMap<String, TensorNode>>,
     uses: BTreeMap<String, TensorNode>,
 }
 
@@ -22,15 +24,34 @@ impl<'a> Context<'a> {
         Context {
             root,
             parent: Default::default(),
+            children: Default::default(),
             uses: Default::default(),
         }
     }
 
-    pub fn add_child(&mut self, name: NodeName, child: RefGraph) {
-        self.parent.insert(name, child);
+    pub fn add_graph(&mut self, name: NodeName, graph: RefGraph) {
+        self.parent.insert(name.clone(), graph);
+        self.children.insert(name, Default::default());
     }
 
-    pub fn get(&mut self, name: &str) -> Result<TensorNode> {
+    pub fn add_child(&mut self, name: NodeNameRef, child: TensorNode) {
+        let node_name = child.name().to_string();
+        self.children
+            .get_mut(name)
+            .unwrap()
+            .insert(node_name, child);
+    }
+
+    pub fn get(&mut self, parent: NodeNameRef, name: &str) -> Result<TensorNode> {
+        let mut parent = parent.to_vec();
+        while !parent.is_empty() {
+            if let Some(node) = self.children.get_mut(&parent).unwrap().get(name) {
+                let mut variables = vec![];
+                return Ok(node.clone_safe(&self.root.seed, &mut variables));
+            }
+            parent.pop();
+        }
+
         if let Some(node) = self.uses.get(name) {
             let mut variables = vec![];
             Ok(node.clone_safe(&self.root.seed, &mut variables))

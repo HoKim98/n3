@@ -14,19 +14,31 @@ pub type RefGraph = Rc<RefCell<Graph>>;
 #[derive(Debug)]
 pub struct Graph {
     pub id: u64,
-    shortcuts: Table,
-    variables: Table,
+    shortcuts: Variables,
+    variables: Variables,
 }
 
-pub type Table = BTreeMap<String, ast::RefVariable>;
+#[derive(Clone, Debug)]
+pub struct Table {
+    pub id: u64,
+    pub variables: Variables,
+}
+
+impl PartialEq for Table {
+    fn eq(&self, other: &Self) -> bool {
+        self.variables.eq(&other.variables)
+    }
+}
+
+pub type Variables = BTreeMap<String, ast::RefVariable>;
 pub type Values = BTreeMap<String, Option<ast::Value>>;
 
 impl Graph {
     pub fn with_id(id: u64) -> Self {
         Self {
             id,
-            shortcuts: Table::new(),
-            variables: Table::new(),
+            shortcuts: Variables::new(),
+            variables: Variables::new(),
         }
     }
 
@@ -45,39 +57,47 @@ impl Graph {
         graph
     }
 
-    pub fn try_with_variables<I>(id: u64, variables: I) -> Result<Self>
+    pub fn try_with_variables<I>(id: u64, variables: I, is_exec: bool) -> Result<Self>
     where
         I: IntoIterator<Item = (String, ast::NodeLet)>,
     {
+        let variables = variables
+            .into_iter()
+            .map(|(k, v)| {
+                // filter nodes from variables
+                if !is_exec {
+                    if let ast::LetType::Node(_) = v.ty {
+                        return GraphError::UnexpectedNodeVariable { name: k }.into();
+                    }
+                }
+                Ok((
+                    k,
+                    ast::Variable {
+                        id: Some(id),
+                        id_old: Some(id),
+                        name: v.name,
+                        shortcut: v.shortcut,
+                        ty: Some(v.ty),
+                        value: v.value,
+                    }
+                    .into(),
+                ))
+            })
+            .collect::<Result<_>>()?;
+
         let mut graph = Graph {
             id,
-            shortcuts: Table::new(),
-            variables: variables
-                .into_iter()
-                .map(|(k, v)| {
-                    (
-                        k,
-                        ast::Variable {
-                            id: Some(id),
-                            id_old: Some(id),
-                            name: v.name,
-                            shortcut: v.shortcut,
-                            ty: Some(v.ty),
-                            value: v.value,
-                        }
-                        .into(),
-                    )
-                })
-                .collect(),
+            shortcuts: Variables::new(),
+            variables,
         };
         graph.build()?;
         Ok(graph)
     }
 
-    pub fn with_variables(id: u64, variables: Table) -> Self {
+    pub fn with_variables(id: u64, variables: Variables) -> Self {
         let mut graph = Graph {
             id,
-            shortcuts: Table::new(),
+            shortcuts: Variables::new(),
             variables,
         };
         graph.build().unwrap();
@@ -207,12 +227,19 @@ impl Graph {
         }
     }
 
-    pub fn variables(&self) -> &Table {
+    pub fn variables(&self) -> &Variables {
         &self.variables
     }
 
-    pub fn into_variables(self) -> Table {
+    pub fn into_variables(self) -> Variables {
         self.variables
+    }
+
+    pub fn into_table(self) -> Table {
+        Table {
+            id: self.id,
+            variables: self.variables,
+        }
     }
 }
 
@@ -239,7 +266,7 @@ impl CloneSafe for Graph {
         let id = seed.generate();
 
         // Step 1. get the copies
-        let mut self_variables: Table = self
+        let mut self_variables: Variables = self
             .variables
             .iter()
             .map(|(k, v)| (k.clone(), v.detach(id)))
@@ -266,7 +293,7 @@ impl CloneSafe for Graph {
     }
 }
 
-fn to_shortcuts(variables: &Table) -> Table {
+fn to_shortcuts(variables: &Variables) -> Variables {
     variables
         .values()
         .map(|var| {

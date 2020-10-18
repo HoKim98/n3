@@ -32,7 +32,7 @@ pub enum BuildError {
 pub enum ExecBuildError {
     UnexpectedWiths,
     UnexpectedChildren,
-    UnexpectedGraph,
+    EmptyGraph,
     MismatchedNodeType {
         expected: ast::LetNodeType,
         given: ast::LetNodeType,
@@ -66,6 +66,9 @@ pub enum GraphError {
         name: String,
         candidates: BTreeSet<String>,
     },
+    UnexpectedNodeVariable {
+        name: String,
+    },
     DuplicatedVariable {
         name: String,
     },
@@ -85,6 +88,8 @@ pub enum GraphError {
 
 #[derive(Debug, PartialEq)]
 pub enum GraphNodeError {
+    EmptyCalls,
+    UnexpectedShapes,
     NoSuchInput {
         out: ast::Out,
     },
@@ -105,6 +110,9 @@ pub enum GraphNodeError {
 #[derive(Debug, PartialEq)]
 pub enum GraphCallError {
     EmptyInputs,
+    UnexpectedInputs,
+    UnexpectedArgs,
+    UnexpectedRepeat,
     GenericListInputShape {
         index: usize,
     },

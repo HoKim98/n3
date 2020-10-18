@@ -1,16 +1,15 @@
+mod code;
+mod code_extern;
+mod code_node;
 mod context;
 mod exec;
 mod graph;
-mod ir_extern;
-mod ir_node;
-mod tensor;
 mod value;
 mod variable;
 
 use std::collections::BTreeMap;
 
 use self::graph::Graphs;
-use crate::error::Result;
 
 pub use self::context::{CompactContext, DecompactContext};
 pub use self::exec::Program;
@@ -18,7 +17,7 @@ pub use self::exec::Program;
 pub trait Compact {
     type Output;
 
-    fn compact(&self, ctx: &mut CompactContext) -> Result<Self::Output>;
+    fn compact(&self, ctx: &mut CompactContext) -> Self::Output;
 }
 
 pub trait ArrangeId {
@@ -39,9 +38,9 @@ where
 {
     type Output = BTreeMap<K, V::Output>;
 
-    fn compact(&self, ctx: &mut CompactContext) -> Result<Self::Output> {
+    fn compact(&self, ctx: &mut CompactContext) -> Self::Output {
         self.iter()
-            .map(|(k, v)| Ok((k.clone(), v.compact(ctx)?)))
+            .map(|(k, v)| (k.clone(), v.compact(ctx)))
             .collect()
     }
 }
@@ -77,7 +76,7 @@ where
 {
     type Output = Vec<T::Output>;
 
-    fn compact(&self, ctx: &mut CompactContext) -> Result<Self::Output> {
+    fn compact(&self, ctx: &mut CompactContext) -> Self::Output {
         self.iter().map(|x| x.compact(ctx)).collect()
     }
 }
@@ -109,11 +108,8 @@ where
 {
     type Output = Option<T::Output>;
 
-    fn compact(&self, ctx: &mut CompactContext) -> Result<Self::Output> {
-        match self {
-            Some(x) => Ok(Some(x.compact(ctx)?)),
-            None => Ok(None),
-        }
+    fn compact(&self, ctx: &mut CompactContext) -> Self::Output {
+        self.as_ref().map(|x| x.compact(ctx))
     }
 }
 
@@ -146,8 +142,8 @@ where
 {
     type Output = Box<T::Output>;
 
-    fn compact(&self, ctx: &mut CompactContext) -> Result<Self::Output> {
-        Ok(Self::Output::new((**self).compact(ctx)?))
+    fn compact(&self, ctx: &mut CompactContext) -> Self::Output {
+        Self::Output::new((**self).compact(ctx))
     }
 }
 

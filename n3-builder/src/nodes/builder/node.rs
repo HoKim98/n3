@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use super::super::ir::NodeIR;
 use super::graph::GraphNodeEntry;
 use crate::ast;
-use crate::context::{CloneSafe, Context, NodeName};
+use crate::context::{Context, NodeName};
 use crate::error::{ExecBuildError, GraphCallError, GraphNodeError, Result};
 use crate::execs::ExecIR;
 use crate::externs::ExternIR;
@@ -25,8 +25,6 @@ where
     pub graph: RefGraph,
     pub ctx: &'b mut Context<'a>,
 
-    children: BTreeMap<String, TensorNode>,
-
     pub tensor_graph: TensorGraph,
     pub last_tensor_id: u64,
 }
@@ -36,7 +34,6 @@ impl<'a, 'b> NodeEntry<'a, 'b> {
         Self {
             name,
             graph,
-            children: Default::default(),
             ctx,
             tensor_graph: Default::default(),
             last_tensor_id: 0,
@@ -83,7 +80,7 @@ impl<'a, 'b> NodeEntry<'a, 'b> {
         node.apply_variables(args, false)?;
 
         // Step 3. store
-        self.children.insert(name, node);
+        self.ctx.add_child(&self.name, node);
         Ok(())
     }
 
@@ -98,7 +95,7 @@ impl<'a, 'b> NodeEntry<'a, 'b> {
         let node = file.build(self.ctx, self.name.clone())?;
 
         // Step 3. store
-        self.children.insert(node.name().to_string(), node);
+        self.ctx.add_child(&self.name, node);
         Ok(())
     }
 
@@ -134,12 +131,7 @@ impl<'a, 'b> NodeEntry<'a, 'b> {
     }
 
     pub fn get(&mut self, name: &str) -> Result<TensorNode> {
-        if let Some(node) = self.children.get(name) {
-            let mut variables = vec![];
-            Ok(node.clone_safe(&self.ctx.root.seed, &mut variables))
-        } else {
-            self.ctx.get(name)
-        }
+        self.ctx.get(&self.name, name)
     }
 
     pub fn get_output_shapes(&self) -> Option<&ast::Shapes> {
@@ -194,8 +186,8 @@ impl<'a> ASTBuild<'a> for ast::File {
 
         // Step 1. make a graph
         let graph: RefGraph =
-            Graph::try_with_variables(ctx.root.seed.generate(), node.graph)?.into();
-        ctx.add_child(name.clone(), graph.clone());
+            Graph::try_with_variables(ctx.root.seed.generate(), node.graph, false)?.into();
+        ctx.add_graph(name.clone(), graph.clone());
 
         let mut entry = NodeEntry::new(name, graph, ctx);
 
@@ -311,7 +303,7 @@ impl<'a> ASTBuild<'a> for ExternFile {
         let ty = node.ty.unwrap_extern();
 
         // Step 1. make a graph
-        let graph = Graph::try_with_variables(ctx.root.seed.generate(), node.graph)?.into();
+        let graph = Graph::try_with_variables(ctx.root.seed.generate(), node.graph, false)?.into();
 
         let entry = NodeEntry::new(vec![node.name], graph, ctx);
         let mut entry = ExternNodeEntry::new(entry, ty);
@@ -451,16 +443,66 @@ impl<'a> ExternTensorGraphCondition<'a> {
 struct ExecNodeEntry {
     name: String,
     graph: RefGraph,
+    links: Vec<Vec<String>>,
 }
 
 impl ExecNodeEntry {
-    fn new(name: String, graph: RefGraph) -> Self {
-        Self { name, graph }
+    fn try_new(
+        name: String,
+        graph: RefGraph,
+        tensor_graph: BTreeMap<u64, ast::GraphNode>,
+    ) -> Result<Self> {
+        Ok(Self {
+            name,
+            graph,
+            links: ExecNodeEntry::get_links(tensor_graph)?,
+        })
+    }
+
+    fn get_links(tensor_graph: BTreeMap<u64, ast::GraphNode>) -> Result<Vec<Vec<String>>> {
+        tensor_graph
+            .into_iter()
+            .enumerate()
+            .map(|(expected, (given, node))| {
+                let expected = expected as u64 + 1;
+
+                // test id
+                if expected != given {
+                    return GraphNodeError::MismatchedId { expected, given }.into();
+                }
+
+                // test the shape
+                if node.shapes.is_some() {
+                    return GraphNodeError::UnexpectedShapes.into();
+                }
+
+                // test the calls
+                if node.calls.is_empty() {
+                    return GraphNodeError::EmptyCalls.into();
+                }
+                node.calls
+                    .into_iter()
+                    .map(|call| {
+                        if call.inputs.is_some() {
+                            return GraphCallError::UnexpectedInputs.into();
+                        }
+                        if call.args.is_some() {
+                            return GraphCallError::UnexpectedArgs.into();
+                        }
+                        if call.repeat.is_some() {
+                            return GraphCallError::UnexpectedRepeat.into();
+                        }
+                        Ok(call.name)
+                    })
+                    .collect()
+            })
+            .collect()
     }
 
     fn build(self) -> ExecIR {
         ExecIR {
             data: IRData::with_no_shapes(self.name, self.graph),
+            links: self.links,
         }
     }
 }
@@ -479,14 +521,14 @@ impl<'a> ASTBuild<'a> for ExecFile {
         if !node.children.is_empty() {
             return ExecBuildError::UnexpectedChildren.into();
         }
-        if !node.tensor_graph.is_empty() {
-            return ExecBuildError::UnexpectedGraph.into();
+        if node.tensor_graph.is_empty() {
+            return ExecBuildError::EmptyGraph.into();
         }
 
         // Step 1. make a graph
-        let graph = Graph::try_with_variables(ctx.root.seed.generate(), node.graph)?.into();
+        let graph = Graph::try_with_variables(ctx.root.seed.generate(), node.graph, true)?.into();
 
-        let entry = ExecNodeEntry::new(node.name, graph);
+        let entry = ExecNodeEntry::try_new(node.name, graph, node.tensor_graph)?;
 
         // Step 2. store
         Ok(entry.build())

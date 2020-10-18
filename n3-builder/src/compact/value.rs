@@ -6,7 +6,6 @@ use super::graph::Graphs;
 use super::variable::{VarAsValue, VariableValue};
 use super::{ArrangeId, Compact, CompactContext, Decompact, DecompactContext};
 use crate::ast;
-use crate::error::Result;
 
 pub type Values = BTreeMap<String, Option<Value>>;
 
@@ -34,8 +33,8 @@ pub struct ValueMap(Values);
 impl Compact for ast::Value {
     type Output = Value;
 
-    fn compact(&self, ctx: &mut CompactContext) -> Result<Self::Output> {
-        Ok(match self {
+    fn compact(&self, ctx: &mut CompactContext) -> Self::Output {
+        match self {
             Self::Bool(x) => Self::Output::Bool(*x),
             Self::UInt(x) => Self::Output::UInt(*x),
             Self::Int(x) => Self::Output::Int(*x),
@@ -43,11 +42,11 @@ impl Compact for ast::Value {
             Self::String(x) => Self::Output::String(x.clone()),
             Self::Node(_) => crate::variable::node_variable_should_be_pruned(),
             Self::Dim(x) => Self::Output::Dim(x.clone()),
-            Self::Variable(x) => Self::Output::Variable(VarAsValue(x).compact(ctx)?),
-            Self::Expr(x) => Self::Output::Expr(x.compact(ctx)?),
-            Self::List(x) => Self::Output::List(ValueList(x.compact(ctx)?)),
-            Self::Map(x) => Self::Output::Map(ValueMap(x.compact(ctx)?)),
-        })
+            Self::Variable(x) => Self::Output::Variable(VarAsValue(x).compact(ctx)),
+            Self::Expr(x) => Self::Output::Expr(x.compact(ctx)),
+            Self::List(x) => Self::Output::List(ValueList(x.compact(ctx))),
+            Self::Map(x) => Self::Output::Map(ValueMap(x.compact(ctx))),
+        }
     }
 }
 
@@ -123,12 +122,12 @@ pub struct Expr {
 impl Compact for ast::Expr {
     type Output = Expr;
 
-    fn compact(&self, ctx: &mut CompactContext) -> Result<Self::Output> {
-        Ok(Self::Output {
+    fn compact(&self, ctx: &mut CompactContext) -> Self::Output {
+        Self::Output {
             op: self.op,
-            lhs: self.lhs.compact(ctx)?,
-            rhs: self.rhs.compact(ctx)?,
-        })
+            lhs: self.lhs.compact(ctx),
+            rhs: self.rhs.compact(ctx),
+        }
     }
 }
 

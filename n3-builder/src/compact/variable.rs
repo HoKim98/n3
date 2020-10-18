@@ -4,7 +4,6 @@ use super::graph::Graphs;
 use super::value::Value;
 use super::{ArrangeId, Compact, CompactContext, Decompact, DecompactContext};
 use crate::ast;
-use crate::error::Result;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct VariableKey {
@@ -25,22 +24,20 @@ pub struct VarAsValue<'a>(pub &'a ast::RefVariable);
 impl<'a> Compact for VarAsKey<'a> {
     type Output = (String, VariableKey);
 
-    fn compact(&self, ctx: &mut CompactContext) -> Result<Self::Output> {
+    fn compact(&self, ctx: &mut CompactContext) -> Self::Output {
         let self_ref = self.0.borrow();
 
         let name = self_ref.name.clone();
         let shortcut = self_ref.shortcut.clone();
         let ty = self_ref.ty.clone();
-        let value = self_ref.value.compact(ctx)?;
+        let value = self_ref.value.compact(ctx);
 
-        Ok((
-            name,
-            VariableKey {
-                shortcut,
-                ty,
-                value,
-            },
-        ))
+        let key = VariableKey {
+            shortcut,
+            ty,
+            value,
+        };
+        (name, key)
     }
 }
 
@@ -68,12 +65,12 @@ impl Decompact for VariableKey {
 impl<'a> Compact for VarAsValue<'a> {
     type Output = VariableValue;
 
-    fn compact(&self, _ctx: &mut CompactContext) -> Result<Self::Output> {
+    fn compact(&self, _ctx: &mut CompactContext) -> Self::Output {
         let self_ref = self.0.borrow();
-        Ok(Self::Output {
+        Self::Output {
             id: self_ref.id.unwrap(),
             name: self_ref.name.clone(),
-        })
+        }
     }
 }
 

@@ -1,10 +1,10 @@
 use crate::ast;
 use crate::error::{GraphError, Result};
-use crate::graph::Table;
+use crate::graph::Variables;
 
 #[derive(Default, Debug)]
 pub struct Vars {
-    inner: Table,
+    inner: Variables,
 }
 
 #[derive(Clone)]
@@ -16,14 +16,14 @@ pub struct Query<'a> {
     pub fn_value: Option<fn() -> Option<String>>,
 }
 
-impl From<Table> for Vars {
-    fn from(inner: Table) -> Self {
+impl From<Variables> for Vars {
+    fn from(inner: Variables) -> Self {
         Self { inner }
     }
 }
 
 impl Vars {
-    pub fn new(inner: Table) -> Self {
+    pub fn new(inner: Variables) -> Self {
         Self::from(inner)
     }
 
