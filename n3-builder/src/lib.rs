@@ -17,7 +17,7 @@ mod tensor;
 mod variable;
 
 pub use self::error::{Error, Result};
-pub use self::execs::{ExecRoot, GlobalVars};
+pub use self::execs::{ExecRoot, GlobalVars, Program};
 
 use n3_parser::{ast, Parser};
 

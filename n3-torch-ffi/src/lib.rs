@@ -4,11 +4,15 @@
 extern crate log;
 
 mod data;
+mod error;
 mod exec;
-pub mod machine;
+mod machine;
 mod nn;
 mod optim;
 mod tensor;
+mod torch;
+
+pub use self::machine::HostMachine;
 
 macro_rules! add_classes_dyn {
     (

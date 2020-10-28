@@ -3,7 +3,7 @@ use std::ops::{Deref, DerefMut};
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
 
-use crate::machine::Torch;
+use crate::torch::Torch;
 
 pub struct TensorGraph(PyObject);
 

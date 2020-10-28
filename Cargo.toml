@@ -1,2 +1,10 @@
 [workspace]
-members = ["n3", "n3-builder", "n3-parser", "n3-torch", "n3-torch-ffi"]
+members = [
+    "n3",
+    "n3-builder",
+    "n3-parser",
+    "n3-torch",
+    "n3-torch-ffi",
+    "n3-monitor-core",
+    "n3-monitor",
+]

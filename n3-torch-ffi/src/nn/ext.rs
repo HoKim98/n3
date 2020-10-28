@@ -33,6 +33,7 @@ mod tests {
 
     use super::*;
     use crate::machine::*;
+    use crate::torch::Torch;
     use crate::PyInit_n3;
 
     #[test]
