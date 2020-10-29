@@ -67,7 +67,7 @@ mod tests {
     use crate::machine::*;
 
     #[test]
-    fn test_linear() -> Result<(), ()> {
+    fn test_linear() -> std::result::Result<(), ()> {
         fn linear(py: Python, input_channels: usize, output_channels: usize) -> PyResult<PyObject> {
             Ok(Torch(py)
                 .nn("Linear")?
@@ -86,7 +86,7 @@ mod tests {
 
         #[pyfunction]
         fn test_tg_linear(py: Python) -> PyResult<()> {
-            let mut machine: Machine = GenericMachine::new(py).into();
+            let mut machine = PyMachine::new(py);
             let torch = Torch(py);
 
             // get a sample tensor graph
@@ -111,7 +111,7 @@ mod tests {
             // test output shape
             assert_eq!(output.getattr("shape")?.extract::<(_, _)>()?, (3, 10));
 
-            machine.terminate()
+            machine.py_terminate()
         }
 
         Python::with_gil(|py| {

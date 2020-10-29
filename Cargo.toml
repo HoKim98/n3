@@ -5,6 +5,8 @@ members = [
     "n3-parser",
     "n3-torch",
     "n3-torch-ffi",
+    "n3-machine",
+    "n3-machine-ffi",
     "n3-monitor-core",
     "n3-monitor",
 ]

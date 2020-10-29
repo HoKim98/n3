@@ -37,10 +37,10 @@ mod tests {
     use crate::PyInit_n3;
 
     #[test]
-    fn test_subclass() -> Result<(), ()> {
+    fn test_subclass() -> std::result::Result<(), ()> {
         #[pyfunction]
         fn test_ext_subclass(py: Python) -> PyResult<()> {
-            let mut machine: Machine = GenericMachine::new(py).into();
+            let mut machine = PyMachine::new(py);
             let builtins = py.import("builtins")?.into_py(py);
             let torch = Torch(py);
 
@@ -84,7 +84,7 @@ assert y.shape == (3, 10)
                 None,
             )?;
 
-            machine.terminate()
+            machine.py_terminate()
         }
 
         Python::with_gil(|py| {

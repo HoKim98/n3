@@ -15,7 +15,7 @@ impl<'a> Torch<'a> {
         PyModule::import(self.0, module)?.get(name)
     }
 
-    pub(super) fn terminate(&self) -> PyResult<()> {
+    pub fn terminate(&self) -> PyResult<()> {
         self.0.eval("exit(0)", None, None)?;
         Ok(())
     }

@@ -130,7 +130,15 @@ impl<'a> Deref for Args<'a> {
 }
 
 impl<'a> Args<'a> {
-    pub fn build(self) -> Result<Program> {
+    pub fn build_uncompacted(self) -> Result<Program> {
         self.ir.build(&self.root.node_root)
+    }
+
+    pub fn build(self) -> Result<Vec<u8>> {
+        let program = self.build_uncompacted()?;
+
+        let mut buffer = vec![];
+        program.save(&mut buffer)?;
+        Ok(buffer)
     }
 }

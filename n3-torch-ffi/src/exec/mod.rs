@@ -18,9 +18,15 @@ mod test {
 
         let program = args.build()?;
 
-        let host = HostMachine::load(&["cuda:0"]).unwrap();
-        let monitor = host.spawn(&program).unwrap();
-        monitor.wait().unwrap();
+        // load machines
+        let mut host = HostMachine::default();
+        host.load(&["cuda:0"]).unwrap();
+
+        // spawn processes
+        host.spawn(&program).unwrap();
+
+        // wait processes
+        host.join().unwrap();
         Ok(())
     }
 }

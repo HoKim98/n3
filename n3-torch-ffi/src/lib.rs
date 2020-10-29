@@ -1,18 +1,15 @@
 #![deny(clippy::all)]
 
-#[macro_use]
-extern crate log;
-
 mod data;
 mod error;
 mod exec;
-mod machine;
+pub mod machine;
 mod nn;
 mod optim;
 mod tensor;
 mod torch;
 
-pub use self::machine::HostMachine;
+pub use self::torch::Torch;
 
 macro_rules! add_classes_dyn {
     (

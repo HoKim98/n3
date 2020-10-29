@@ -25,7 +25,7 @@ mod tests {
         args.set("epoch", "1").unwrap();
         args.set("batch size", "10").unwrap();
 
-        let program = args.build().unwrap();
+        let program = args.build_uncompacted().unwrap();
 
         // compacting & decompacting
         {
