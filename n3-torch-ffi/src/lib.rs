@@ -1,9 +1,11 @@
 #![deny(clippy::all)]
 
+pub extern crate pyo3;
+pub extern crate pyo3_mp;
+
 mod data;
 mod error;
 mod exec;
-pub mod machine;
 mod nn;
 mod optim;
 mod tensor;
@@ -11,6 +13,7 @@ mod torch;
 
 pub use self::torch::Torch;
 
+#[cfg(any(crate_type = "cdylib", test))]
 macro_rules! add_classes_dyn {
     (
         $( Some($base:path) => [$( $ty_child:path ),*,], ),*
@@ -71,6 +74,7 @@ macro_rules! add_classes_dyn {
     };
 }
 
+#[cfg(any(crate_type = "cdylib", test))]
 add_classes_dyn!(
     Some(torch::nn::Module) => [
         self::nn::Node,

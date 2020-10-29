@@ -1,22 +1,20 @@
-use std::collections::BTreeMap;
-
 pub use n3_machine_ffi::Query;
 use n3_machine_ffi::{Machine, Program};
 
 use crate::error::{LoadError, ParseError, Result};
 
-pub type Generator = Box<dyn Fn(Query) -> Box<dyn Machine>>;
+pub type Generator = Box<dyn Fn(&Query) -> Option<Box<dyn Machine>>>;
 
 #[derive(Default)]
 pub struct HostMachine {
-    generators: BTreeMap<Query, Generator>,
+    generators: Vec<(Query, Generator)>,
     machines: Vec<Box<dyn Machine>>,
 }
 
 impl HostMachine {
     pub fn add_generator(&mut self, query: &str, f: Generator) -> Result<()> {
         let query = Query::parse(query)?;
-        self.generators.insert(query, f);
+        self.generators.push((query, f));
         Ok(())
     }
 
@@ -27,25 +25,31 @@ impl HostMachine {
             .collect::<Result<_>>()?;
 
         for query in queries {
-            if let Some(f) = self.get_generator(&query) {
-                let machine = f.call((query,));
+            if let Some(machine) = self.get_machine(&query) {
                 self.machines.push(machine);
             } else {
                 return LoadError::NoSuchMachine { query }.into();
             }
         }
-
-        dbg!(&self.machines);
-        todo!()
+        Ok(())
     }
 
-    fn get_generator(&self, query: &Query) -> Option<&Generator> {
-        dbg!("todo");
+    fn get_machine(&self, query: &Query) -> Option<Box<dyn Machine>> {
+        for (pattern, generator) in &self.generators {
+            if pattern.cmp_weakly(query) {
+                if let Some(machine) = generator.call((query,)) {
+                    return Some(machine);
+                }
+            }
+        }
         None
     }
 
     pub fn spawn(&mut self, program: &Program) -> Result<()> {
-        todo!()
+        for (id, machine) in self.machines.iter_mut().enumerate() {
+            machine.spawn(id, program)?;
+        }
+        Ok(())
     }
 
     pub fn join(&mut self) -> Result<()> {
@@ -61,13 +65,15 @@ impl HostMachine {
     }
 }
 
-trait QueryParse {
+trait QueryImpl {
     fn parse(query: &str) -> Result<Self>
     where
         Self: Sized;
+
+    fn cmp_weakly(&self, target: &Self) -> bool;
 }
 
-impl QueryParse for Query {
+impl QueryImpl for Query {
     fn parse(query: &str) -> Result<Self> {
         let mut tokens = query.split(':').map(|x| x.to_string());
 
@@ -102,5 +108,25 @@ impl QueryParse for Query {
             device,
             id,
         })
+    }
+
+    fn cmp_weakly(&self, target: &Self) -> bool {
+        fn cmp_field<T, F>(a: &Option<T>, b: &Option<T>, additional: F) -> bool
+        where
+            T: PartialEq + Eq,
+            F: FnOnce() -> bool,
+        {
+            if a.is_none() || a == b {
+                additional()
+            } else {
+                false
+            }
+        }
+
+        let test_provider = || cmp_field(&self.provider, &target.provider, || true);
+        let test_domain = || cmp_field(&self.domain, &target.domain, test_provider);
+        let test_device = || cmp_field(&self.device, &target.device, test_domain);
+        let test_id = || cmp_field(&self.id, &target.id, test_device);
+        test_id()
     }
 }

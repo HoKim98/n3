@@ -63,8 +63,9 @@ mod tests {
     use pyo3::types::IntoPyDict;
     use pyo3::*;
 
+    use n3_torch_machine::HostMachine;
+
     use super::*;
-    use crate::machine::*;
 
     #[test]
     fn test_linear() -> std::result::Result<(), ()> {
@@ -86,7 +87,7 @@ mod tests {
 
         #[pyfunction]
         fn test_tg_linear(py: Python) -> PyResult<()> {
-            let mut machine = PyMachine::new(py);
+            let mut host = HostMachine::try_new().unwrap();
             let torch = Torch(py);
 
             // get a sample tensor graph
@@ -111,7 +112,7 @@ mod tests {
             // test output shape
             assert_eq!(output.getattr("shape")?.extract::<(_, _)>()?, (3, 10));
 
-            machine.py_terminate()
+            host.py_terminate()
         }
 
         Python::with_gil(|py| {

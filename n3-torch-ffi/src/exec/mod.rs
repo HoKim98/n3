@@ -1,11 +1,10 @@
 #[cfg(test)]
 mod test {
     use n3_builder::*;
-
-    use crate::machine::HostMachine;
+    use n3_torch_machine::HostMachine;
 
     #[test]
-    fn test_exec_ic() -> Result<()> {
+    fn test_exec_ic() -> n3_builder::Result<()> {
         let envs = GlobalVars::default();
         envs.set("root", "../n3-builder/tests/data/")?;
         let mut root = ExecRoot::try_new(envs)?;
@@ -19,7 +18,7 @@ mod test {
         let program = args.build()?;
 
         // load machines
-        let mut host = HostMachine::default();
+        let mut host = HostMachine::try_new().unwrap();
         host.load(&["cuda:0"]).unwrap();
 
         // spawn processes

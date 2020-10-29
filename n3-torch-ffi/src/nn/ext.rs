@@ -31,8 +31,9 @@ mod tests {
     use pyo3::types::IntoPyDict;
     use pyo3::*;
 
+    use n3_torch_machine::HostMachine;
+
     use super::*;
-    use crate::machine::*;
     use crate::torch::Torch;
     use crate::PyInit_n3;
 
@@ -40,7 +41,7 @@ mod tests {
     fn test_subclass() -> std::result::Result<(), ()> {
         #[pyfunction]
         fn test_ext_subclass(py: Python) -> PyResult<()> {
-            let mut machine = PyMachine::new(py);
+            let mut host = HostMachine::try_new().unwrap();
             let builtins = py.import("builtins")?.into_py(py);
             let torch = Torch(py);
 
@@ -84,7 +85,7 @@ assert y.shape == (3, 10)
                 None,
             )?;
 
-            machine.py_terminate()
+            host.py_terminate()
         }
 
         Python::with_gil(|py| {
