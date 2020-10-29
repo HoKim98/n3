@@ -1,4 +1,4 @@
-from n3.builder import *
+from n3_torch_ffi import *
 
 
 class ImageClassification(Trainer):

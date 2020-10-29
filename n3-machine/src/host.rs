@@ -45,9 +45,9 @@ impl HostMachine {
         None
     }
 
-    pub fn spawn(&mut self, program: &Program) -> Result<()> {
+    pub fn spawn(&mut self, program: &Program, command: &str) -> Result<()> {
         for (id, machine) in self.machines.iter_mut().enumerate() {
-            machine.spawn(id, program)?;
+            machine.spawn(id, program, command)?;
         }
         Ok(())
     }

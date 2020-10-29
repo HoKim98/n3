@@ -2,7 +2,7 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 from torchvision.datasets import MNIST
 
-from n3.builder import DataNode
+from n3_torch_ffi import DataNode
 
 
 class Mnist(DataNode):

@@ -1,3 +1,4 @@
+mod blocker;
 mod device;
 mod exec;
 mod host;

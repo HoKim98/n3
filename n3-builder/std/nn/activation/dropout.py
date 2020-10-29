@@ -1,6 +1,6 @@
 import torch.nn as nn
 
-from n3 import ExternNode
+from n3_torch_ffi import ExternNode
 
 
 class Dropout(ExternNode):

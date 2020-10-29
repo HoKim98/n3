@@ -1,3 +1,7 @@
+mod trainer;
+
+pub use self::trainer::Trainer;
+
 #[cfg(test)]
 mod test {
     use n3_builder::*;
@@ -22,7 +26,7 @@ mod test {
         host.load(&["cuda:0"]).unwrap();
 
         // spawn a process
-        host.spawn(&program).unwrap();
+        host.spawn(&program, "train").unwrap();
 
         // wait the process
         host.join().unwrap();

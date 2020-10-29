@@ -41,7 +41,7 @@ impl PyMachineImpl for ProcessMachine {
         self.process.is_running()
     }
 
-    fn py_spawn(&mut self, id: usize, program: &Program) -> PyResult<()> {
+    fn py_spawn(&mut self, id: usize, program: &Program, command: &str) -> PyResult<()> {
         // the GIL is acquired by HostMachine
         let py = unsafe { Python::assume_gil_acquired() };
 
@@ -53,7 +53,7 @@ impl PyMachineImpl for ProcessMachine {
 
         // spawn to new process
         self.process
-            .spawn(n3_execute, (id, &machine, program), None)?;
+            .spawn(n3_execute, (id, &machine, command, program), None)?;
         Ok(())
     }
 
@@ -81,8 +81,8 @@ where
         self.deref().is_running()
     }
 
-    fn py_spawn(&mut self, id: usize, program: &Program) -> PyResult<()> {
-        self.deref_mut().py_spawn(id, program)
+    fn py_spawn(&mut self, id: usize, program: &Program, command: &str) -> PyResult<()> {
+        self.deref_mut().py_spawn(id, program, command)
     }
 
     fn py_terminate(&mut self) -> PyResult<()> {

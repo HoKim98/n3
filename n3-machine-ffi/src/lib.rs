@@ -6,7 +6,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub type Program = [u8];
 
 pub trait Machine {
-    fn spawn(&mut self, id: usize, program: &Program) -> Result<()>;
+    fn spawn(&mut self, id: usize, program: &Program, command: &str) -> Result<()>;
 
     fn join(&mut self) -> Result<()>;
     fn terminate(&mut self) -> Result<()>;

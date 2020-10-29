@@ -1,4 +1,4 @@
-from n3 import ExternNode
+from n3_torch_ffi import ExternNode
 
 
 class AssertShape(ExternNode):

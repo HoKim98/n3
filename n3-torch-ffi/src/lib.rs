@@ -81,6 +81,6 @@ add_classes_dyn!(
         self::nn::ExternNode,
     ],
     None => [
-        ,
+        self::exec::Trainer,
     ],
 );

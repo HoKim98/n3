@@ -1,6 +1,6 @@
 import torch.optim as optim
 
-from n3.builder import OptimNode
+from n3_torch_ffi import OptimNode
 
 
 class Adam(OptimNode):

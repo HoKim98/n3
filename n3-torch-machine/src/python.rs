@@ -4,7 +4,7 @@ use n3_torch_ffi::pyo3::PyResult;
 pub trait PyMachineImpl {
     fn is_running(&self) -> bool;
 
-    fn py_spawn(&mut self, id: usize, program: &Program) -> PyResult<()>;
+    fn py_spawn(&mut self, id: usize, program: &Program, command: &str) -> PyResult<()>;
     fn py_terminate(&mut self) -> PyResult<()>;
 }
 
@@ -25,8 +25,8 @@ impl<T> Machine for PyMachineBase<T>
 where
     T: PyMachineImpl,
 {
-    fn spawn(&mut self, id: usize, program: &Program) -> MachineResult<()> {
-        Ok(self.0.py_spawn(id, program)?)
+    fn spawn(&mut self, id: usize, program: &Program, command: &str) -> MachineResult<()> {
+        Ok(self.0.py_spawn(id, program, command)?)
     }
 
     fn join(&mut self) -> MachineResult<()> {
