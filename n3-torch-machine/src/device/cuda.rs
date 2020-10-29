@@ -7,7 +7,7 @@ use crate::{Machine, Query};
 pub struct CudaMachine(ProcessMachine);
 
 impl CudaMachine {
-    pub fn try_new(query: &Query) -> Option<Box<dyn Machine>> {
+    pub unsafe fn try_new(query: &Query) -> Option<Box<dyn Machine>> {
         ProcessMachine::try_new()
             .map(Self)
             .map(PyMachineBase)

@@ -10,8 +10,8 @@ pub struct ProcessMachine {
 }
 
 impl ProcessMachine {
-    pub fn try_new() -> Option<Self> {
-        let py = unsafe { Python::assume_gil_acquired() };
+    pub unsafe fn try_new() -> Option<Self> {
+        let py = Python::assume_gil_acquired();
 
         Some(Self {
             process: Process::new(py).ok()?,

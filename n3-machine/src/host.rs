@@ -3,7 +3,7 @@ use n3_machine_ffi::{Machine, Program};
 
 use crate::error::{LoadError, ParseError, Result};
 
-pub type Generator = Box<dyn Fn(&Query) -> Option<Box<dyn Machine>>>;
+pub type Generator = unsafe fn(&Query) -> Option<Box<dyn Machine>>;
 
 #[derive(Default)]
 pub struct HostMachine {
@@ -37,7 +37,7 @@ impl HostMachine {
     fn get_machine(&self, query: &Query) -> Option<Box<dyn Machine>> {
         for (pattern, generator) in &self.generators {
             if pattern.cmp_weakly(query) {
-                if let Some(machine) = generator.call((query,)) {
+                if let Some(machine) = unsafe { generator(query) } {
                     return Some(machine);
                 }
             }

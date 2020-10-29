@@ -3,7 +3,7 @@ use std::ops::{Deref, DerefMut};
 use n3_machine::HostMachine as NativeHostMachine;
 use n3_torch_ffi::pyo3::GILGuard;
 
-use crate::{Error, PyResult, Python, Result, Torch};
+use crate::{Error, PyResult, Python, Result, Torch, BUILTIN_MACHINES};
 
 pub struct HostMachine {
     host: NativeHostMachine,
@@ -17,11 +17,11 @@ impl HostMachine {
         // acquire Python GIL first
         let _py = Python::acquire_gil();
 
+        // register built-in machine generators
         let mut host = NativeHostMachine::default();
-        host.add_generator(
-            "cuda",
-            Box::new(|query| crate::device::CudaMachine::try_new(query)),
-        )?;
+        for (name, generator) in BUILTIN_MACHINES {
+            host.add_generator(name, *generator)?;
+        }
 
         Ok(Self {
             host,
