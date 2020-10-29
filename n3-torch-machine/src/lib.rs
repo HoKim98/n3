@@ -8,8 +8,11 @@ pub use n3_torch_ffi::pyo3::{PyResult, Python};
 pub use n3_torch_ffi::Torch;
 
 pub use self::host::HostMachine;
+pub use self::process::ProcessMachineImpl;
 pub use self::python::PyMachineImpl;
+
+use self::process::ProcessMachine;
 
 /// Define built-in machine generators here.
 pub(crate) const BUILTIN_MACHINES: &[(&str, n3_machine::Generator)] =
-    &[("cuda", crate::device::CudaMachine::try_new)];
+    &[("cuda", ProcessMachine::try_new::<self::device::CudaMachine>)];

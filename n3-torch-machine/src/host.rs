@@ -3,6 +3,7 @@ use std::ops::{Deref, DerefMut};
 use n3_machine::HostMachine as NativeHostMachine;
 use n3_torch_ffi::pyo3::GILGuard;
 
+use crate::process::{ProcessMachine, ProcessMachineImpl};
 use crate::{Error, PyResult, Python, Result, Torch, BUILTIN_MACHINES};
 
 pub struct HostMachine {
@@ -28,6 +29,13 @@ impl HostMachine {
             is_running: true,
             _py,
         })
+    }
+
+    pub fn add_process_generator<T>(&mut self, query: &str) -> Result<()>
+    where
+        T: ProcessMachineImpl + 'static,
+    {
+        self.add_generator(query, ProcessMachine::try_new::<T>)
     }
 
     pub fn py_terminate(&mut self) -> PyResult<()> {
