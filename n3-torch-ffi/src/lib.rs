@@ -13,7 +13,7 @@ mod torch;
 
 pub use self::torch::Torch;
 
-#[cfg(any(crate_type = "cdylib", test))]
+#[cfg(not(test))]
 macro_rules! add_classes_dyn {
     (
         $( Some($base:path) => [$( $ty_child:path ),*,], ),*
@@ -33,7 +33,7 @@ macro_rules! add_classes_dyn {
         use pyo3::wrap_pymodule;
 
         #[pymodule]
-        pub(crate) fn n3(py: Python, m: &PyModule) -> PyResult<()> {
+        pub(crate) fn n3_torch_ffi(py: Python, m: &PyModule) -> PyResult<()> {
             let builtins = py.import("builtins")?;
             let ty = builtins.get("type")?;
             $(
@@ -74,7 +74,7 @@ macro_rules! add_classes_dyn {
     };
 }
 
-#[cfg(any(crate_type = "cdylib", test))]
+#[cfg(not(test))]
 add_classes_dyn!(
     Some(torch::nn::Module) => [
         self::nn::Node,

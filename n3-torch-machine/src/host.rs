@@ -1,10 +1,11 @@
 use std::ops::{Deref, DerefMut};
 
-use n3_machine::HostMachine as NativeHostMachine;
-use n3_torch_ffi::pyo3::GILGuard;
+use n3_machine::{Error, HostMachine as NativeHostMachine, Result};
+use n3_torch_ffi::pyo3::{GILGuard, PyResult, Python};
+use n3_torch_ffi::Torch;
 
 use crate::process::{ProcessMachine, ProcessMachineImpl};
-use crate::{Error, PyResult, Python, Result, Torch, BUILTIN_MACHINES};
+use crate::BUILTIN_MACHINES;
 
 pub struct HostMachine {
     host: NativeHostMachine,

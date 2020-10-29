@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 use std::rc::Rc;
 
-use super::program::Program;
+use super::program::{Program, PROGRAM_MAIN};
 use super::var::Vars;
 use crate::ast;
 use crate::context::CloneSafe;
@@ -111,6 +111,10 @@ impl ExecIR {
         for node in nodes.values() {
             node.add_scripts(root, &mut scripts)?;
         }
+
+        // add exec script
+        let script = root.get_extern(&self.data.name)?;
+        scripts.insert(PROGRAM_MAIN.to_string(), script);
 
         Ok(Program {
             graph,

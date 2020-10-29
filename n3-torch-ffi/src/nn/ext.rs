@@ -31,11 +31,10 @@ mod tests {
     use pyo3::types::IntoPyDict;
     use pyo3::*;
 
-    use n3_torch_machine::HostMachine;
+    use n3_torch_machine::{HostMachine, PyInit_n3_torch_ffi};
 
     use super::*;
     use crate::torch::Torch;
-    use crate::PyInit_n3;
 
     #[test]
     fn test_subclass() -> std::result::Result<(), ()> {
@@ -45,13 +44,13 @@ mod tests {
             let builtins = py.import("builtins")?.into_py(py);
             let torch = Torch(py);
 
-            let n3 = wrap_pymodule!(n3)(py);
+            let n3 = wrap_pymodule!(n3_torch_ffi)(py);
             let nn = torch.this("nn")?.into_py(py);
             let zeros = torch.this("zeros")?.into_py(py);
 
             py.run(
                 r#"
-class MyExternNode(n3.ExternNode):
+class MyExternNode(n3_torch_ffi.ExternNode):
     def __init__(self):
         super().__init__()
         self.inner1 = nn.Linear(32, 64)
@@ -76,8 +75,8 @@ assert y.shape == (3, 10)
                 Some(
                     [
                         ("__builtins__", builtins),
+                        ("n3_torch_ffi", n3),
                         ("nn", nn),
-                        ("n3", n3),
                         ("zeros", zeros),
                     ]
                     .into_py_dict(py),

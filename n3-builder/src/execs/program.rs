@@ -6,6 +6,8 @@ use crate::error::Result;
 use crate::externs::PythonScripts;
 use crate::graph::Variables;
 
+pub const PROGRAM_MAIN: &str = "__main__";
+
 #[derive(Debug, PartialEq)]
 pub struct Program {
     pub graph: Variables,

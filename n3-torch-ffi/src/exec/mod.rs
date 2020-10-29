@@ -17,14 +17,14 @@ mod test {
 
         let program = args.build()?;
 
-        // load machines
+        // load a machine
         let mut host = HostMachine::try_new().unwrap();
         host.load(&["cuda:0"]).unwrap();
 
-        // spawn processes
+        // spawn a process
         host.spawn(&program).unwrap();
 
-        // wait processes
+        // wait the process
         host.join().unwrap();
         Ok(())
     }

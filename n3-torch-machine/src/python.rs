@@ -1,9 +1,10 @@
-use crate::{Machine, MachineResult, Program, PyResult};
+use n3_machine::{Machine, MachineResult, Program};
+use n3_torch_ffi::pyo3::PyResult;
 
 pub trait PyMachineImpl {
     fn is_running(&self) -> bool;
 
-    fn py_spawn(&mut self, id: usize, program: &crate::Program) -> PyResult<()>;
+    fn py_spawn(&mut self, id: usize, program: &Program) -> PyResult<()>;
     fn py_terminate(&mut self) -> PyResult<()>;
 }
 

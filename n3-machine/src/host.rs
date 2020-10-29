@@ -53,7 +53,10 @@ impl HostMachine {
     }
 
     pub fn join(&mut self) -> Result<()> {
-        todo!()
+        for machine in &mut self.machines {
+            machine.join()?;
+        }
+        Ok(())
     }
 
     pub fn terminate(self) -> Result<()> {

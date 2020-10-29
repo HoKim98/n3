@@ -1,3 +1,5 @@
+use std::fmt;
+
 pub type Error = Box<dyn std::error::Error>;
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -16,4 +18,26 @@ pub struct Query {
     pub domain: Option<String>,
     pub device: Option<String>,
     pub id: Option<String>,
+}
+
+impl fmt::Display for Query {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut write_colon = false;
+
+        for (prefix, field) in &[
+            (true, &self.provider),
+            (true, &self.domain),
+            (true, &self.device),
+            (false, &self.id),
+        ] {
+            if write_colon && (*prefix || field.is_some()) {
+                write!(f, ":")?;
+            }
+            if let Some(field) = field {
+                write_colon = true;
+                write!(f, "{}", field)?;
+            }
+        }
+        Ok(())
+    }
 }
