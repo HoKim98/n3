@@ -3,7 +3,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 pub type Program = [u8];
 
-pub trait Machine {
+pub trait Machine: std::fmt::Debug {
     fn spawn(&mut self, program: &Program) -> Result<()>;
 
     fn join(&mut self) -> Result<()>;

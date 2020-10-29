@@ -10,6 +10,12 @@ pub struct PyMachine<'a> {
     is_running: bool,
 }
 
+impl<'a> std::fmt::Debug for PyMachine<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+        write!(f, "PyMachine({})", self.is_running)
+    }
+}
+
 impl<'a> PyMachine<'a> {
     pub fn new(py: Python<'a>) -> Self {
         Self {

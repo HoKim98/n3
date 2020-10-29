@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 pub use n3_machine_ffi::Query;
 use n3_machine_ffi::{Machine, Program};
 
-use crate::error::{ParseError, Result};
+use crate::error::{LoadError, ParseError, Result};
 
 pub type Generator = Box<dyn Fn(Query) -> Box<dyn Machine>>;
 
@@ -27,14 +27,21 @@ impl HostMachine {
             .collect::<Result<_>>()?;
 
         for query in queries {
-            if let Some(f) = self.generators.get(&query) {
+            if let Some(f) = self.get_generator(&query) {
                 let machine = f.call((query,));
                 self.machines.push(machine);
+            } else {
+                return LoadError::NoSuchMachine { query }.into();
             }
         }
 
-        dbg!(&query);
+        dbg!(&self.machines);
         todo!()
+    }
+
+    fn get_generator(&self, query: &Query) -> Option<&Generator> {
+        dbg!("todo");
+        None
     }
 
     pub fn spawn(&mut self, program: &Program) -> Result<()> {
