@@ -43,7 +43,7 @@ impl<'a> From<&'a IRData> for ExternIRShapes {
 }
 
 impl ExternIR {
-    pub fn new(
+    pub fn new_first(
         name: String,
         graph: RefGraph,
         input: Option<ast::Shapes>,

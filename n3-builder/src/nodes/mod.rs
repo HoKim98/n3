@@ -125,7 +125,51 @@ node MyNode:
                 height.as_variable().borrow_mut().value = Some(28u64.into());
             }
         }
-        ir.build(&root).unwrap();
+
+        let node = ir.build(&root).unwrap();
+        let node = node.as_node();
+
+        let node_n0 = node.tensor_graph[0].as_extern();
+        assert_eq!(node_n0.data.input["x"].id, Some(0));
+        assert_eq!(node_n0.data.output["x"].id, Some(1));
+
+        let node_n1 = node.tensor_graph[1].as_node();
+        assert_eq!(node_n1.data.input["x"].id, Some(1));
+        assert_eq!(node_n1.data.output["x"].id, Some(2));
+        let node_n1_conv = node_n1.tensor_graph[0].as_extern();
+        assert_eq!(node_n1_conv.data.input["x"].id, Some(1));
+        assert_eq!(node_n1_conv.data.output["x"].id, Some(2));
+        let node_n1_relu = node_n1.tensor_graph[1].as_extern();
+        assert_eq!(node_n1_relu.data.input["x"].id, Some(2));
+        assert_eq!(node_n1_relu.data.output["x"].id, Some(3));
+
+        let node_n2 = node.tensor_graph[2].as_node();
+        assert_eq!(node_n2.data.input["x"].id, Some(2));
+        assert_eq!(node_n2.data.output["x"].id, Some(3));
+        let node_n2_conv = node_n2.tensor_graph[0].as_extern();
+        assert_eq!(node_n2_conv.data.input["x"].id, Some(1));
+        assert_eq!(node_n2_conv.data.output["x"].id, Some(2));
+        let node_n2_relu = node_n2.tensor_graph[1].as_extern();
+        assert_eq!(node_n2_relu.data.input["x"].id, Some(2));
+        assert_eq!(node_n2_relu.data.output["x"].id, Some(3));
+
+        let node_n3 = node.tensor_graph[3].as_extern();
+        assert_eq!(node_n3.data.input["x"].id, Some(3));
+        assert_eq!(node_n3.data.output["x"].id, Some(4));
+
+        let node_n4 = node.tensor_graph[4].as_extern();
+        assert_eq!(node_n4.data.input["x"].id, Some(4));
+        assert_eq!(node_n4.data.output["x"].id, Some(5));
+        let node_n5 = node.tensor_graph[5].as_extern();
+        assert_eq!(node_n5.data.input["x"].id, Some(5));
+        assert_eq!(node_n5.data.output["x"].id, Some(5));
+        let node_n6 = node.tensor_graph[6].as_extern();
+        assert_eq!(node_n6.data.input["x"].id, Some(5));
+        assert_eq!(node_n6.data.output["x"].id, Some(5));
+
+        let node_n7 = node.tensor_graph[7].as_extern();
+        assert_eq!(node_n7.data.input["x"].id, Some(5));
+        assert_eq!(node_n7.data.output["x"].id, Some(6));
     }
 
     #[test]

@@ -1,8 +1,9 @@
 use super::node::{ExternTensorGraphCondition, NodeEntry};
 use crate::ast;
 use crate::error::{GraphCallError, Result};
-use crate::externs::ExternIR;
+use crate::externs::{ExternIR, ExternIRShapes};
 use crate::graph::Graph;
+use crate::tensor::IRData;
 use crate::variable::{assert_equal, BuildValue, Link};
 
 #[allow(non_upper_case_globals)]
@@ -45,7 +46,7 @@ impl<'a, 'b, 'c> GraphNodeBuilder<InputNode> for GraphNodeEntry<'a, 'b, 'c> {
         }
         .test()?;
 
-        let ir = ExternIR::new(
+        let ir = ExternIR::new_first(
             INPUT_NAME.to_string(),
             make_empty_graph(&self.root).into(),
             None,
@@ -62,7 +63,7 @@ impl<'a, 'b, 'c> GraphNodeBuilder<DefaultNode> for GraphNodeEntry<'a, 'b, 'c> {
         let root = self.root;
         let id = self.node.id;
 
-        for call in self.node.calls {
+        for call in self.node.calls.into_iter() {
             // Step 1. get the node
             let mut callee = root.get(&call.name)?;
             let graph = root.graph.borrow();
@@ -97,7 +98,7 @@ impl<'a, 'b, 'c> GraphNodeBuilder<DefaultNode> for GraphNodeEntry<'a, 'b, 'c> {
             let expected_outputs = callee.get_inputs();
             *callee.get_outputs_mut() = expected_outputs
                 .keys()
-                .map(|k| ast::Out::new(id, k.clone()))
+                .map(|k| ast::Out::new(id + 1, k.clone()))
                 .map(|x| (x.name.clone(), x))
                 .collect();
 
@@ -125,10 +126,10 @@ impl<'a, 'b, 'c> GraphNodeBuilder<DefaultNode> for GraphNodeEntry<'a, 'b, 'c> {
                             }
                         }
                     }
-                } else {
-                    for x in callee.get_inputs_mut().values_mut() {
-                        x.id = Some(0);
-                    }
+                }
+            } else {
+                for x in callee.get_inputs_mut().values_mut() {
+                    x.id = Some(1);
                 }
             }
 
@@ -150,6 +151,53 @@ impl<'a, 'b, 'c> GraphNodeBuilder<DefaultNode> for GraphNodeEntry<'a, 'b, 'c> {
 //  BEGIN Built-in nodes
 // ----------------------
 
+fn get_extern_io(
+    id: u64,
+    root: &NodeEntry,
+    inputs: Vec<String>,
+    outputs: Vec<String>,
+) -> Result<(ast::Outs, ast::Outs)> {
+    let inputs: ast::Outs = inputs
+        .into_iter()
+        .map(|x| {
+            let mut out = ast::Out::with_name(x.clone());
+            root.fetch_shape(&mut out)?;
+            Ok((x, out))
+        })
+        .collect::<Result<_>>()?;
+    let outputs = outputs
+        .into_iter()
+        .map(|x| ast::Out::new(id + 1, x))
+        .map(|x| ((x.name.clone()), x))
+        .collect();
+    Ok((inputs, outputs))
+}
+
+fn build_extern(
+    id: u64,
+    root: &NodeEntry,
+    name: String,
+    graph: Graph,
+    (input, io_input): (ast::Shapes, Vec<String>),
+    (output, io_output): (ast::Shapes, Vec<String>),
+) -> Result<ExternIR> {
+    let (io_input, io_output) = get_extern_io(id, root, io_input, io_output)?;
+
+    Ok(ExternIR {
+        data: IRData {
+            id,
+            name,
+            graph: graph.into(),
+            input: io_input,
+            output: io_output,
+        },
+        shapes: ExternIRShapes {
+            input: Some(input),
+            output: Some(output),
+        },
+    })
+}
+
 fn build_transform(
     entry: GraphNodeEntry,
     names: &'static [&'static str; 1],
@@ -157,6 +205,7 @@ fn build_transform(
 ) -> Result<()> {
     let root = entry.root;
     let node = entry.node;
+    let id = node.id;
 
     ExternTensorGraphCondition {
         nodes: &[&node].iter().map(|&x| (x.id, x.clone())).collect(),
@@ -222,12 +271,16 @@ fn build_transform(
     );
 
     // Step 5. store
-    let ir = ExternIR::new(
-        NODE__Transform.to_string(),
-        graph.into(),
-        Some(inputs.clone()),
-        Some(outputs),
-    );
+    let io_inputs: Vec<_> = inputs.0.borrow().keys().cloned().collect();
+    let io_outputs = io_inputs.clone();
+    let ir = build_extern(
+        id,
+        root,
+        INPUT_NAME.to_string(),
+        graph,
+        (inputs.clone(), io_inputs),
+        (outputs, io_outputs),
+    )?;
     root.tensor_graph.push(ir.into());
     Ok(())
 }
@@ -251,6 +304,7 @@ impl<'a, 'b, 'c> GraphNodeBuilder<Concat> for GraphNodeEntry<'a, 'b, 'c> {
     fn build(self) -> Result<()> {
         let root = self.root;
         let mut node = self.node;
+        let id = node.id;
 
         ExternTensorGraphCondition {
             nodes: &[&node].iter().map(|&x| (x.id, x.clone())).collect(),
@@ -279,8 +333,8 @@ impl<'a, 'b, 'c> GraphNodeBuilder<Concat> for GraphNodeEntry<'a, 'b, 'c> {
             })?;
 
         // Step 2. get the inputs
-        let mut inputs = call.inputs.unwrap().unwrap_list().unwrap();
-        let inputs: Vec<_> = inputs
+        let mut io_inputs = call.inputs.unwrap().unwrap_list().unwrap();
+        let inputs: Vec<_> = io_inputs
             .iter_mut()
             .map(|x| root.fetch_shape(x))
             .collect::<Result<_>>()?;
@@ -367,7 +421,16 @@ impl<'a, 'b, 'c> GraphNodeBuilder<Concat> for GraphNodeEntry<'a, 'b, 'c> {
             .collect();
         let outputs = ast::Shapes::new(outputs);
 
-        let ir = ExternIR::new(call.name, graph.into(), Some(inputs), Some(outputs));
+        let io_inputs = io_inputs.into_iter().map(|x| x.name).collect();
+        let io_outputs = vec!["x".to_string()];
+        let ir = build_extern(
+            id,
+            root,
+            call.name,
+            graph,
+            (inputs, io_inputs),
+            (outputs, io_outputs),
+        )?;
         root.tensor_graph.push(ir.into());
         Ok(())
     }

@@ -16,6 +16,12 @@ pub enum Code {
     Extern(ExternCode),
 }
 
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum CodeType {
+    Node,
+    Extern,
+}
+
 impl From<NodeCode> for Code {
     fn from(code: NodeCode) -> Self {
         Self::Node(code)
@@ -29,10 +35,31 @@ impl From<ExternCode> for Code {
 }
 
 impl Code {
+    pub fn ty(&self) -> CodeType {
+        match self {
+            Self::Node(_) => CodeType::Node,
+            Self::Extern(_) => CodeType::Extern,
+        }
+    }
+
     pub fn data(&self) -> &CodeData {
         match self {
             Self::Node(node) => &node.data,
             Self::Extern(node) => &node.data,
+        }
+    }
+
+    pub fn as_node(&self) -> &NodeCode {
+        match self {
+            Self::Node(node) => node,
+            _ => unreachable!("The code should be node."),
+        }
+    }
+
+    pub fn as_extern(&self) -> &ExternCode {
+        match self {
+            Self::Extern(node) => node,
+            _ => unreachable!("The code should be external."),
         }
     }
 

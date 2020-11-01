@@ -16,6 +16,7 @@ mod seed;
 mod tensor;
 mod variable;
 
+pub use self::code::CodeType;
 pub use self::error::{Error, Result};
 pub use self::execs::{ExecRoot, GlobalVars, Program};
 
