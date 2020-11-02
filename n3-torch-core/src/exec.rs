@@ -19,15 +19,19 @@ pub(self) fn n3_execute(
     command: &str,
     program: &Program,
 ) -> PyResult<()> {
+    // Step 1. Load the program
     let program = n3_builder::Program::load(program).unwrap();
     dbg!(id, machine);
 
+    // Step 2. Convert the args
     let args = Args(&program.graph).into_py_dict(py);
     if let Some(env) = &program.env {
         let env = Args(env).into_py_dict(py);
         args.set_item("env", env)?;
     }
 
+    // Step 3. Convert the nodes
+    // TODO: to be implemented
     let nodes = (&[] as &[(&str, PyObject)]).into_py_dict(py);
 
     let model = program.nodes["model"].as_node();
@@ -35,17 +39,20 @@ pub(self) fn n3_execute(
     let model_n1_conv = model_n1.tensor_graph[0].as_extern();
     dbg!(model_n1_conv);
 
+    // Step 4. Get the main program
     let main = &program.scripts["__main__"];
 
-    // Step 1. Define the Node
+    // Step 5. Define the Executable Node in REPL
     py.run(&main.source, None, None)?;
-    // Step 2. Instantiate
+
+    // Step 6. Instantiate
     let trainer = py.eval(
         &format!("{name}(args, nodes)", name = &main.name),
         None,
         Some([("args", args), ("nodes", nodes)].into_py_dict(py)),
     )?;
-    // Step 3. Do its own job
+
+    // Step 7. Do its own job
     trainer.call_method0(command)?;
     Ok(())
 }
