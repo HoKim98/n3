@@ -139,6 +139,12 @@ impl<'a> Args<'a> {
         self.ir.build(&self.root.node_root)
     }
 
+    pub fn build_with_env(self) -> Result<Vec<u8>> {
+        let mut program = self.ir.build(&self.root.node_root)?;
+        self.root.attach_env(&mut program);
+        program.save_to_binary()
+    }
+
     pub fn build(self) -> Result<Vec<u8>> {
         self.build_uncompacted()?.save_to_binary()
     }

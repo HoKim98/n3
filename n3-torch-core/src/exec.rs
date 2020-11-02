@@ -84,9 +84,7 @@ mod test {
             args.set("epoch", "1").unwrap();
             args.set("batch size", "10").unwrap();
 
-            let mut program = args.build_uncompacted().unwrap();
-            root.attach_env(&mut program);
-            let program = program.save_to_binary().unwrap();
+            let program = args.build_with_env().unwrap();
 
             load_n3(py)
                 .and_then(|()| n3_execute(py, 0, "cuda:0", "train", &program))
