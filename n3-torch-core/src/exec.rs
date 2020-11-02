@@ -37,25 +37,17 @@ pub(self) fn n3_execute(
 
     let main = &program.scripts["__main__"];
 
-    // execute the script
-    py.run(
-        &format!(
-            r#"
-{source}
-
-# let's define the trainer
-trainer = {name}(args, nodes)
-
-# let the trainer do its own command
-trainer.{command}()
-"#,
-            source = &main.source,
-            name = &main.name,
-            command = command,
-        ),
+    // Step 1. Define the Node
+    py.run(&main.source, None, None)?;
+    // Step 2. Instantiate
+    let trainer = py.eval(
+        &format!("{name}(args, nodes)", name = &main.name),
         None,
         Some([("args", args), ("nodes", nodes)].into_py_dict(py)),
-    )
+    )?;
+    // Step 3. Do its own job
+    trainer.call_method0(command)?;
+    Ok(())
 }
 
 #[cfg(test)]
