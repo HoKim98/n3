@@ -3,13 +3,14 @@ use std::io;
 use serde::{Deserialize, Serialize};
 
 use super::code::Codes;
-use super::graph::Table;
+use super::graph::{Env, Table, UncompactedEnv};
 use super::{Compact, CompactContext, Decompact, DecompactContext};
 use crate::error::Result;
 use crate::externs::PythonScripts;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Program {
+    pub(super) env: Option<Env>,
     pub(super) graphs: Vec<Table>,
     pub(super) nodes: Codes,
     pub(super) scripts: PythonScripts,
@@ -20,6 +21,7 @@ impl Program {
         let mut ctx = CompactContext::new(program.scripts.clone());
 
         // note: the args cannot be compacted; the graph will do it instead.
+        UncompactedEnv(&program.env).compact(&mut ctx);
         program.graph.compact(&mut ctx);
         ctx.nodes = program.nodes.compact(&mut ctx);
         ctx.build()
@@ -27,6 +29,8 @@ impl Program {
 
     pub fn decompact(self) -> crate::execs::Program {
         let mut ctx = DecompactContext::new();
+
+        let env = self.env.decompact(&mut ctx, ());
 
         // note: ordered (graphs -> args)
         self.graphs.decompact(&mut ctx, ());
@@ -37,6 +41,7 @@ impl Program {
         drop(ctx);
 
         crate::execs::Program {
+            env,
             graph,
             nodes,
             scripts: self.scripts,

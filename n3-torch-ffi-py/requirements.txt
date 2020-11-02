@@ -1,0 +1,22 @@
+# Parser
+lark-parser==0.9
+
+# Builder
+inflection==0.5
+
+# Exec
+click==7.1
+
+# PyTorch
+torch==1.6
+torchvision==0.7
+
+# Log
+tensorboard==2.3
+tensorboardx==2.1
+tqdm==4.48
+
+# Test
+coverage==5.2
+py==1.9
+pytest==6.0

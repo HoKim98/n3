@@ -117,6 +117,7 @@ impl ExecIR {
         scripts.insert(PROGRAM_MAIN.to_string(), script);
 
         Ok(Program {
+            env: None,
             graph,
             nodes,
             scripts,

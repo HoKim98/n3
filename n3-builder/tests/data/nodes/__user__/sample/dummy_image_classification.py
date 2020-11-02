@@ -1,4 +1,4 @@
-from n3_torch_ffi import *
+from n3 import *
 
 
 class DummyImageClassification(Trainer):

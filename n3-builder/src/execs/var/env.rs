@@ -2,9 +2,11 @@ use std::ops::Deref;
 
 use super::core::{Query, Vars};
 use crate::error::Result;
+use crate::graph::{ToValues, Values};
 
 use inflector::Inflector;
 
+#[derive(Clone, Debug)]
 pub struct EnvVars {
     inner: Vars,
 }
@@ -33,5 +35,11 @@ impl EnvVars {
     fn load_from_env(key: &str) -> Option<String> {
         let key = format!("N3_{}", key.to_screaming_snake_case());
         std::env::var(&key).ok()
+    }
+}
+
+impl ToValues for EnvVars {
+    fn to_values(&self) -> Values {
+        self.inner.to_values()
     }
 }

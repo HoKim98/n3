@@ -249,7 +249,7 @@ impl_from_value!(f64, Real; f64);
 
 impl From<String> for Value {
     fn from(value: String) -> Self {
-        Self::Node(value)
+        Self::String(value)
     }
 }
 

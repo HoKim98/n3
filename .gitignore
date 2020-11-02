@@ -13,6 +13,7 @@ Cargo.lock
 # Fake n3 root directory
 **/tests/data/data/
 **/tests/data/models/
+**/tests/data/logs/
 
 # Python
 **/*.pyc

@@ -1,12 +1,13 @@
 use super::code::Codes;
 use super::exec::Program;
-use super::graph::{Graphs, Table};
+use super::graph::{Env, Graphs, Table};
 use super::value::Values;
 use super::{ArrangeId, Decompact};
 use crate::ast;
 use crate::externs::PythonScripts;
 
 pub struct CompactContext {
+    pub(super) env: Option<Env>,
     graphs: Graphs<Table>,
     pub nodes: Codes,
     scripts: PythonScripts,
@@ -15,6 +16,7 @@ pub struct CompactContext {
 impl CompactContext {
     pub fn new(scripts: PythonScripts) -> Self {
         Self {
+            env: None,
             graphs: Graphs::new(),
             nodes: Codes::new(),
             scripts,
@@ -34,6 +36,7 @@ impl CompactContext {
         self.nodes.arrange_id(&ids);
 
         Program {
+            env: self.env,
             graphs,
             nodes: self.nodes,
             scripts: self.scripts,

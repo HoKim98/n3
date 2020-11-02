@@ -1,0 +1,5 @@
+DATA_DIR = 'data'
+LOGS_DIR = 'logs'
+MODELS_DIR = 'models'
+NODES_DIR = 'nodes'
+NODES_USER_DIR = '__user__'

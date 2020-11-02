@@ -1,8 +1,8 @@
 use crate::ast;
 use crate::error::{GraphError, Result};
-use crate::graph::Variables;
+use crate::graph::{ToValues, Values, Variables};
 
-#[derive(Default, Debug)]
+#[derive(Clone, Default, Debug)]
 pub struct Vars {
     inner: Variables,
 }
@@ -178,6 +178,12 @@ impl Vars {
             Some(ast::LetType::Node(_)) => Ok(ast::Value::Node(value)),
             _ => todo!(),
         }
+    }
+}
+
+impl ToValues for Vars {
+    fn to_values(&self) -> Values {
+        self.inner.to_values()
     }
 }
 

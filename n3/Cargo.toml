@@ -8,4 +8,3 @@ edition = "2018"
 
 [dependencies]
 n3-builder = { path = "../n3-builder" }
-n3-torch-machine = { path = "../n3-torch-machine" }

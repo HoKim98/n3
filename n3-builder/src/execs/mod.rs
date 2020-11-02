@@ -29,9 +29,7 @@ mod tests {
 
         // compacting & decompacting
         {
-            let mut binary = vec![];
-            program.save(&mut binary).unwrap();
-
+            let binary = program.save_to_binary().unwrap();
             let program_decompacted = Program::load(&*binary).unwrap();
 
             // manipulate values to varify RefVariable

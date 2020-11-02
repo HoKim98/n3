@@ -7,6 +7,7 @@ use super::ir::ExecIR;
 use super::program::Program;
 use super::var::{GlobalVars, Vars};
 use crate::error::{ExecError, Result};
+use crate::graph::ToValues;
 use crate::n3_std::trim_path;
 use crate::nodes::NodeRoot;
 
@@ -39,6 +40,10 @@ impl ExecRoot {
             ir,
             args,
         })
+    }
+
+    pub fn attach_env(&self, program: &mut Program) {
+        program.env = Some(self.env.to_values());
     }
 
     fn create_root_dir(&self) -> Result<()> {
@@ -135,10 +140,6 @@ impl<'a> Args<'a> {
     }
 
     pub fn build(self) -> Result<Vec<u8>> {
-        let program = self.build_uncompacted()?;
-
-        let mut buffer = vec![];
-        program.save(&mut buffer)?;
-        Ok(buffer)
+        self.build_uncompacted()?.save_to_binary()
     }
 }

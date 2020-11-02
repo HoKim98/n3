@@ -24,6 +24,10 @@ pub struct Table {
     pub variables: Variables,
 }
 
+pub trait ToValues {
+    fn to_values(&self) -> Values;
+}
+
 impl PartialEq for Table {
     fn eq(&self, other: &Self) -> bool {
         self.variables.eq(&other.variables)
@@ -290,6 +294,21 @@ impl CloneSafe for Graph {
             shortcuts: self_shortcuts,
             variables: self_variables,
         }
+    }
+}
+
+impl ToValues for Variables {
+    fn to_values(&self) -> Values {
+        self.iter()
+            .filter(|(_, v)| v.borrow().ty != Some(ast::LetType::Dim))
+            .map(|(k, v)| (k.clone(), v.borrow().value.clone()))
+            .collect()
+    }
+}
+
+impl ToValues for Values {
+    fn to_values(&self) -> Self {
+        self.clone()
     }
 }
 

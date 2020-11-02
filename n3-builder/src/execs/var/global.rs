@@ -4,7 +4,9 @@ use std::path::PathBuf;
 use super::core::Query;
 use super::env::EnvVars;
 use crate::ast;
+use crate::graph::{ToValues, Values};
 
+#[derive(Clone, Debug)]
 pub struct GlobalVars {
     inner: EnvVars,
 }
@@ -39,5 +41,11 @@ impl GlobalVars {
 
     fn default_home_dir() -> Option<String> {
         Some(dirs::home_dir().unwrap().display().to_string())
+    }
+}
+
+impl ToValues for GlobalVars {
+    fn to_values(&self) -> Values {
+        self.inner.to_values()
     }
 }

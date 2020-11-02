@@ -16,9 +16,12 @@ mod seed;
 mod tensor;
 mod variable;
 
+pub use n3_parser::ast::{Value, Variable};
+
 pub use self::code::CodeType;
 pub use self::error::{Error, Result};
 pub use self::execs::{ExecRoot, GlobalVars, Program};
+pub use self::graph::ToValues;
 
 use n3_parser::{ast, Parser};
 

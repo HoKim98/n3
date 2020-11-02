@@ -125,6 +125,32 @@ impl Compact for crate::graph::Variables {
     }
 }
 
+#[derive(Clone, Debug)]
+pub struct UncompactedEnv<'a>(pub &'a Option<crate::graph::Values>);
+
+impl<'a> Compact for UncompactedEnv<'a> {
+    type Output = ();
+
+    fn compact(&self, ctx: &mut CompactContext) -> Self::Output {
+        ctx.env = self.0.as_ref().map(|x| Env(x.compact(ctx)))
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Env(pub Values);
+
+impl Decompact for Env {
+    type Args = ();
+    type Output = crate::graph::Values;
+
+    fn decompact(self, ctx: &mut DecompactContext, (): Self::Args) -> Self::Output {
+        self.0
+            .into_iter()
+            .map(|(k, v)| (k, v.decompact(ctx, ())))
+            .collect()
+    }
+}
+
 fn compact_table(ctx: &mut CompactContext, variables: &crate::graph::Variables, id: u64) {
     if !ctx.contains_graph(&id) {
         let graph = variables

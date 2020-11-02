@@ -1,4 +1,4 @@
-from n3_torch_ffi import ExternNode
+from n3 import ExternNode
 
 
 class Transform(ExternNode):
