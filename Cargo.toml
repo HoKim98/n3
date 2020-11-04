@@ -13,3 +13,8 @@ members = [
     "n3-monitor-core",
     "n3-monitor",
 ]
+
+[profile.release]
+codegen-units = 1
+lto = true
+panic = 'unwind'
