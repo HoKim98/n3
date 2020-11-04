@@ -5,5 +5,5 @@ include requirements.txt
 include VERSION
 
 # standard n3 & python files
-# recursive-include n3/std *.n3
-# recursive-include n3/std *.py
+recursive-include n3/std *.n3
+recursive-include n3/std *.py

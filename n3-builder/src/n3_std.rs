@@ -4,20 +4,26 @@ use std::path::Path;
 use glob::glob;
 use inflector::Inflector;
 
-pub fn get_sources(root: &str) -> HashMap<String, String> {
+pub fn get_sources(root: &Path) -> HashMap<String, String> {
     get_files(root, "n3")
 }
 
-pub fn get_externs(root: &str) -> HashMap<String, String> {
+pub fn get_externs(root: &Path) -> HashMap<String, String> {
     get_files(root, "py")
 }
 
-fn get_files(root: &str, extension: &'static str) -> HashMap<String, String> {
-    glob(&format!("{}/**/*.{}", root, extension))
+fn get_files(root: &Path, extension: &'static str) -> HashMap<String, String> {
+    let result: HashMap<_, _> = glob(&format!("{}/std/**/*.{}", root.display(), extension))
         .unwrap()
         .filter_map(|e| e.ok())
         .map(|p| (trim_path(&p), load_source(&p)))
-        .collect()
+        .collect();
+
+    if result.is_empty() {
+        dbg!(root);
+        panic!("variable 'N3_DIR' is incorrect")
+    }
+    result
 }
 
 pub fn trim_path(path: &Path) -> String {

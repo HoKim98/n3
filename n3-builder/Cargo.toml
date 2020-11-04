@@ -7,13 +7,15 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = ["cli"]
+default = ["cli", "pip"]
 
 cli = ["dialoguer"]
+pip = ["n3-torch-ffi"]
 test-nightly = []
 
 [dependencies]
 n3-parser = { path = "../n3-parser" }
+n3-torch-ffi = { path = "../n3-torch-ffi-rust", optional = true }
 
 Inflector = "0.11"
 num-traits = "0.2"

@@ -1,6 +1,7 @@
 use std::ops::Deref;
 use std::path::PathBuf;
 
+use super::super::dirs::*;
 use super::core::Query;
 use super::env::EnvVars;
 use crate::ast;
@@ -11,12 +12,20 @@ pub struct GlobalVars {
     inner: EnvVars,
 }
 
-const QUERY: &[Query] = &[Query {
-    name: "root",
-    ty: ast::LetType::String,
-    value: None,
-    fn_value: Some(GlobalVars::default_home_dir),
-}];
+const QUERY: &[Query] = &[
+    Query {
+        name: N3_SOURCE_ROOT,
+        ty: ast::LetType::String,
+        value: None,
+        fn_value: None,
+    },
+    Query {
+        name: N3_ROOT,
+        ty: ast::LetType::String,
+        value: None,
+        fn_value: Some(GlobalVars::default_home_dir),
+    },
+];
 
 impl Default for GlobalVars {
     fn default() -> Self {

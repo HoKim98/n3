@@ -129,6 +129,16 @@ impl Vars {
         }
     }
 
+    pub unsafe fn add(&mut self, name: &str, value: impl Into<ast::Value>) -> Result<()> {
+        if self.inner.contains_key(name) {
+            self.set_as_value(name, value)
+        } else {
+            let var = ast::Variable::with_name_value(name.to_string(), Some(value.into()));
+            self.inner.insert(name.to_string(), var.into());
+            Ok(())
+        }
+    }
+
     pub fn set(&self, name: &str, value: &str) -> Result<()> {
         let mut var = self.get(name)?.borrow_mut();
         var.value = Some(Self::convert(name, value.to_string(), var.ty.as_ref())?);

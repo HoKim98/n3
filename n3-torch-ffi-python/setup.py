@@ -23,7 +23,7 @@ setup(
 
     name='n3',
     description='Nerual Network Notation',
-    long_description=read('README.md'),
+    long_description=read('../README.md'),
     long_description_content_type='text/markdown',
     url=r'https://github.com/kerryeon/n3',
 

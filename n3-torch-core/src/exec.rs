@@ -55,8 +55,11 @@ mod test {
     fn test_exec() -> std::result::Result<(), ()> {
         Python::with_gil(|py| {
             let envs = GlobalVars::default();
-            envs.set("root", "../n3-builder/tests/data/").unwrap();
-            let mut root = ExecRoot::try_new(envs, Some("../n3-torch-ffi-python/n3/std")).unwrap();
+            envs.set(dirs::N3_ROOT, "../n3-builder/tests/data/")
+                .unwrap();
+            envs.set(dirs::N3_SOURCE_ROOT, "../n3-torch-ffi-python/n3")
+                .unwrap();
+            let mut root = ExecRoot::try_new(envs).unwrap();
 
             let args = root.get("DummyImageClassification").unwrap();
             args.set("data", "Mnist").unwrap();

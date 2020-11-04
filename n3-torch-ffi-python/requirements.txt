@@ -1,11 +1,11 @@
 # Builder
-inflection==0.5
+inflection
 
 # PyTorch
-torch==1.6
-torchvision==0.7
+torch
+torchvision
 
 # Log
-tensorboard==2.3
-tensorboardx==2.1
-tqdm==4.48
+tensorboard
+tensorboard
+tqdm

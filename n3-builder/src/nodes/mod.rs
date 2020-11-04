@@ -25,7 +25,7 @@ mod tests {
     use crate::tensor::IRData;
 
     fn new_root() -> NodeRoot {
-        NodeRoot::new(Some("../n3-torch-ffi-python/n3/std"))
+        NodeRoot::new(Some("../n3-torch-ffi-python/n3"))
     }
 
     #[test]

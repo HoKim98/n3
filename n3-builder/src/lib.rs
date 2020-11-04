@@ -20,7 +20,7 @@ pub use n3_parser::ast;
 
 pub use self::code::{Code, CodeData, CodeType};
 pub use self::error::{Error, Result};
-pub use self::execs::{ExecRoot, GlobalVars, Program};
+pub use self::execs::{dirs, ExecRoot, GlobalVars, Program};
 pub use self::externs::{ExternCode, PythonScripts};
 pub use self::graph::ToValues;
 pub use self::nodes::NodeCode;
@@ -51,7 +51,8 @@ mod tests_recon {
 
     #[test]
     fn test_all_externs() {
-        for source in super::n3_std::get_sources("../n3-torch-ffi-python/n3/std").values() {
+        let path = std::path::PathBuf::from("../n3-torch-ffi-python/n3");
+        for source in super::n3_std::get_sources(&path).values() {
             recon(&source);
         }
     }
