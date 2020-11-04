@@ -297,10 +297,15 @@ impl CloneSafe for Graph {
     }
 }
 
+impl ToValues for Table {
+    fn to_values(&self) -> Values {
+        self.variables.to_values()
+    }
+}
+
 impl ToValues for Variables {
     fn to_values(&self) -> Values {
         self.iter()
-            .filter(|(_, v)| v.borrow().ty != Some(ast::LetType::Dim))
             .map(|(k, v)| (k.clone(), v.borrow().value.clone()))
             .collect()
     }

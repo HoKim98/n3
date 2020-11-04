@@ -6,5 +6,5 @@ from n3 import OptimNode
 class Adam(OptimNode):
     learning_rate: float
 
-    def _initialize(self, params):
+    def initialize(self, params):
         return optim.Adam(params, lr=self.learning_rate)

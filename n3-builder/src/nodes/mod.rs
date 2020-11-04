@@ -47,7 +47,8 @@ mod tests {
                 })
                 .collect::<BTreeMap<_, _>>();
             let graph = Graph::try_with_variables(1, graph, false).unwrap();
-            IRData {
+
+            let data = IRData {
                 id: ix,
                 name: "Linear".to_string(),
                 graph: graph.into(),
@@ -57,8 +58,12 @@ mod tests {
                 output: btreemap! {
                     "x".to_string() => ast::Out::new(ox, "x".to_string()),
                 },
+            };
+            ExternIR {
+                ty: ast::ExternNodeType::Default,
+                shapes: (&data).into(),
+                data,
             }
-            .into()
         }
         let graph_1 = make_graph((1, 32), (2, 64));
         let graph_2 = make_graph((2, 64), (3, 10));
@@ -130,7 +135,7 @@ node MyNode:
         let node = node.as_node();
 
         let node_n0 = node.tensor_graph[0].as_extern();
-        assert_eq!(node_n0.data.input["x"].id, Some(0));
+        assert_eq!(node_n0.data.input["x"].id, Some(1));
         assert_eq!(node_n0.data.output["x"].id, Some(1));
 
         let node_n1 = node.tensor_graph[1].as_node();

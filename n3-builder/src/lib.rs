@@ -16,14 +16,17 @@ mod seed;
 mod tensor;
 mod variable;
 
-pub use n3_parser::ast::{Value, Variable};
+pub use n3_parser::ast;
 
-pub use self::code::CodeType;
+pub use self::code::{Code, CodeData, CodeType};
 pub use self::error::{Error, Result};
 pub use self::execs::{ExecRoot, GlobalVars, Program};
+pub use self::externs::{ExternCode, PythonScripts};
 pub use self::graph::ToValues;
+pub use self::nodes::NodeCode;
+pub use self::variable::BuildValue;
 
-use n3_parser::{ast, Parser};
+use n3_parser::Parser;
 
 #[cfg(test)]
 mod tests_recon {

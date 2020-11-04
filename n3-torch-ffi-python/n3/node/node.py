@@ -26,7 +26,7 @@ class Node(metaclass=abc.ABCMeta):
     def get_name(self) -> str:
         return self.__class__.__name__
 
-    def __call__(self, **kwargs: TensorDict) -> TensorDictOrX:
+    def forward(self, **kwargs: TensorDict) -> TensorDictOrX:
         raise NotImplementedError
 
     def __repr__(self, depth: int = 0) -> str:
@@ -43,17 +43,17 @@ class NodeExecutable(Node, nn.Module):
     def get_name(self) -> str:
         return self._name
 
-    def __call__(self, *args: List[torch.Tensor], **kwargs: TensorDict) -> TensorDict:
+    def forward(self, *args: List[torch.Tensor], **kwargs: TensorDict) -> TensorDict:
         if len(args) == 1 and isinstance(args[0], dict) and not kwargs:
             return self(**args[0])
 
-        output = {Out(0, k): x for k, x in kwargs.items()}
+        output = {Out(1, k): x for k, x in kwargs.items()}
         x = {}
 
         for node in self._tensor_graph:
             x: TensorDict = {k: _index(output, n)
                              for k, n in node._node_input.items()}
-            x: TensorDictOrX = node(**x)
+            x: TensorDictOrX = node.forward(**x)
             if not isinstance(x, dict):
                 x = {'x': x}
             x = {n: x[k] for k, n in node._node_output.items()}

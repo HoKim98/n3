@@ -1,11 +1,12 @@
 use pyo3::prelude::*;
-use pyo3::types::{IntoPyDict, PyCFunction};
+use pyo3::types::PyCFunction;
 use pyo3::wrap_pyfunction;
 
 use n3_machine::Program;
 use n3_torch_ffi::pyo3;
 
-use crate::graph::Args;
+use crate::code::BuildCode;
+use crate::handler::SignalHandler;
 
 pub fn n3_execute_wrapper(py: Python) -> PyResult<&PyCFunction> {
     wrap_pyfunction!(n3_execute)(py)
@@ -23,38 +24,18 @@ pub(self) fn n3_execute(
     let program = n3_builder::Program::load(program).unwrap();
     dbg!(id, machine);
 
-    // Step 2. Convert the args
-    let args = Args(&program.graph).into_py_dict(py);
-    if let Some(env) = &program.env {
-        let env = Args(env).into_py_dict(py);
-        args.set_item("env", env)?;
-    }
+    // Step 2. Define the node in REPL
+    let program = program.build(py, ())?.into_py(py);
 
-    // Step 3. Convert the nodes
-    // TODO: to be implemented
-    let nodes = (&[] as &[(&str, PyObject)]).into_py_dict(py);
-
-    let model = program.nodes["model"].as_node();
-    let model_n1 = model.tensor_graph[1].as_node();
-    let model_n1_conv = model_n1.tensor_graph[0].as_extern();
-    dbg!(model_n1_conv);
-
-    // Step 4. Get the main program
-    let main = &program.scripts["__main__"];
-
-    // Step 5. Define the Executable Node in REPL
-    py.run(&main.source, None, None)?;
-
-    // Step 6. Instantiate
-    let trainer = py.eval(
-        &format!("{name}(args, nodes)", name = &main.name),
-        None,
-        Some([("args", args), ("nodes", nodes)].into_py_dict(py)),
-    )?;
-
-    // Step 7. Do its own job
-    trainer.call_method0(command)?;
-    Ok(())
+    // Step 3. Do its own job
+    let command = command.to_string();
+    SignalHandler::run(py, move |handler| {
+        pyo3::Python::with_gil(|py| {
+            program.call_method1(py, &command, (handler,))?;
+            Ok(())
+        })
+    })
+    .unwrap()
 }
 
 #[cfg(test)]
@@ -66,7 +47,7 @@ mod test {
     fn load_n3(py: Python) -> PyResult<()> {
         let sys = py.import("sys")?;
         sys.get("path")?
-            .call_method1("insert", (0, "../n3-torch-ffi-py"))?;
+            .call_method1("insert", (0, "../n3-torch-ffi-python"))?;
         Ok(())
     }
 
@@ -87,6 +68,7 @@ mod test {
 
             load_n3(py)
                 .and_then(|()| n3_execute(py, 0, "cuda:0", "train", &program))
+                .and_then(|()| py.run("exit(0)", None, None))
                 .map_err(|e| {
                     e.print_and_set_sys_last_vars(py);
                 })

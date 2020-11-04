@@ -3,9 +3,11 @@ use serde::{Deserialize, Serialize};
 use super::code::CodeData;
 use super::graph::Graphs;
 use super::{ArrangeId, Compact, CompactContext, Decompact, DecompactContext};
+use crate::ast;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ExternCode {
+    ty: ast::ExternNodeType,
     data: CodeData,
 }
 
@@ -14,6 +16,7 @@ impl Compact for crate::externs::ExternCode {
 
     fn compact(&self, ctx: &mut CompactContext) -> Self::Output {
         Self::Output {
+            ty: self.ty,
             data: self.data.compact(ctx),
         }
     }
@@ -31,6 +34,7 @@ impl Decompact for ExternCode {
 
     fn decompact(self, ctx: &mut DecompactContext, (): Self::Args) -> Self::Output {
         Self::Output {
+            ty: self.ty,
             data: self.data.decompact(ctx, ()),
         }
     }

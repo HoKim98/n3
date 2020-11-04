@@ -10,6 +10,7 @@ use crate::variable::CloneValue;
 
 #[derive(Debug, PartialEq)]
 pub struct ExternIR {
+    pub ty: ast::ExternNodeType,
     pub data: IRData,
     pub shapes: ExternIRShapes,
 }
@@ -18,15 +19,6 @@ pub struct ExternIR {
 pub struct ExternIRShapes {
     pub input: Option<ast::Shapes>,
     pub output: Option<ast::Shapes>,
-}
-
-impl From<IRData> for ExternIR {
-    fn from(data: IRData) -> Self {
-        Self {
-            shapes: (&data).into(),
-            data,
-        }
-    }
 }
 
 impl<'a> From<&'a IRData> for ExternIRShapes {
@@ -44,12 +36,14 @@ impl<'a> From<&'a IRData> for ExternIRShapes {
 
 impl ExternIR {
     pub fn new_first(
+        ty: ast::ExternNodeType,
         name: String,
         graph: RefGraph,
         input: Option<ast::Shapes>,
         output: Option<ast::Shapes>,
     ) -> Self {
         Self {
+            ty,
             data: IRData::with_shapes(name, graph, input.as_ref(), output.as_ref()),
             shapes: ExternIRShapes { input, output },
         }
@@ -65,6 +59,7 @@ impl ExternIR {
 
     pub fn build(self) -> Result<ExternCode> {
         Ok(ExternCode {
+            ty: self.ty,
             data: CodeData::from_ir(self.data),
         })
     }
@@ -74,6 +69,7 @@ impl CloneSafe for ExternIR {
     fn clone_safe(&self, seed: &Seed, variables: &mut Vec<ast::RefVariable>) -> Self {
         // note: ordered (data -> shapes)
         Self {
+            ty: self.ty,
             data: self.data.clone_safe(seed, variables),
             shapes: self.shapes.clone_safe(seed, variables),
         }

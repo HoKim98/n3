@@ -345,7 +345,7 @@ impl IRData {
             id: 0,
             name,
             graph,
-            input: shapes_to_outs(0, input),
+            input: shapes_to_outs(1, input),
             output: shapes_to_outs(1, output),
         }
     }

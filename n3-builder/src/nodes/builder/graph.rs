@@ -47,6 +47,7 @@ impl<'a, 'b, 'c> GraphNodeBuilder<InputNode> for GraphNodeEntry<'a, 'b, 'c> {
         .test()?;
 
         let ir = ExternIR::new_first(
+            ast::ExternNodeType::Default,
             INPUT_NAME.to_string(),
             make_empty_graph(&self.root).into(),
             None,
@@ -174,6 +175,7 @@ fn get_extern_io(
 }
 
 fn build_extern(
+    ty: ast::ExternNodeType,
     id: u64,
     root: &NodeEntry,
     name: String,
@@ -184,6 +186,7 @@ fn build_extern(
     let (io_input, io_output) = get_extern_io(id, root, io_input, io_output)?;
 
     Ok(ExternIR {
+        ty,
         data: IRData {
             id,
             name,
@@ -274,9 +277,10 @@ fn build_transform(
     let io_inputs: Vec<_> = inputs.0.borrow().keys().cloned().collect();
     let io_outputs = io_inputs.clone();
     let ir = build_extern(
+        ast::ExternNodeType::Default,
         id,
         root,
-        INPUT_NAME.to_string(),
+        names[0].to_string(),
         graph,
         (inputs.clone(), io_inputs),
         (outputs, io_outputs),
@@ -424,6 +428,7 @@ impl<'a, 'b, 'c> GraphNodeBuilder<Concat> for GraphNodeEntry<'a, 'b, 'c> {
         let io_inputs = io_inputs.into_iter().map(|x| x.name).collect();
         let io_outputs = vec!["x".to_string()];
         let ir = build_extern(
+            ast::ExternNodeType::Default,
             id,
             root,
             call.name,

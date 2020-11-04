@@ -3,18 +3,15 @@ import abc
 import torch.nn as nn
 
 from .node import Node, TensorDict, TensorDictOrX
+from ..util.args import Args, Values
 from ..util.out import Outs
-
-_MAGIC_VARIABLES = ['exec']
 
 
 class ExternNodeBase(Node, metaclass=abc.ABCMeta):
-    def __init__(self, input: Outs, output: Outs, **kwargs) -> None:
+    def __init__(self, args: Args, input: Outs, output: Outs, values: Values) -> None:
         super().__init__(input, output)
-        for k, v in kwargs.items():
-            if k in _MAGIC_VARIABLES:
-                continue
-            setattr(self, k, v)
+        for k, v in values.items():
+            setattr(self, k.replace(' ', '_'), v)
 
     @abc.abstractmethod
     def forward(self, **kwargs: TensorDict) -> TensorDictOrX:
@@ -35,8 +32,8 @@ class ExternNodeBase(Node, metaclass=abc.ABCMeta):
 
 
 class ExternNode(ExternNodeBase, nn.Module, metaclass=abc.ABCMeta):
-    def __init__(self, input: Outs, output: Outs, **kwargs) -> None:
-        ExternNodeBase.__init__(self, input, output, **kwargs)
+    def __init__(self, args: Args, input: Outs, output: Outs, values: Values) -> None:
+        ExternNodeBase.__init__(self, args, input, output, values)
         nn.Module.__init__(self)
 
     @abc.abstractmethod

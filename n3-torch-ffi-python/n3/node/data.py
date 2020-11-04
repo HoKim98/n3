@@ -14,10 +14,10 @@ Dataset = Iterable
 
 class DataNode(ExternNodeBase, metaclass=abc.ABCMeta):
     def __init__(self, args: Args, **kwargs) -> None:
-        super().__init__(**kwargs)
+        super().__init__(args, **kwargs)
         name = underscore(self.__class__.__name__).replace('_', '-')
-        self._dataset_dir = os.path.join(args.env.root, DATA_DIR, name)
-        self._batch_size = args.batch_size
+        self._dataset_dir = os.path.join(args['env']['root'], DATA_DIR, name)
+        self._batch_size = args['batch size']
 
     @property
     def dataset_dir(self) -> str:

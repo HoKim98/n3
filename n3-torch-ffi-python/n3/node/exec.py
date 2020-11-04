@@ -21,9 +21,9 @@ class ExecNode(metaclass=abc.ABCMeta):
 
     def __init__(self, args: Args, nodes: Dict[str, Node] = {}) -> None:
         for k, v in args.items():
-            setattr(self, inflection.underscore(k), v)
+            setattr(self, k.replace(' ', '_'), v)
         for k, v in nodes.items():
-            setattr(self, inflection.underscore(k), v)
+            setattr(self, k.replace(' ', '_'), v)
         self._nodes = nodes
 
         self._writer = ExecWriter(args, self.get_name(), self.get_model_name())
@@ -53,7 +53,7 @@ class Trainer(ExecNode, metaclass=abc.ABCMeta):
     epoch: int
     batch_size: int
 
-    def train(self) -> None:
+    def train(self, handler) -> None:
         # Step 1. ready to train
         self._train_begin()
 
@@ -78,15 +78,19 @@ class Trainer(ExecNode, metaclass=abc.ABCMeta):
                 self.optimizer.step()
                 # Step 2-7. store result
                 self._train_iter_end(metrics, x, y, y_pred, loss)
+                if not handler.is_running():
+                    break
 
             # Step 2-8. store log
             self._train_epoch_end(writer, metrics)
+            if not handler.is_running():
+                break
 
         # Step 3. clean up
         self._train_end()
 
     def _train_begin(self) -> None:
-        self.optimizer.initialize(self.model)
+        self.optimizer._initialize(self.model)
         for name, node in self.nodes().items():
             setattr(self, name, self.to(node))
 
@@ -108,10 +112,10 @@ class Trainer(ExecNode, metaclass=abc.ABCMeta):
         metrics['loss'] += loss.item()
 
     @abc.abstractmethod
-    def eval(self) -> None:
+    def eval(self, handler) -> None:
         raise NotImplementedError
 
-    def publish(self, args: Args) -> None:
+    def publish(self, handler, args: Args) -> None:
         # Step 1. ready to publish
         self.model.eval()
 

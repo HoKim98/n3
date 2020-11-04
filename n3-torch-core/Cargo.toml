@@ -9,6 +9,7 @@ edition = "2018"
 [dependencies]
 n3-builder = { path = "../n3-builder" }
 n3-machine = { path = "../n3-machine" }
-n3-torch-ffi = { path = "../n3-torch-ffi-rs" }
+n3-torch-ffi = { path = "../n3-torch-ffi-rust" }
 
+ctrlc = "3.1"
 pyo3-mp = "0.1"

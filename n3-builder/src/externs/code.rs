@@ -1,10 +1,12 @@
 use super::script::PythonScripts;
+use crate::ast::ExternNodeType;
 use crate::code::CodeData;
 use crate::error::Result;
 use crate::nodes::NodeRoot;
 
 #[derive(Debug, PartialEq)]
 pub struct ExternCode {
+    pub ty: ExternNodeType,
     pub data: CodeData,
 }
 
