@@ -1,14 +1,16 @@
+use std::collections::BTreeMap;
+
 pub use n3_machine_ffi::Query;
-use n3_machine_ffi::{Machine, Program};
+use n3_machine_ffi::{JobId, Machine, MachineId, Program};
 
 use crate::error::{LoadError, ParseError, Result};
 
-pub type Generator = unsafe fn(&Query) -> Option<Box<dyn Machine>>;
+pub type Generator = unsafe fn(&Query) -> Vec<Box<dyn Machine>>;
 
 #[derive(Default)]
 pub struct HostMachine {
     generators: Vec<(Query, Generator)>,
-    machines: Vec<Box<dyn Machine>>,
+    jobs: BTreeMap<JobId, Vec<Box<dyn Machine>>>,
 }
 
 impl HostMachine {
@@ -18,53 +20,77 @@ impl HostMachine {
         Ok(())
     }
 
-    pub fn load(&mut self, query: &[&str]) -> Result<()> {
+    pub fn load(&mut self, job: JobId, query: &[String]) -> Result<u64> {
         let queries: Vec<_> = query
             .iter()
             .map(|x| Query::parse(x))
             .collect::<Result<_>>()?;
 
+        let mut machines = vec![];
         for query in queries {
-            if let Some(machine) = self.get_machine(&query) {
-                self.machines.push(machine);
+            if let Some(mut machine) = self.get_machines(&query) {
+                machines.append(&mut machine);
             } else {
                 return LoadError::NoSuchMachine { query }.into();
             }
         }
-        Ok(())
+
+        let num_machines = machines.len();
+        self.jobs.insert(job, machines);
+        Ok(num_machines as u64)
     }
 
-    fn get_machine(&self, query: &Query) -> Option<Box<dyn Machine>> {
+    fn get_machines(&self, query: &Query) -> Option<Vec<Box<dyn Machine>>> {
         for (pattern, generator) in &self.generators {
             if pattern.cmp_weakly(query) {
-                if let Some(machine) = unsafe { generator(query) } {
-                    return Some(machine);
+                let machines = unsafe { generator(query) };
+                if !machines.is_empty() {
+                    return Some(machines);
                 }
             }
         }
         None
     }
 
-    pub fn spawn(&mut self, program: &Program, command: &str) -> Result<()> {
-        for (id, machine) in self.machines.iter_mut().enumerate() {
+    pub fn spawn(
+        &mut self,
+        job: JobId,
+        machines: Vec<MachineId>,
+        program: &Program,
+        command: &str,
+    ) -> Result<()> {
+        let job = self.jobs.get_mut(&job).unwrap();
+        for (id, machine) in machines.into_iter().zip(job.iter_mut()) {
             machine.spawn(id, program, command)?;
         }
         Ok(())
     }
 
-    pub fn join(&mut self) -> Result<()> {
-        for machine in &mut self.machines {
+    pub fn join(&mut self, job: JobId) -> Result<()> {
+        let job = self.jobs.remove(&job).unwrap();
+        for mut machine in job {
             machine.join()?;
         }
         Ok(())
     }
 
-    pub fn terminate(self) -> Result<()> {
-        for mut machine in self.machines {
+    pub fn terminate(&mut self, job: JobId) -> Result<()> {
+        let job = self.jobs.remove(&job).unwrap();
+        for mut machine in job {
             machine.terminate()?;
             drop(machine);
         }
         Ok(())
+    }
+}
+
+impl Drop for HostMachine {
+    fn drop(&mut self) {
+        for job in self.jobs.values_mut() {
+            for machine in job.iter_mut() {
+                machine.terminate().unwrap();
+            }
+        }
     }
 }
 

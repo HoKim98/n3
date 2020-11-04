@@ -1,0 +1,12 @@
+[package]
+name = "n3-torch-core-protocol"
+version = "0.1.0"
+authors = ["h <ho.kim@gnu.ac.kr>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+n3-machine-ffi = { path = "../n3-machine-ffi" }
+
+serde = { version = "1.0", features = ["derive"] }

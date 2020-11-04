@@ -48,7 +48,7 @@ impl HostMachine {
         Ok(())
     }
 
-    pub fn terminate(&mut self) -> Result<()> {
+    fn _terminate(&mut self) -> Result<()> {
         self.py_terminate()
             .map_err(|e| e.into())
             .map_err(Error::MachineError)
@@ -71,6 +71,6 @@ impl DerefMut for HostMachine {
 
 impl Drop for HostMachine {
     fn drop(&mut self) {
-        self.terminate().unwrap()
+        self._terminate().unwrap()
     }
 }

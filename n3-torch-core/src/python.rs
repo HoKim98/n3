@@ -1,4 +1,4 @@
-use n3_machine::{Machine, MachineResult, Program};
+use n3_machine::{Machine, MachineId, MachineResult, Program};
 use n3_torch_ffi::PyMachine;
 
 pub struct PyMachineBase<T>(pub T)
@@ -18,7 +18,7 @@ impl<T> Machine for PyMachineBase<T>
 where
     T: PyMachine,
 {
-    fn spawn(&mut self, id: usize, program: &Program, command: &str) -> MachineResult<()> {
+    fn spawn(&mut self, id: MachineId, program: &Program, command: &str) -> MachineResult<()> {
         Ok(self.0.py_spawn(id, program, command)?)
     }
 

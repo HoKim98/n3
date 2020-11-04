@@ -3,10 +3,15 @@ use std::fmt;
 pub type Error = Box<dyn std::error::Error>;
 pub type Result<T> = std::result::Result<T, Error>;
 
+pub type JobId = u64;
+
+pub type MachineId = u64;
+
+pub type ProgramVec = Vec<u8>;
 pub type Program = [u8];
 
 pub trait Machine {
-    fn spawn(&mut self, id: usize, program: &Program, command: &str) -> Result<()>;
+    fn spawn(&mut self, id: MachineId, program: &Program, command: &str) -> Result<()>;
 
     fn join(&mut self) -> Result<()>;
     fn terminate(&mut self) -> Result<()>;

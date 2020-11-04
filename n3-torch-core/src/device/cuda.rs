@@ -12,8 +12,8 @@ impl ProcessMachine<ProcessMachineImpl> for CudaMachine {
         Self(process)
     }
 
-    fn verify_query(query: &Query) -> Option<Query> {
-        Some(query.clone())
+    fn verify_query(query: &Query) -> Vec<Query> {
+        vec![query.clone()]
     }
 }
 

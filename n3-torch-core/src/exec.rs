@@ -15,7 +15,7 @@ pub fn n3_execute_wrapper(py: Python) -> PyResult<&PyCFunction> {
 #[pyfunction]
 pub(self) fn n3_execute(
     py: Python,
-    id: usize,
+    id: u64,
     machine: &str,
     command: &str,
     program: &Program,
