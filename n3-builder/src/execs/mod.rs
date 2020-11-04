@@ -1,8 +1,10 @@
-pub mod dirs;
+mod args;
 mod ir;
 mod program;
 mod root;
 mod var;
+
+pub use n3_program::execs::dirs;
 
 pub use self::ir::ExecIR;
 pub use self::program::Program;

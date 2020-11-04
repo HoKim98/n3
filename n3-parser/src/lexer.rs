@@ -980,13 +980,6 @@ where
         // let mut X = HashMap::new();
         // X.insert('=', Tok::Equal);
         let token = self.inner_next();
-        trace!(
-            "Lex token {:?}, nesting={:?}, indent stack: {:?}",
-            token,
-            self.nesting,
-            self.indentation_stack
-        );
-
         match token {
             Ok((_, Tok::EndOfFile, _)) => None,
             r => Some(r),

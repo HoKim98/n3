@@ -21,7 +21,7 @@ pub(self) fn n3_execute(
     program: &Program,
 ) -> PyResult<()> {
     // Step 1. Load the program
-    let program = n3_builder::Program::load(program).unwrap();
+    let program = n3_program::Program::load(program).unwrap();
     dbg!(id, machine);
 
     // Step 2. Define the node in REPL

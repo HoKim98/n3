@@ -3,6 +3,8 @@ members = [
     "n3",
     "n3-builder",
     "n3-parser",
+    "n3-parser-ast",
+    "n3-program",
     "n3-torch",
     "n3-torch-core",
     "n3-torch-ffi-rust",

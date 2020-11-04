@@ -6,7 +6,7 @@ use n3_torch_ffi::pyo3;
 use super::base::{BuildArgs, BuildCode};
 use super::graph::Args;
 
-impl<'a> BuildCode<'a> for n3_builder::Program {
+impl<'a> BuildCode<'a> for n3_program::Program {
     type Args = ();
     type Output = &'a PyAny;
 

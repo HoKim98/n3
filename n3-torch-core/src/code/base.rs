@@ -6,7 +6,7 @@ use n3_torch_ffi::pyo3;
 #[derive(Debug)]
 pub struct BuildArgs<'a> {
     pub args: &'a PyDict,
-    pub scripts: &'a n3_builder::PythonScripts,
+    pub scripts: &'a n3_program::PythonScripts,
 }
 
 pub trait BuildCode<'a> {
@@ -16,7 +16,7 @@ pub trait BuildCode<'a> {
     fn build(&'a self, py: Python<'a>, args: Self::Args) -> PyResult<Self::Output>;
 }
 
-impl<'a> BuildCode<'a> for n3_builder::Code {
+impl<'a> BuildCode<'a> for n3_program::Code {
     type Args = &'a BuildArgs<'a>;
     type Output = &'a PyAny;
 

@@ -1,6 +1,6 @@
 use super::code::ExternCode;
 use crate::ast;
-use crate::code::CodeData;
+use crate::code::{CodeData, DataFromIR};
 use crate::context::CloneSafe;
 use crate::error::Result;
 use crate::graph::RefGraph;

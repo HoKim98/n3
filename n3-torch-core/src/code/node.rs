@@ -1,13 +1,13 @@
 use pyo3::prelude::*;
 use pyo3::types::{IntoPyDict, PyList};
 
-use n3_builder::CodeData;
+use n3_program::CodeData;
 use n3_torch_ffi::pyo3;
 
 use super::base::{BuildArgs, BuildCode};
 use super::out::Outs;
 
-impl<'a> BuildCode<'a> for n3_builder::NodeCode {
+impl<'a> BuildCode<'a> for n3_program::NodeCode {
     type Args = &'a BuildArgs<'a>;
     type Output = &'a PyAny;
 

@@ -15,10 +15,10 @@ test-nightly = []
 
 [dependencies]
 n3-parser = { path = "../n3-parser" }
+n3-program = { path = "../n3-program" }
 n3-torch-ffi = { path = "../n3-torch-ffi-rust", optional = true }
 
 Inflector = "0.11"
-num-traits = "0.2"
 
 bincode = "1.3"
 serde = { version = "1.0", features = ["derive"] }

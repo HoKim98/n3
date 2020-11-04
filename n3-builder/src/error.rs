@@ -1,10 +1,10 @@
 use std::collections::BTreeSet;
 use std::path::PathBuf;
 
-use bincode::ErrorKind as BincodeError;
 use glob::{GlobError, PatternError};
 
 use n3_parser::error::ParseError;
+use n3_program::error::Error as CompactError;
 
 use crate::ast;
 
@@ -16,6 +16,7 @@ pub enum Error {
     BuildError(BuildError),
     ExecBuildError(ExecBuildError),
     ExecError(ExecError),
+    CompactError(CompactError),
     ExternalError(ExternalError),
 }
 
@@ -181,7 +182,6 @@ pub enum ExternalError {
     IOError(std::io::Error),
     GlobError(GlobError),
     PatternError(PatternError),
-    BincodeError(BincodeError),
 }
 
 impl PartialEq for Error {
@@ -231,7 +231,6 @@ impl PartialEq for ExternalError {
             (Self::IOError(_), Self::IOError(_)) => true,
             (Self::GlobError(_), Self::GlobError(_)) => true,
             (Self::PatternError(_), Self::PatternError(_)) => true,
-            (Self::BincodeError(_), Self::BincodeError(_)) => true,
             _ => false,
         }
     }
@@ -258,6 +257,12 @@ impl From<ExecBuildError> for Error {
 impl From<ExecError> for Error {
     fn from(error: ExecError) -> Self {
         Self::ExecError(error)
+    }
+}
+
+impl From<CompactError> for Error {
+    fn from(error: CompactError) -> Self {
+        Self::CompactError(error)
     }
 }
 
@@ -319,7 +324,6 @@ impl_into_build_error!(LinkError);
 
 impl_into_external_error!(GlobError);
 impl_into_external_error!(PatternError);
-impl_into_external_error!(BincodeError);
 
 impl<T> From<Box<T>> for Error
 where

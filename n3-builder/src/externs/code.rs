@@ -1,17 +1,12 @@
 use super::script::PythonScripts;
-use crate::ast::ExternNodeType;
-use crate::code::CodeData;
+use crate::code::AddScripts;
 use crate::error::Result;
 use crate::nodes::NodeRoot;
 
-#[derive(Debug, PartialEq)]
-pub struct ExternCode {
-    pub ty: ExternNodeType,
-    pub data: CodeData,
-}
+pub use n3_program::externs::ExternCode;
 
-impl ExternCode {
-    pub fn add_script(&self, root: &NodeRoot, scripts: &mut PythonScripts) -> Result<()> {
+impl AddScripts for ExternCode {
+    fn add_scripts(&self, root: &NodeRoot, scripts: &mut PythonScripts) -> Result<()> {
         let name = &self.data.name;
         if !scripts.contains_key(name) {
             let script = root.get_extern(name)?;

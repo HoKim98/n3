@@ -86,10 +86,6 @@ impl TensorGraph {
         Self(vec![node])
     }
 
-    pub fn new(nodes: Vec<TensorNode>) -> Self {
-        Self(nodes)
-    }
-
     pub fn is_some(&self) -> bool {
         !self.is_empty()
     }
@@ -149,10 +145,6 @@ impl TensorNode {
         }
     }
 
-    pub fn is_extern(&self) -> bool {
-        matches!(self, Self::Extern(_))
-    }
-
     pub fn get_id(&self) -> u64 {
         self.get_data().id
     }
@@ -194,10 +186,6 @@ impl TensorNode {
 
     pub fn get_inputs_mut(&mut self) -> &mut ast::Outs {
         &mut self.get_data_mut().input
-    }
-
-    pub fn get_outputs(&self) -> &ast::Outs {
-        &self.get_data().output
     }
 
     pub fn get_outputs_mut(&mut self) -> &mut ast::Outs {

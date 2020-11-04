@@ -1,13 +1,13 @@
 use std::cell::RefCell;
-use std::collections::BTreeMap;
 use std::rc::Rc;
 
-use n3_parser::ast;
-
+use crate::ast;
 use crate::context::CloneSafe;
 use crate::error::{GraphError, Result};
 use crate::seed::Seed;
 use crate::variable::*;
+
+pub use n3_program::graph::*;
 
 pub type RefGraph = Rc<RefCell<Graph>>;
 
@@ -17,25 +17,6 @@ pub struct Graph {
     shortcuts: Variables,
     variables: Variables,
 }
-
-#[derive(Clone, Debug)]
-pub struct Table {
-    pub id: u64,
-    pub variables: Variables,
-}
-
-pub trait ToValues {
-    fn to_values(&self) -> Values;
-}
-
-impl PartialEq for Table {
-    fn eq(&self, other: &Self) -> bool {
-        self.variables.eq(&other.variables)
-    }
-}
-
-pub type Variables = BTreeMap<String, ast::RefVariable>;
-pub type Values = BTreeMap<String, Option<ast::Value>>;
 
 impl Graph {
     pub fn with_id(id: u64) -> Self {
@@ -294,26 +275,6 @@ impl CloneSafe for Graph {
             shortcuts: self_shortcuts,
             variables: self_variables,
         }
-    }
-}
-
-impl ToValues for Table {
-    fn to_values(&self) -> Values {
-        self.variables.to_values()
-    }
-}
-
-impl ToValues for Variables {
-    fn to_values(&self) -> Values {
-        self.iter()
-            .map(|(k, v)| (k.clone(), v.borrow().value.clone()))
-            .collect()
-    }
-}
-
-impl ToValues for Values {
-    fn to_values(&self) -> Self {
-        self.clone()
     }
 }
 

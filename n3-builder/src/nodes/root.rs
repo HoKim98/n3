@@ -77,15 +77,15 @@ impl NodeRoot {
         self.externs.add_path(name, path);
     }
 
-    pub fn get(&self, name: &str) -> Result<NodeIR> {
+    pub(crate) fn get(&self, name: &str) -> Result<NodeIR> {
         self.sources.get(name, self)?.unwrap_node()
     }
 
-    pub fn get_exec(&self, name: &str) -> Result<ExecIR> {
+    pub(crate) fn get_exec(&self, name: &str) -> Result<ExecIR> {
         self.sources.get(name, self)?.unwrap_exec()
     }
 
-    pub fn get_extern(&self, name: &str) -> Result<PythonScript> {
+    pub(crate) fn get_extern(&self, name: &str) -> Result<PythonScript> {
         self.externs.get(name, self)
     }
 }

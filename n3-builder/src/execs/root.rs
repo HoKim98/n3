@@ -2,10 +2,10 @@ use std::fs;
 use std::ops::Deref;
 use std::path::Path;
 
+use super::args::Args;
 use super::dirs::*;
-use super::ir::ExecIR;
 use super::program::Program;
-use super::var::{GlobalVars, Vars};
+use super::var::GlobalVars;
 use crate::error::{ExecError, Result};
 use crate::graph::ToValues;
 use crate::n3_std::trim_path;
@@ -16,6 +16,14 @@ use glob::glob;
 pub struct ExecRoot {
     node_root: NodeRoot,
     env: GlobalVars,
+}
+
+impl Deref for ExecRoot {
+    type Target = NodeRoot;
+
+    fn deref(&self) -> &Self::Target {
+        &self.node_root
+    }
 }
 
 impl ExecRoot {
@@ -120,34 +128,4 @@ fn no_such_directory(path: &Path) -> Result<()> {
         path: path.to_path_buf(),
     }
     .into()
-}
-
-pub struct Args<'a> {
-    root: &'a mut ExecRoot,
-    ir: ExecIR,
-    args: Vars,
-}
-
-impl<'a> Deref for Args<'a> {
-    type Target = Vars;
-
-    fn deref(&self) -> &Self::Target {
-        &self.args
-    }
-}
-
-impl<'a> Args<'a> {
-    pub fn build_uncompacted(self) -> Result<Program> {
-        self.ir.build(&self.root.node_root)
-    }
-
-    pub fn build_with_env(self) -> Result<Vec<u8>> {
-        let mut program = self.ir.build(&self.root.node_root)?;
-        self.root.attach_env(&mut program);
-        program.save_to_binary()
-    }
-
-    pub fn build(self) -> Result<Vec<u8>> {
-        self.build_uncompacted()?.save_to_binary()
-    }
 }

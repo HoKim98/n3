@@ -5,7 +5,6 @@ mod n3_std;
 
 mod cache;
 mod code;
-mod compact;
 mod context;
 mod error;
 mod execs;
@@ -24,7 +23,6 @@ pub use self::execs::{dirs, ExecRoot, GlobalVars, Program};
 pub use self::externs::{ExternCode, PythonScripts};
 pub use self::graph::ToValues;
 pub use self::nodes::NodeCode;
-pub use self::variable::BuildValue;
 
 use n3_parser::Parser;
 

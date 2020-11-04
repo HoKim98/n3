@@ -4,6 +4,7 @@ use std::rc::Rc;
 use super::program::{Program, PROGRAM_MAIN};
 use super::var::Vars;
 use crate::ast;
+use crate::code::AddScripts;
 use crate::context::CloneSafe;
 use crate::error::{ExecBuildError, GraphError, Result};
 use crate::nodes::NodeRoot;

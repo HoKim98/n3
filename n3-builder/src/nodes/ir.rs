@@ -1,7 +1,7 @@
 use super::code::NodeCode;
 use super::root::NodeRoot;
 use crate::ast;
-use crate::code::{Code, CodeData};
+use crate::code::{Code, CodeData, DataFromIR};
 use crate::context::{Build, CloneSafe};
 use crate::error::{GraphCallError, Result};
 use crate::graph::Graph;
