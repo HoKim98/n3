@@ -1,5 +1,5 @@
 [package]
-name = "n3-torch-core-server"
+name = "n3-torch-ffi"
 version = "0.1.0"
 authors = ["h <ho.kim@gnu.ac.kr>"]
 edition = "2018"
@@ -7,7 +7,6 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-n3-torch-core = { path = "../n3-torch-core" }
-n3-torch-core-protocol = { path = "../n3-torch-core-protocol" }
+n3-machine-ffi = { path = "../../../n3-machine-ffi" }
 
-simple-socket = "0.1"
+pyo3 = "0.12.3"

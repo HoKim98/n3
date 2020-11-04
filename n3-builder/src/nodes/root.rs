@@ -37,8 +37,6 @@ impl NodeRoot {
     fn get_n3_source_root() -> PathBuf {
         use pyo3::prelude::*;
 
-        use n3_torch_ffi::pyo3;
-
         Python::with_gil(|py| {
             py.run("import n3", None, None)
                 .and_then(|()| py.eval("n3.__file__", None, None))

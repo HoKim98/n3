@@ -47,7 +47,7 @@ mod test {
     fn load_n3(py: Python) -> PyResult<()> {
         let sys = py.import("sys")?;
         sys.get("path")?
-            .call_method1("insert", (0, "../n3-torch-ffi-python"))?;
+            .call_method1("insert", (0, "../ffi/python"))?;
         Ok(())
     }
 
@@ -55,10 +55,9 @@ mod test {
     fn test_exec() -> std::result::Result<(), ()> {
         Python::with_gil(|py| {
             let envs = GlobalVars::default();
-            envs.set(dirs::N3_ROOT, "../n3-builder/tests/data/")
+            envs.set(dirs::N3_ROOT, "../../n3-builder/tests/data/")
                 .unwrap();
-            envs.set(dirs::N3_SOURCE_ROOT, "../n3-torch-ffi-python/n3")
-                .unwrap();
+            envs.set(dirs::N3_SOURCE_ROOT, "../ffi/python/n3").unwrap();
             let mut root = ExecRoot::try_new(envs).unwrap();
 
             let args = root.get("DummyImageClassification").unwrap();

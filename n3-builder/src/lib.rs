@@ -49,7 +49,7 @@ mod tests_recon {
 
     #[test]
     fn test_all_externs() {
-        let path = std::path::PathBuf::from("../n3-torch-ffi-python/n3");
+        let path = std::path::PathBuf::from("../n3-torch/ffi/python/n3");
         for source in super::n3_std::get_sources(&path).values() {
             recon(&source);
         }

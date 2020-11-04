@@ -19,7 +19,7 @@ mod tests {
     fn test_build_ic() {
         let envs = GlobalVars::default();
         envs.set(dirs::N3_ROOT, "tests/data/").unwrap();
-        envs.set(dirs::N3_SOURCE_ROOT, "../n3-torch-ffi-python/n3")
+        envs.set(dirs::N3_SOURCE_ROOT, "../n3-torch/ffi/python/n3")
             .unwrap();
         let mut root = ExecRoot::try_new(envs).unwrap();
 

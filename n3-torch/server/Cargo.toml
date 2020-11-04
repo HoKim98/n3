@@ -1,0 +1,17 @@
+[package]
+name = "n3-torch-core-server"
+version = "0.1.0"
+authors = ["h <ho.kim@gnu.ac.kr>"]
+edition = "2018"
+
+[[bin]]
+name = "n3-torchd"
+path = "src/main.rs"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+n3-torch-core = { path = "../core" }
+n3-torch-core-protocol = { path = "../protocol" }
+
+simple-socket = "0.1"
