@@ -10,7 +10,7 @@ jobs:
 
 # command to install dependencies
 install:
-  - pip install -r n3-torch-ffi-python/requirements.txt
+  - pip3 install -r n3-torch-ffi-python/requirements.txt
 
 script:
   - cargo build --verbose --workspace

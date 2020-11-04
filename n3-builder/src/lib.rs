@@ -51,7 +51,7 @@ mod tests_recon {
 
     #[test]
     fn test_all_externs() {
-        for source in super::n3_std::get_sources().values() {
+        for source in super::n3_std::get_sources("../n3-torch-ffi-python/n3/std").values() {
             recon(&source);
         }
     }

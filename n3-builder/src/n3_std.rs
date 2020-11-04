@@ -1,26 +1,22 @@
 use std::collections::HashMap;
 use std::path::Path;
 
-use include_dir::{include_dir, Dir};
+use glob::glob;
 use inflector::Inflector;
 
-// note: This macro will include a directory relative to the project root.
-const STD_DIR: Dir = include_dir!("./std");
-
-pub fn get_sources() -> HashMap<String, String> {
-    get_files("n3")
+pub fn get_sources(root: &str) -> HashMap<String, String> {
+    get_files(root, "n3")
 }
 
-pub fn get_externs() -> HashMap<String, String> {
-    get_files("py")
+pub fn get_externs(root: &str) -> HashMap<String, String> {
+    get_files(root, "py")
 }
 
-fn get_files(extension: &'static str) -> HashMap<String, String> {
-    STD_DIR
-        .find(&format!("**/*.{}", extension))
+fn get_files(root: &str, extension: &'static str) -> HashMap<String, String> {
+    glob(&format!("{}/**/*.{}", root, extension))
         .unwrap()
-        .map(|e| e.path())
-        .map(|p| (trim_path(p), load_source(p)))
+        .filter_map(|e| e.ok())
+        .map(|p| (trim_path(&p), load_source(&p)))
         .collect()
 }
 
@@ -32,10 +28,5 @@ pub fn trim_path(path: &Path) -> String {
 }
 
 fn load_source(path: &Path) -> String {
-    STD_DIR
-        .get_file(path)
-        .unwrap()
-        .contents_utf8()
-        .unwrap()
-        .to_string()
+    std::fs::read_to_string(path).unwrap()
 }

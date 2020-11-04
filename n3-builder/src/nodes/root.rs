@@ -17,19 +17,18 @@ pub struct NodeRoot {
     _thread_unsafe: UnsafeCell<()>,
 }
 
-impl Default for NodeRoot {
-    fn default() -> Self {
+impl NodeRoot {
+    pub fn new(std_dir: Option<&str>) -> Self {
+        let std_dir = std_dir.unwrap();
         Self {
             seed: Seed::default(),
-            sources: NodeCache::new(n3_std::get_sources()),
-            externs: NodeCache::new(n3_std::get_externs()),
+            sources: NodeCache::new(n3_std::get_sources(std_dir)),
+            externs: NodeCache::new(n3_std::get_externs(std_dir)),
             parser: crate::Parser::default(),
             _thread_unsafe: UnsafeCell::new(()),
         }
     }
-}
 
-impl NodeRoot {
     pub fn add_source(&self, name: String, source: String) {
         self.sources.add_source(name, source);
     }

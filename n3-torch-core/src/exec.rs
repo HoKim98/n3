@@ -56,7 +56,7 @@ mod test {
         Python::with_gil(|py| {
             let envs = GlobalVars::default();
             envs.set("root", "../n3-builder/tests/data/").unwrap();
-            let mut root = ExecRoot::try_new(envs).unwrap();
+            let mut root = ExecRoot::try_new(envs, Some("../n3-torch-ffi-python/n3/std")).unwrap();
 
             let args = root.get("DummyImageClassification").unwrap();
             args.set("data", "Mnist").unwrap();

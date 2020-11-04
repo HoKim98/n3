@@ -24,6 +24,10 @@ mod tests {
     use crate::graph::Graph;
     use crate::tensor::IRData;
 
+    fn new_root() -> NodeRoot {
+        NodeRoot::new(Some("../n3-torch-ffi-python/n3/std"))
+    }
+
     #[test]
     fn test_tensor_graph() {
         fn make_graph((ix, ic): (u64, u64), (ox, oc): (u64, u64)) -> ExternIR {
@@ -76,13 +80,13 @@ mod tests {
             tensor_graph,
             repeat: None,
         };
-        let root = NodeRoot::default();
+        let root = new_root();
         ir.build(&root).unwrap();
     }
 
     #[test]
     fn test_unexpected_extern_node() {
-        let root = NodeRoot::default();
+        let root = new_root();
         assert_eq!(
             root.get_extern("FOO").err(),
             Some(
@@ -110,7 +114,7 @@ node MyNode:
     1. Linear + MyRelu = 64
     2. Linear + MyRelu = Oc
 ";
-        let root = NodeRoot::default();
+        let root = new_root();
         root.add_source("MyNode".to_string(), model.to_string());
         let ir = root.get("MyNode").unwrap();
         ir.build(&root).unwrap();
@@ -118,7 +122,7 @@ node MyNode:
 
     #[test]
     fn test_build_lenet5() {
-        let root = NodeRoot::default();
+        let root = new_root();
         let ir = root.get("LeNet5").unwrap();
         // manually define shapes
         {
@@ -180,7 +184,7 @@ node MyNode:
     #[test]
     fn test_build_concat() {
         let model = fs::read_to_string("tests/data/nodes/__user__/sample/test-cat.n3").unwrap();
-        let root = NodeRoot::default();
+        let root = new_root();
         root.add_source("TestCat".to_string(), model);
         let ir = root.get("TestCat").unwrap();
         ir.build(&root).unwrap();
@@ -200,7 +204,7 @@ node MyNode:
     3. Linear * one     = 30
     4. Linear * two     = 40
 ";
-        let root = NodeRoot::default();
+        let root = new_root();
         root.add_source("MyNode".to_string(), model.to_string());
         let ir = root.get("MyNode").unwrap();
         ir.build(&root).unwrap();

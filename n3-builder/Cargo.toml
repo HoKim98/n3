@@ -15,7 +15,6 @@ test-nightly = []
 [dependencies]
 n3-parser = { path = "../n3-parser" }
 
-include_dir = "0.6"
 Inflector = "0.11"
 num-traits = "0.2"
 
