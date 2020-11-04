@@ -1,4 +1,3 @@
-use std::borrow::Cow;
 use std::cell::UnsafeCell;
 use std::path::PathBuf;
 
@@ -22,7 +21,7 @@ pub struct NodeRoot {
 impl NodeRoot {
     pub fn new(n3_source_root: Option<&str>) -> Self {
         let n3_source_root = n3_source_root
-            .map(|x| PathBuf::from(x))
+            .map(PathBuf::from)
             .unwrap_or_else(Self::get_n3_source_root);
 
         Self {

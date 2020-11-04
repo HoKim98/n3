@@ -7,5 +7,5 @@ torchvision
 
 # Log
 tensorboard
-tensorboard
+tensorboardX
 tqdm
