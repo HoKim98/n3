@@ -28,7 +28,7 @@ impl Program {
     }
 
     pub fn decompact(self) -> crate::execs::Program {
-        let mut ctx = DecompactContext::new();
+        let mut ctx = DecompactContext::default();
 
         let env = self.env.decompact(&mut ctx, ());
 

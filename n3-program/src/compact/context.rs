@@ -48,13 +48,15 @@ pub struct DecompactContext {
     graphs: Graphs<crate::graph::Table>,
 }
 
-impl DecompactContext {
-    pub fn new() -> Self {
+impl Default for DecompactContext {
+    fn default() -> Self {
         Self {
             graphs: Graphs::new(),
         }
     }
+}
 
+impl DecompactContext {
     pub fn insert_graph(&mut self, id: u64, graph: crate::graph::Table) {
         self.graphs.insert(id, graph);
     }
