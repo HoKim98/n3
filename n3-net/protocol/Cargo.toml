@@ -1,5 +1,5 @@
 [package]
-name = "n3-torch-core-protocol"
+name = "n3-net-protocol"
 version = "0.1.0"
 authors = ["h <ho.kim@gnu.ac.kr>"]
 edition = "2018"

@@ -2,18 +2,18 @@
 members = [
     "n3",
     "n3-builder",
-    "n3-parser",
-    "n3-parser-ast",
-    "n3-program",
-    "n3-torch/client",
-    "n3-torch/core",
-    "n3-torch/ffi/rust",
-    "n3-torch/protocol",
-    "n3-torch/server",
     "n3-machine",
     "n3-machine-ffi",
     "n3-monitor-core",
     "n3-monitor",
+    "n3-net/client",
+    "n3-net/protocol",
+    "n3-net/server",
+    "n3-parser",
+    "n3-parser-ast",
+    "n3-program",
+    "n3-torch/core",
+    "n3-torch/ffi/rust",
 ]
 
 [profile.release]
