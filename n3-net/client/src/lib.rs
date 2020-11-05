@@ -12,7 +12,7 @@ pub struct Job {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub struct NetHost {
+pub(crate) struct NetHost {
     provider: Option<String>,
     domain: Option<String>,
 }
@@ -20,16 +20,17 @@ pub struct NetHost {
 type NetMachine = SocketClient<Request, Response>;
 
 impl Job {
-    pub fn spawn<R>(id: JobId, query: &[R], program: &Program, command: &str) -> Result<Self>
+    pub fn spawn<R>(program: &Program, command: &str, query: &[R]) -> Result<Self>
     where
         R: AsRef<str>,
     {
+        let id = Self::create_job_id();
         let (machines, num_machines) = Self::load(id, query)?;
 
         let mut seed = 0;
         for (machine, num_machines) in machines.iter().zip(num_machines) {
             let id_end = seed + num_machines;
-            let id_machines: Vec<_> = (seed..id_end).collect();
+            let id_machines = (seed..id_end).collect();
             seed = id_end;
 
             let request = Request::Spawn {
@@ -94,7 +95,7 @@ impl Job {
                 .to_socket_addrs()
                 .map_err(Error::from)?
                 .into_iter()
-                .next()
+                .find(|x| x.is_ipv4()) // TODO: have we support IPv6?
                 .ok_or_else(|| Error::from("Failed to parse domain address"))?;
 
             let socket = SocketClient::<Request, Response>::try_new(addr).map_err(Error::from)?;
@@ -110,6 +111,15 @@ impl Job {
         }
 
         Ok((machines, num_machines))
+    }
+
+    fn create_job_id() -> JobId {
+        use std::time::SystemTime;
+
+        SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
     }
 }
 

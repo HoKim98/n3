@@ -1,16 +1,15 @@
 use std::ops::{Deref, DerefMut};
 
-use pyo3::{GILGuard, PyResult, Python};
+use pyo3::{GILGuard, Python};
 
-use n3_machine::{HostMachine as NativeHostMachine, MachineError, Result};
+use n3_machine::{HostMachine as NativeHostMachine, Result};
 use n3_torch_ffi::{pyo3, ProcessMachine as ProcessMachineTrait};
 
-use crate::process::ProcessMachine;
+use crate::process::{exit_python, ProcessMachine};
 use crate::BUILTIN_MACHINES;
 
 pub struct HostMachine {
     host: NativeHostMachine,
-    is_running: bool,
     // GILGuard is required to make Python GIL alive.
     _py: GILGuard,
 }
@@ -26,11 +25,7 @@ impl HostMachine {
             host.add_generator(name, *generator)?;
         }
 
-        Ok(Self {
-            host,
-            is_running: true,
-            _py,
-        })
+        Ok(Self { host, _py })
     }
 
     pub fn add_process_generator<T>(&mut self, query: &str) -> Result<()>
@@ -40,19 +35,10 @@ impl HostMachine {
         self.add_generator(query, ProcessMachine::try_new::<T>)
     }
 
-    pub fn py_terminate(&mut self) -> PyResult<()> {
-        if !self.is_running {
-            self.is_running = false;
-            self._py.python().eval("exit(0)", None, None)?;
+    pub fn terminate(&mut self) {
+        unsafe {
+            exit_python();
         }
-        Ok(())
-    }
-
-    fn _terminate(&mut self) -> Result<()> {
-        Ok(self
-            .py_terminate()
-            .map_err(|e| e.into())
-            .map_err(MachineError::ExternalError)?)
     }
 }
 
@@ -72,6 +58,6 @@ impl DerefMut for HostMachine {
 
 impl Drop for HostMachine {
     fn drop(&mut self) {
-        self._terminate().unwrap()
+        self.terminate()
     }
 }

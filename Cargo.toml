@@ -14,6 +14,7 @@ members = [
     "n3-program",
     "n3-torch/core",
     "n3-torch/ffi/rust",
+    "n3-torch/server",
 ]
 
 [profile.release]

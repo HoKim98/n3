@@ -1,12 +1,14 @@
 use std::net::{IpAddr, SocketAddr};
 use std::ops::{Deref, DerefMut};
 
-use simple_socket::{PostServing, SocketServer};
+pub use simple_socket::PostServing;
 
 use n3_machine::HostMachine;
 use n3_net_protocol::{Request, Response, PORT};
 
-pub trait Handle<H>
+pub type SocketServer = simple_socket::SocketServer<Request, Response>;
+
+pub(crate) trait Handle<H>
 where
     H: Deref<Target = HostMachine> + DerefMut,
 {
@@ -43,18 +45,17 @@ where
     }
 }
 
-pub fn run_server<H>(mut host: H, ip: IpAddr)
+pub fn run_server<H, P>(mut host: H, ip: IpAddr, post: P)
 where
     H: Deref<Target = HostMachine> + DerefMut,
+    P: Fn(&mut SocketServer) -> PostServing,
 {
     let socket = SocketAddr::new(ip, PORT);
 
     let backlog = Default::default();
-    let server = SocketServer::<Request, Response>::try_new(socket, backlog).unwrap();
+    let server = SocketServer::try_new(socket, backlog).unwrap();
+
     server
-        .run(
-            |x| Handle::<H>::handle(x, &mut host),
-            |_| PostServing::Yield,
-        )
+        .run(|x| Handle::<H>::handle(x, &mut host), post)
         .unwrap()
 }

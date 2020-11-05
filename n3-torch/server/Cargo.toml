@@ -1,0 +1,20 @@
+[package]
+name = "n3-torch-server"
+version = "0.1.0"
+authors = ["h <ho.kim@gnu.ac.kr>"]
+edition = "2018"
+
+[[bin]]
+name = "n3-torchd"
+path = "src/main.rs"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+n3-net-server = { path = "../../n3-net/server" }
+n3-torch-core = { path = "../core" }
+
+[dev-dependencies]
+n3-builder = { path = "../../n3-builder" }
+n3-machine-ffi = { path = "../../n3-machine-ffi" }
+n3-net-client = { path = "../../n3-net/client" }

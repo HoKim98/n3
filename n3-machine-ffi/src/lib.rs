@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 pub use self::error::*;
 
-pub type JobId = u64;
+pub type JobId = u128;
 
 pub type MachineId = u64;
 

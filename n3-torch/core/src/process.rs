@@ -59,6 +59,16 @@ impl PyMachine for ProcessMachine {
     }
 
     fn py_terminate(&mut self) -> PyResult<()> {
-        self.process.join()
+        self.process.join()?;
+        Ok(())
+    }
+}
+
+/// # Safety
+///
+/// This function should be called when the Python interpreter is idle.
+pub unsafe fn exit_python() {
+    if pyo3::ffi::Py_IsInitialized() == 1 {
+        pyo3::ffi::Py_Exit(0);
     }
 }

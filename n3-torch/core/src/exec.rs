@@ -2,11 +2,12 @@ use pyo3::prelude::*;
 use pyo3::types::PyCFunction;
 use pyo3::wrap_pyfunction;
 
-use n3_machine::Program;
+use n3_machine::{MachineId, Program};
 use n3_torch_ffi::pyo3;
 
 use crate::code::BuildCode;
 use crate::handler::SignalHandler;
+use crate::process::exit_python;
 
 pub fn n3_execute_wrapper(py: Python) -> PyResult<&PyCFunction> {
     wrap_pyfunction!(n3_execute)(py)
@@ -15,7 +16,7 @@ pub fn n3_execute_wrapper(py: Python) -> PyResult<&PyCFunction> {
 #[pyfunction]
 pub(self) fn n3_execute(
     py: Python,
-    id: u64,
+    id: MachineId,
     machine: &str,
     command: &str,
     program: &Program,
@@ -30,50 +31,16 @@ pub(self) fn n3_execute(
     // Step 3. Do its own job
     let command = command.to_string();
     SignalHandler::run(py, move |handler| {
-        pyo3::Python::with_gil(|py| {
+        pyo3::Python::with_gil::<_, PyResult<_>>(|py| {
             program.call_method1(py, &command, (handler,))?;
             Ok(())
         })
     })
-    .unwrap()
-}
+    .unwrap()?;
 
-#[cfg(test)]
-mod test {
-    use n3_builder::*;
-
-    use super::*;
-
-    fn load_n3(py: Python) -> PyResult<()> {
-        let sys = py.import("sys")?;
-        sys.get("path")?
-            .call_method1("insert", (0, "../ffi/python"))?;
-        Ok(())
+    // Step 4. Exit interpreter
+    unsafe {
+        exit_python();
     }
-
-    #[test]
-    fn test_exec() -> std::result::Result<(), ()> {
-        Python::with_gil(|py| {
-            let envs = GlobalVars::default();
-            envs.set(dirs::N3_ROOT, "../../n3-builder/tests/data/")
-                .unwrap();
-            envs.set(dirs::N3_SOURCE_ROOT, "../ffi/python/n3").unwrap();
-            let mut root = ExecRoot::try_new(envs).unwrap();
-
-            let args = root.get("DummyImageClassification").unwrap();
-            args.set("data", "Mnist").unwrap();
-            args.set("model", "LeNet5").unwrap();
-            args.set("epoch", "1").unwrap();
-            args.set("batch size", "10").unwrap();
-
-            let program = args.build_with_env().unwrap();
-
-            load_n3(py)
-                .and_then(|()| n3_execute(py, 0, "cuda:0", "train", &program))
-                .and_then(|()| py.run("exit(0)", None, None))
-                .map_err(|e| {
-                    e.print_and_set_sys_last_vars(py);
-                })
-        })
-    }
+    Ok(())
 }
