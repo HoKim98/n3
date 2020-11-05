@@ -10,7 +10,9 @@ pub enum Request {
     },
     Spawn {
         job: JobId,
-        machines: Vec<MachineId>,
+        id_primaries: Vec<MachineId>,
+        id_local: MachineId,
+        id_world: MachineId,
         program: ProgramVec,
         command: String,
     },

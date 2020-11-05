@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 pub use n3_machine_ffi::Query;
-use n3_machine_ffi::{JobId, Machine, MachineId, Program, SignalHandler};
+use n3_machine_ffi::{JobId, Machine, MachineId, MachineIdSet, Program, SignalHandler};
 
 use crate::error::{LoadError, Result};
 
@@ -54,12 +54,19 @@ impl HostMachine {
     pub fn spawn(
         &mut self,
         job: JobId,
-        machines: Vec<MachineId>,
+        id_primaries: Vec<MachineId>,
+        id_local: MachineId,
+        id_world: MachineId,
         program: &Program,
         command: &str,
     ) -> Result<()> {
         let job = self.jobs.get_mut(&job).unwrap();
-        for (id, machine) in machines.into_iter().zip(job.iter_mut()) {
+        for (id, machine) in id_primaries.into_iter().zip(job.iter_mut()) {
+            let id = MachineIdSet {
+                primary: id,
+                local: id_local,
+                world: id_world,
+            };
             machine.spawn(id, program, command, self.handler.clone())?;
         }
         Ok(())

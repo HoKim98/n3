@@ -6,7 +6,7 @@ use std::ops::{Deref, DerefMut};
 
 use pyo3::PyResult;
 
-use n3_machine_ffi::{MachineId, Program, Query};
+use n3_machine_ffi::{MachineIdSet, Program, Query};
 
 pub use self::handler::SignalHandler;
 
@@ -15,7 +15,7 @@ pub trait PyMachine {
 
     fn py_spawn(
         &mut self,
-        id: MachineId,
+        id: MachineIdSet,
         program: &Program,
         command: &str,
         handler: SignalHandler,
@@ -45,7 +45,7 @@ where
 
     fn py_spawn(
         &mut self,
-        id: MachineId,
+        id: MachineIdSet,
         program: &Program,
         command: &str,
         handler: SignalHandler,

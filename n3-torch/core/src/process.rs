@@ -1,7 +1,7 @@
 use pyo3::{PyResult, Python};
 use pyo3_mp::Process;
 
-use n3_machine::{LocalQuery, Machine, MachineId, Program, Query};
+use n3_machine::{LocalQuery, Machine, MachineIdSet, Program, Query};
 use n3_torch_ffi::{pyo3, ProcessMachine as ProcessMachineTrait, PyMachine, SignalHandler};
 
 use crate::exec::n3_execute_wrapper;
@@ -44,7 +44,7 @@ impl PyMachine for ProcessMachine {
 
     fn py_spawn(
         &mut self,
-        id: MachineId,
+        id: MachineIdSet,
         program: &Program,
         command: &str,
         handler: SignalHandler,
@@ -59,8 +59,13 @@ impl PyMachine for ProcessMachine {
         let n3_execute = n3_execute_wrapper(py)?;
 
         // spawn to new process
-        self.process
-            .spawn(n3_execute, (id, &machine, command, program, handler), None)?;
+        self.process.spawn(
+            n3_execute,
+            (
+                id.primary, id.local, id.world, &machine, command, program, handler,
+            ),
+            None,
+        )?;
         Ok(())
     }
 

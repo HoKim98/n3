@@ -1,4 +1,4 @@
-use n3_machine::{Machine, MachineError, MachineId, MachineResult, Program};
+use n3_machine::{Machine, MachineError, MachineIdSet, MachineResult, Program};
 use n3_torch_ffi::PyMachine;
 
 pub struct PyMachineBase<T>(pub T)
@@ -20,7 +20,7 @@ where
 {
     fn spawn(
         &mut self,
-        id: MachineId,
+        id: MachineIdSet,
         program: &Program,
         command: &str,
         handler: n3_machine::SignalHandler,

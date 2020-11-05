@@ -27,15 +27,19 @@ impl Job {
         let id = Self::create_job_id();
         let (machines, num_machines) = Self::load(id, query)?;
 
+        let id_world = num_machines.iter().sum();
+
         let mut seed = 0;
-        for (machine, num_machines) in machines.iter().zip(num_machines) {
+        for (id_local, (machine, num_machines)) in machines.iter().zip(num_machines).enumerate() {
             let id_end = seed + num_machines;
             let id_machines = (seed..id_end).collect();
             seed = id_end;
 
             let request = Request::Spawn {
                 job: id,
-                machines: id_machines,
+                id_primaries: id_machines,
+                id_local: id_local as u64,
+                id_world,
                 program: program.to_vec(),
                 command: command.to_string(),
             };

@@ -11,20 +11,22 @@ class EpochIter:
 
     def __next__(self):
         value = next(self._dataset)
-        self._bar.update()
+        if self._bar is not None:
+            self._bar.update()
         return value
 
 
 class Epoch:
-    def __init__(self, writer, head, bar, num_batch, value):
+    def __init__(self, writer, head, num_batch, value):
         super().__init__()
         self._writer = writer
         self._head = head
-        self._bar = bar
         self._num_batch = num_batch
         self._value = value
 
     def write(self, name, value, use_batch=False):
+        if self._writer is None:
+            return
         if isinstance(value, (int, float)):
             if use_batch:
                 value = value / self._num_batch
@@ -36,7 +38,8 @@ class Epoch:
         self._writer.add_scalar(self._tag(name), value, self._value)
 
     def flush(self):
-        return self._writer.flush()
+        if self._writer is not None:
+            self._writer.flush()
 
     def _tag(self, name):
         return f'{self._head}/{name}'
@@ -64,17 +67,19 @@ class EpochWriter:
 
     def __next__(self):
         if self._start == self._end:
-            self._bar.close()
+            if self._bar is not None:
+                self._bar.close()
             raise StopIteration
 
         dataset = self._fn_dataset()
 
         if self._bar is None:
             self._num_batch = len(dataset)
-            self._bar = tqdm(total=(self._end - self._start) * self._num_batch)
+            if self._writer is not None:
+                total = (self._end - self._start) * self._num_batch
+                self._bar = tqdm(total=total)
 
-        epoch = Epoch(self._writer, self._head, self._bar,
-                      self._num_batch, self._start)
+        epoch = Epoch(self._writer, self._head, self._num_batch, self._start)
         self._start += 1
 
         return epoch, EpochIter(iter(dataset), self._bar)

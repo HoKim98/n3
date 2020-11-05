@@ -11,16 +11,19 @@ from ..util.dirs import LOGS_DIR
 
 
 class ExecWriter:
-    def __init__(self, args: Args, exec: str, model: str) -> None:
+    def __init__(self, args: Args, exec: str, model: str, root: bool) -> None:
         super().__init__()
         self._exec_name = inflection.underscore(exec)
         self._model_name = inflection.underscore(model)
 
-        logdir = os.path.join(args['env']['root'], LOGS_DIR,
-                              self._exec_name, self._model_name)
-        logdir = _increment_dir(logdir)
+        if root:
+            logdir = os.path.join(args['env']['root'], LOGS_DIR,
+                                  self._exec_name, self._model_name)
+            logdir = _increment_dir(logdir)
+            self._writer = tensorboardX.SummaryWriter(logdir)
+        else:
+            self._writer = None
 
-        self._writer = tensorboardX.SummaryWriter(logdir)
         self._epoch = args['epoch']
 
     def do_epoch(self, tag, fn_dataset):

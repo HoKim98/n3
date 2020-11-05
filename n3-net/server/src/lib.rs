@@ -27,11 +27,14 @@ where
             },
             Self::Spawn {
                 job,
-                machines,
+                id_primaries,
+                id_local,
+                id_world,
                 program,
                 command,
             } => {
-                host.spawn(job, machines, &program, &command).unwrap();
+                host.spawn(job, id_primaries, id_local, id_world, &program, &command)
+                    .unwrap();
                 Response::Awk
             }
             Self::Join { job } => {

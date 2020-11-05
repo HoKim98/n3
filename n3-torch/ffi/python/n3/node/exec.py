@@ -4,6 +4,7 @@ from typing import Any, Dict, List
 
 import inflection
 import torch
+import torch.nn as nn
 from torch import Tensor
 
 from .data import DataNode
@@ -19,6 +20,11 @@ class ExecNode(metaclass=abc.ABCMeta):
     _id: int
     _machine: str
 
+    _is_root: bool
+    _is_distributed: bool
+
+    _gpu_id: int
+
     _writer: ExecWriter
 
     def __init__(self, args: Args, nodes: Dict[str, Node] = {}) -> None:
@@ -28,12 +34,24 @@ class ExecNode(metaclass=abc.ABCMeta):
             setattr(self, k.replace(' ', '_'), v)
         self._nodes = nodes
 
-        # Attach id, machine
+        # Attach variables
         env = args['env']
         self._id = env['id']
         self._machine = env['machine']
 
-        self._writer = ExecWriter(args, self.get_name(), self.get_model_name())
+        self._is_root = env['is root']
+        self._is_distributed = env['is distributed']
+
+        self._gpu_id = env['gpu id']
+
+        # Distributed Training
+        if self._is_distributed:
+            torch.distributed.init_process_group(backend='nccl')
+
+        self._writer = ExecWriter(args,
+                                  exec=self.get_name(),
+                                  model=self.get_model_name(),
+                                  root=self._is_root)
 
     def get_name(self) -> str:
         return self.__class__.__name__
@@ -45,8 +63,23 @@ class ExecNode(metaclass=abc.ABCMeta):
         return self._nodes
 
     def to(self, node: Node) -> Node:
-        # TODO: https://github.com/pytorch/pytorch/blob/master/torch/distributed/launch.py
-        return node.to(self._machine)
+        # check node
+        if not isinstance(node, nn.Module):
+            return node
+
+        node = node.to(self._machine)
+        if self._is_distributed and any((p.requires_grad for p in node.parameters())):
+            device_ids = [self._gpu_id]  # GPU device id
+            node = nn.parallel.DistributedDataParallel(node,
+                                                       device_ids=device_ids)
+        return node
+
+    def tensor_to(self, value) -> Node:
+        if isinstance(value, dict):
+            return {k: self.tensor_to(v) for k, v in value.items()}
+        if isinstance(value, (list, tuple)):
+            return [self.tensor_to(v) for v in value]
+        return value.to(self._machine)
 
 
 class Trainer(ExecNode, metaclass=abc.ABCMeta):
@@ -71,7 +104,8 @@ class Trainer(ExecNode, metaclass=abc.ABCMeta):
             self._train_epoch_begin(writer, metrics)
 
             for data in dataset:
-                x, y = self._train_iter_begin(data)
+                data = self._train_iter_begin(data)
+                x, y = self.tensor_to(data)
                 # Step 2-2. clean-up gradients
                 self.optimizer.zero_grad()
                 # Step 2-3. predict classses

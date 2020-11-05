@@ -41,6 +41,3 @@ class DataNode(ExternNodeBase, metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def get_eval_dataset(self) -> Iterable[Dataset]:
         raise NotImplementedError
-
-    def to(self, device: torch.device) -> 'DataNode':
-        return self

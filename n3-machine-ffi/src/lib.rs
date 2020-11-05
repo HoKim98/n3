@@ -10,6 +10,13 @@ pub use self::handler::SignalHandler;
 
 pub type JobId = u128;
 
+#[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+pub struct MachineIdSet {
+    pub primary: MachineId,
+    pub local: MachineId,
+    pub world: MachineId,
+}
+
 pub type MachineId = u64;
 
 pub type ProgramVec = Vec<u8>;
@@ -18,7 +25,7 @@ pub type Program = [u8];
 pub trait Machine {
     fn spawn(
         &mut self,
-        id: MachineId,
+        id: MachineIdSet,
         program: &Program,
         command: &str,
         handler: SignalHandler,

@@ -28,6 +28,3 @@ class OptimNode(ExternNodeBase, metaclass=abc.ABCMeta):
 
     def step(self) -> None:
         self._inner.step()
-
-    def to(self, device: torch.device) -> 'OptimNode':
-        return self
