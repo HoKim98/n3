@@ -1,19 +1,13 @@
+pub use n3_machine_ffi::{Error as MachineError, ParseError};
+
 use crate::Query;
 
 pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug)]
 pub enum Error {
-    ParseError(ParseError),
     LoadError(LoadError),
     MachineError(MachineError),
-}
-
-pub type MachineError = n3_machine_ffi::Error;
-
-#[derive(Debug)]
-pub enum ParseError {
-    UnexpectedTokens { query: String },
 }
 
 #[derive(Debug)]
@@ -21,27 +15,26 @@ pub enum LoadError {
     NoSuchMachine { query: Query },
 }
 
-macro_rules! impl_into_error(
-    ($t:ident) => {
-        impl From<$t> for Error {
-            fn from(error: $t) -> Self {
-                Self::$t(error.into())
-            }
-        }
-
-        impl<T> From<$t> for Result<T> {
-            fn from(error: $t) -> Self {
-                Err(Error::from(error))
-            }
-        }
+impl From<LoadError> for Error {
+    fn from(error: LoadError) -> Self {
+        Self::LoadError(error)
     }
-);
+}
 
-impl_into_error!(ParseError);
-impl_into_error!(LoadError);
+impl From<ParseError> for Error {
+    fn from(error: ParseError) -> Self {
+        Self::MachineError(error.into())
+    }
+}
 
 impl From<MachineError> for Error {
     fn from(error: MachineError) -> Self {
         Self::MachineError(error)
+    }
+}
+
+impl<T> From<LoadError> for Result<T> {
+    fn from(error: LoadError) -> Self {
+        Err(Error::from(error))
     }
 }

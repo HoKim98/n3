@@ -1,12 +1,12 @@
 use serde::{Deserialize, Serialize};
 
-use n3_machine_ffi::{JobId, MachineId, ProgramVec};
+use n3_machine_ffi::{JobId, MachineId, ProgramVec, Query};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum Request {
     Load {
         job: JobId,
-        query: Vec<String>,
+        query: Vec<Query>,
     },
     Spawn {
         job: JobId,

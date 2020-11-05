@@ -1,4 +1,4 @@
-use n3_machine::{Machine, MachineId, MachineResult, Program};
+use n3_machine::{Machine, MachineError, MachineId, MachineResult, Program};
 use n3_torch_ffi::PyMachine;
 
 pub struct PyMachineBase<T>(pub T)
@@ -19,7 +19,11 @@ where
     T: PyMachine,
 {
     fn spawn(&mut self, id: MachineId, program: &Program, command: &str) -> MachineResult<()> {
-        Ok(self.0.py_spawn(id, program, command)?)
+        Ok(self
+            .0
+            .py_spawn(id, program, command)
+            .map_err(|x| x.into())
+            .map_err(MachineError::ExternalError)?)
     }
 
     fn join(&mut self) -> MachineResult<()> {
@@ -27,6 +31,10 @@ where
     }
 
     fn terminate(&mut self) -> MachineResult<()> {
-        Ok(self.0.py_terminate()?)
+        Ok(self
+            .0
+            .py_terminate()
+            .map_err(|x| x.into())
+            .map_err(MachineError::ExternalError)?)
     }
 }

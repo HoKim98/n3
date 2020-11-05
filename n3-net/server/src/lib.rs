@@ -4,26 +4,23 @@ use std::ops::{Deref, DerefMut};
 use simple_socket::{PostServing, SocketServer};
 
 use n3_machine::HostMachine;
-use n3_net_protocol::request::Request;
-use n3_net_protocol::response::Response;
-
-const PORT: u16 = 40960;
+use n3_net_protocol::{Request, Response, PORT};
 
 pub trait Handle<H>
 where
     H: Deref<Target = HostMachine> + DerefMut,
 {
-    fn handle(self, host: &mut HostMachine) -> Response;
+    fn handle(self, host: &mut H) -> Response;
 }
 
 impl<H> Handle<H> for Request
 where
     H: Deref<Target = HostMachine> + DerefMut,
 {
-    fn handle(self, host: &mut HostMachine) -> Response {
+    fn handle(self, host: &mut H) -> Response {
         match self {
             Self::Load { job, query } => Response::Load {
-                num_machines: host.load(job, &query).unwrap(),
+                num_machines: host.load(job, query).unwrap(),
             },
             Self::Spawn {
                 job,

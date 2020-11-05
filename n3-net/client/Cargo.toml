@@ -7,3 +7,7 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+n3-machine-ffi = { path = "../../n3-machine-ffi" }
+n3-net-protocol = { path = "../protocol" }
+
+simple-socket = { version = "0.1", default-features = false }

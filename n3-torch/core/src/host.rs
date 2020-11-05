@@ -2,7 +2,7 @@ use std::ops::{Deref, DerefMut};
 
 use pyo3::{GILGuard, PyResult, Python};
 
-use n3_machine::{Error, HostMachine as NativeHostMachine, Result};
+use n3_machine::{HostMachine as NativeHostMachine, MachineError, Result};
 use n3_torch_ffi::{pyo3, ProcessMachine as ProcessMachineTrait};
 
 use crate::process::ProcessMachine;
@@ -49,9 +49,10 @@ impl HostMachine {
     }
 
     fn _terminate(&mut self) -> Result<()> {
-        self.py_terminate()
+        Ok(self
+            .py_terminate()
             .map_err(|e| e.into())
-            .map_err(Error::MachineError)
+            .map_err(MachineError::ExternalError)?)
     }
 }
 

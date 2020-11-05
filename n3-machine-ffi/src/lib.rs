@@ -1,7 +1,10 @@
+mod error;
+
 use std::fmt;
 
-pub type Error = Box<dyn std::error::Error>;
-pub type Result<T> = std::result::Result<T, Error>;
+use serde::{Deserialize, Serialize};
+
+pub use self::error::*;
 
 pub type JobId = u64;
 
@@ -17,12 +20,74 @@ pub trait Machine {
     fn terminate(&mut self) -> Result<()>;
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct Query {
     pub provider: Option<String>,
     pub domain: Option<String>,
     pub device: Option<String>,
     pub id: Option<String>,
+}
+
+impl Query {
+    pub fn parse<R>(query: R) -> std::result::Result<Self, ParseError>
+    where
+        R: AsRef<str>,
+    {
+        let query = query.as_ref();
+
+        let mut tokens = query.split(':').map(|x| x.to_string());
+
+        let mut provider = tokens.next();
+        let mut domain = tokens.next();
+        let mut device = tokens.next();
+        let mut id = tokens.next();
+
+        if tokens.next().is_some() {
+            return Err(ParseError::UnexpectedTokens {
+                query: query.to_string(),
+            });
+        }
+
+        if domain.is_none() {
+            domain = provider.take();
+        }
+        if device.is_none() {
+            device = domain.take();
+            domain = provider.take();
+        }
+        if id.is_none() && domain.is_some() {
+            id = device.take();
+            device = domain.take();
+            domain = provider.take();
+        }
+
+        Ok(Query {
+            provider,
+            domain,
+            device,
+            id,
+        })
+    }
+
+    pub fn eq_weakly(&self, target: &Self) -> bool {
+        fn eq_field<T, F>(a: &Option<T>, b: &Option<T>, additional: F) -> bool
+        where
+            T: PartialEq + Eq,
+            F: FnOnce() -> bool,
+        {
+            if a.is_none() || a == b {
+                additional()
+            } else {
+                false
+            }
+        }
+
+        let test_provider = || eq_field(&self.provider, &target.provider, || true);
+        let test_domain = || eq_field(&self.domain, &target.domain, test_provider);
+        let test_device = || eq_field(&self.device, &target.device, test_domain);
+        let test_id = || eq_field(&self.id, &target.id, test_device);
+        test_id()
+    }
 }
 
 impl fmt::Display for Query {
