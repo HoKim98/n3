@@ -1,6 +1,6 @@
 # N3: Neural Network Notation
 
-[![travis-ci](https://travis-ci.com/github/kerryeon/n3)](https://travis-ci.com/kerryeon/n3.svg)
+[![travis-ci](https://api.travis-ci.com/kerryeon/n3.svg)](https://travis-ci.com/kerryeon/n3)
 
 This project is WIP. Please be aware of using it.
 
