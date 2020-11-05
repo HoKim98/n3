@@ -1,7 +1,7 @@
 use pyo3::{PyResult, Python};
 use pyo3_mp::Process;
 
-use n3_machine::{Machine, MachineId, Program, Query};
+use n3_machine::{LocalQuery, Machine, MachineId, Program, Query};
 use n3_torch_ffi::{pyo3, ProcessMachine as ProcessMachineTrait, PyMachine, SignalHandler};
 
 use crate::exec::n3_execute_wrapper;
@@ -53,7 +53,7 @@ impl PyMachine for ProcessMachine {
         let py = unsafe { Python::assume_gil_acquired() };
 
         // the machine's name
-        let machine = format!("{}", self.query);
+        let machine = format!("{}", LocalQuery(&self.query));
 
         // the function to execute the program
         let n3_execute = n3_execute_wrapper(py)?;

@@ -2,13 +2,12 @@ use n3_machine::Query;
 
 use super::base::CandidatesMachine;
 
-pub struct CudaMachine;
+pub struct CpuMachine;
 
-impl CandidatesMachine for CudaMachine {
+impl CandidatesMachine for CpuMachine {
     fn get_candidates() -> Vec<Query> {
-        // TODO: detect devices
         vec![Query {
-            device: Some("cuda".to_string()),
+            device: Some("cpu".to_string()),
             id: Some("0".to_string()),
             ..Default::default()
         }]

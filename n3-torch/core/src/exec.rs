@@ -22,13 +22,20 @@ pub(self) fn n3_execute(
     handler: SignalHandler,
 ) -> PyResult<()> {
     // Step 1. Load the program
-    let program = n3_program::Program::load(program).unwrap();
-    dbg!(id, machine);
+    let mut program = n3_program::Program::load(program).unwrap();
 
-    // Step 2. Define the node in REPL
+    // Step 2. Attach id, machine
+    if program.env.is_none() {
+        program.env = Some(Default::default());
+    }
+    let env = program.env.as_mut().unwrap();
+    env.insert("id".to_string(), Some(id.into()));
+    env.insert("machine".to_string(), Some(machine.to_string().into()));
+
+    // Step 3. Define the node in REPL
     let program = program.build(py, ())?.into_py(py);
 
-    // Step 3. Do its own job
+    // Step 4. Do its own job
     let command = command.to_string();
     handler.run(py, move |handler| {
         pyo3::Python::with_gil::<_, PyResult<_>>(|py| {
@@ -37,7 +44,7 @@ pub(self) fn n3_execute(
         })
     })?;
 
-    // Step 4. Exit interpreter
+    // Step 5. Exit interpreter
     unsafe {
         exit_python();
     }

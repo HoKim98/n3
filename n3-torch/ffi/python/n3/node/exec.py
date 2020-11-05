@@ -16,7 +16,9 @@ Metrics = Dict[str, Any]
 
 
 class ExecNode(metaclass=abc.ABCMeta):
-    _devices: list
+    _id: int
+    _machine: str
+
     _writer: ExecWriter
 
     def __init__(self, args: Args, nodes: Dict[str, Node] = {}) -> None:
@@ -25,6 +27,11 @@ class ExecNode(metaclass=abc.ABCMeta):
         for k, v in nodes.items():
             setattr(self, k.replace(' ', '_'), v)
         self._nodes = nodes
+
+        # Attach id, machine
+        env = args['env']
+        self._id = env['id']
+        self._machine = env['machine']
 
         self._writer = ExecWriter(args, self.get_name(), self.get_model_name())
 
@@ -39,8 +46,7 @@ class ExecNode(metaclass=abc.ABCMeta):
 
     def to(self, node: Node) -> Node:
         # TODO: https://github.com/pytorch/pytorch/blob/master/torch/distributed/launch.py
-        # print(self._devices)
-        return node.to('cuda:0')
+        return node.to(self._machine)
 
 
 class Trainer(ExecNode, metaclass=abc.ABCMeta):

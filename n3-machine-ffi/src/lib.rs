@@ -28,13 +28,15 @@ pub trait Machine {
     fn terminate(&mut self) -> Result<()>;
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct Query {
     pub provider: Option<String>,
     pub domain: Option<String>,
     pub device: Option<String>,
     pub id: Option<String>,
 }
+
+pub struct LocalQuery<'a>(pub &'a Query);
 
 impl Query {
     pub fn parse<R>(query: R) -> std::result::Result<Self, ParseError>
@@ -114,6 +116,20 @@ impl fmt::Display for Query {
             if let Some(field) = field {
                 write_colon = true;
                 write!(f, "{}", field)?;
+            }
+        }
+        Ok(())
+    }
+}
+
+impl<'a> fmt::Display for LocalQuery<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if let Some(device) = &self.0.device {
+            write!(f, "{}", device)?;
+        }
+        if let Some(id) = &self.0.id {
+            if id != "0" {
+                write!(f, ":{}", id)?;
             }
         }
         Ok(())

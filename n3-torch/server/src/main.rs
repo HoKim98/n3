@@ -102,7 +102,7 @@ mod tests {
         // spawn a job
         let program = get_dummy_program();
         let command = "train";
-        let machines = &["cuda:0"];
+        let machines = &["cuda"];
 
         let job = Job::spawn(&program, command, machines).unwrap();
 
