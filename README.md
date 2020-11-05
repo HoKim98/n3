@@ -1,9 +1,8 @@
 # N3: Neural Network Notation
 
-[![travis-ci](https://api.travis-ci.com/kerryeon/n3-rs.svg?token=EwDa73MhCmpxV2ZhCUmb&branch=master)](https://travis-ci.com/github/kerryeon/n3-rs)
-[![Coverage Status](https://coveralls.io/repos/github/kerryeon/n3-rs/badge.svg?branch=master&t=bHgSyR)](https://coveralls.io/github/kerryeon/n3-rs?branch=master)
+[![travis-ci](https://travis-ci.com/github/kerryeon/n3)](https://travis-ci.com/kerryeon/n3.svg)
 
-This project is in construction. Please be aware of using it.
+This project is WIP. Please be aware of using it.
 
 ```
 node LeNet5:
