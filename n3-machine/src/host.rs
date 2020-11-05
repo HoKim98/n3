@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 pub use n3_machine_ffi::Query;
-use n3_machine_ffi::{JobId, Machine, MachineId, Program};
+use n3_machine_ffi::{JobId, Machine, MachineId, Program, SignalHandler};
 
 use crate::error::{LoadError, Result};
 
@@ -9,6 +9,7 @@ pub type Generator = unsafe fn(&Query) -> Vec<Box<dyn Machine>>;
 
 #[derive(Default)]
 pub struct HostMachine {
+    pub handler: SignalHandler,
     generators: Vec<(Query, Generator)>,
     jobs: BTreeMap<JobId, Vec<Box<dyn Machine>>>,
 }
@@ -59,7 +60,7 @@ impl HostMachine {
     ) -> Result<()> {
         let job = self.jobs.get_mut(&job).unwrap();
         for (id, machine) in machines.into_iter().zip(job.iter_mut()) {
-            machine.spawn(id, program, command)?;
+            machine.spawn(id, program, command, self.handler.clone())?;
         }
         Ok(())
     }

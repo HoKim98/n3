@@ -2,7 +2,7 @@ use pyo3::{PyResult, Python};
 use pyo3_mp::Process;
 
 use n3_machine::{Machine, MachineId, Program, Query};
-use n3_torch_ffi::{pyo3, ProcessMachine as ProcessMachineTrait, PyMachine};
+use n3_torch_ffi::{pyo3, ProcessMachine as ProcessMachineTrait, PyMachine, SignalHandler};
 
 use crate::exec::n3_execute_wrapper;
 use crate::python::PyMachineBase;
@@ -42,7 +42,13 @@ impl PyMachine for ProcessMachine {
         self.process.is_running()
     }
 
-    fn py_spawn(&mut self, id: MachineId, program: &Program, command: &str) -> PyResult<()> {
+    fn py_spawn(
+        &mut self,
+        id: MachineId,
+        program: &Program,
+        command: &str,
+        handler: SignalHandler,
+    ) -> PyResult<()> {
         // the GIL is acquired by HostMachine
         let py = unsafe { Python::assume_gil_acquired() };
 
@@ -54,7 +60,7 @@ impl PyMachine for ProcessMachine {
 
         // spawn to new process
         self.process
-            .spawn(n3_execute, (id, &machine, command, program), None)?;
+            .spawn(n3_execute, (id, &machine, command, program, handler), None)?;
         Ok(())
     }
 

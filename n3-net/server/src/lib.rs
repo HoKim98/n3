@@ -1,6 +1,7 @@
 use std::net::{IpAddr, SocketAddr};
 use std::ops::{Deref, DerefMut};
 
+use ctrlc::set_handler;
 pub use simple_socket::PostServing;
 
 use n3_machine::HostMachine;
@@ -55,7 +56,20 @@ where
     let backlog = Default::default();
     let server = SocketServer::try_new(socket, backlog).unwrap();
 
+    let handler = host.handler.clone();
+    set_handler(move || handler.set(false)).unwrap();
+
+    let handler = host.handler.clone();
     server
-        .run(|x| Handle::<H>::handle(x, &mut host), post)
+        .run(
+            |x| Handle::<H>::handle(x, &mut host),
+            |s| {
+                if handler.is_running() {
+                    post(s)
+                } else {
+                    PostServing::Stop
+                }
+            },
+        )
         .unwrap()
 }

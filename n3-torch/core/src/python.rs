@@ -18,10 +18,16 @@ impl<T> Machine for PyMachineBase<T>
 where
     T: PyMachine,
 {
-    fn spawn(&mut self, id: MachineId, program: &Program, command: &str) -> MachineResult<()> {
+    fn spawn(
+        &mut self,
+        id: MachineId,
+        program: &Program,
+        command: &str,
+        handler: n3_machine::SignalHandler,
+    ) -> MachineResult<()> {
         Ok(self
             .0
-            .py_spawn(id, program, command)
+            .py_spawn(id, program, command, handler.into())
             .map_err(|x| x.into())
             .map_err(MachineError::ExternalError)?)
     }

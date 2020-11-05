@@ -10,4 +10,5 @@ edition = "2018"
 n3-machine = { path = "../../n3-machine" }
 n3-net-protocol = { path = "../protocol" }
 
+ctrlc = "3.1"
 simple-socket = "0.1"

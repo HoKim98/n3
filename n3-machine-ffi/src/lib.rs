@@ -1,10 +1,12 @@
 mod error;
+mod handler;
 
 use std::fmt;
 
 use serde::{Deserialize, Serialize};
 
 pub use self::error::*;
+pub use self::handler::SignalHandler;
 
 pub type JobId = u128;
 
@@ -14,7 +16,13 @@ pub type ProgramVec = Vec<u8>;
 pub type Program = [u8];
 
 pub trait Machine {
-    fn spawn(&mut self, id: MachineId, program: &Program, command: &str) -> Result<()>;
+    fn spawn(
+        &mut self,
+        id: MachineId,
+        program: &Program,
+        command: &str,
+        handler: SignalHandler,
+    ) -> Result<()>;
 
     fn join(&mut self) -> Result<()>;
     fn terminate(&mut self) -> Result<()>;

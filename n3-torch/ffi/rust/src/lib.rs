@@ -1,3 +1,5 @@
+mod handler;
+
 pub use pyo3;
 
 use std::ops::{Deref, DerefMut};
@@ -6,10 +8,18 @@ use pyo3::PyResult;
 
 use n3_machine_ffi::{MachineId, Program, Query};
 
+pub use self::handler::SignalHandler;
+
 pub trait PyMachine {
     fn is_running(&self) -> bool;
 
-    fn py_spawn(&mut self, id: MachineId, program: &Program, command: &str) -> PyResult<()>;
+    fn py_spawn(
+        &mut self,
+        id: MachineId,
+        program: &Program,
+        command: &str,
+        handler: SignalHandler,
+    ) -> PyResult<()>;
     fn py_terminate(&mut self) -> PyResult<()>;
 }
 
@@ -33,8 +43,14 @@ where
         self.deref().is_running()
     }
 
-    fn py_spawn(&mut self, id: MachineId, program: &Program, command: &str) -> PyResult<()> {
-        self.deref_mut().py_spawn(id, program, command)
+    fn py_spawn(
+        &mut self,
+        id: MachineId,
+        program: &Program,
+        command: &str,
+        handler: SignalHandler,
+    ) -> PyResult<()> {
+        self.deref_mut().py_spawn(id, program, command, handler)
     }
 
     fn py_terminate(&mut self) -> PyResult<()> {
