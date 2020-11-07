@@ -4,8 +4,6 @@ members = [
     "n3-builder",
     "n3-machine",
     "n3-machine-ffi",
-    "n3-monitor-core",
-    "n3-monitor",
     "n3-net/client",
     "n3-net/protocol",
     "n3-net/server",
