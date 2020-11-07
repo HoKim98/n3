@@ -60,13 +60,13 @@ impl PyMachine for ProcessMachine {
 
         // spawn to new process
         py.import("threading")?.call0("_shutdown")?;
-        self.process.spawn(
-            n3_execute,
-            (
-                id.primary, id.local, id.world, &machine, command, program, handler,
-            ),
-            None,
-        )?;
+        // self.process.spawn(
+        //     n3_execute,
+        //     (
+        //         id.primary, id.local, id.world, &machine, command, program, handler,
+        //     ),
+        //     None,
+        // )?;
         Ok(())
     }
 
