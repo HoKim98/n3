@@ -21,7 +21,7 @@ pub use self::code::{Code, CodeData, CodeType};
 pub use self::error::{Error, Result};
 pub use self::execs::{dirs, ExecRoot, GlobalVars, Program};
 pub use self::externs::{ExternCode, PythonScripts};
-pub use self::graph::ToValues;
+pub use self::graph::{RawVariables, ToValues};
 pub use self::nodes::NodeCode;
 
 use n3_parser::Parser;

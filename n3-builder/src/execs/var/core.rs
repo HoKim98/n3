@@ -190,6 +190,13 @@ impl Vars {
             _ => todo!(),
         }
     }
+
+    pub fn to_n3_variables(&self) -> RawVariables {
+        self.inner
+            .iter()
+            .map(|(k, v)| (format!("n3_{}", k), v.borrow().clone()))
+            .collect()
+    }
 }
 
 impl ToValues for Vars {
