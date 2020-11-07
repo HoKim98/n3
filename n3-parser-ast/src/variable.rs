@@ -53,6 +53,7 @@ pub struct Variable {
 
     pub name: String,
     pub shortcut: Option<String>,
+    pub description: Option<String>,
 
     pub ty: Option<LetType>,
     pub value: Option<Value>,

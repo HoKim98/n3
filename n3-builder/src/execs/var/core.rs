@@ -1,6 +1,6 @@
 use crate::ast;
 use crate::error::{GraphError, Result};
-use crate::graph::{ToValues, Values, Variables};
+use crate::graph::{RawVariables, ToValues, Values, Variables};
 
 #[derive(Clone, Default, Debug)]
 pub struct Vars {
@@ -10,6 +10,7 @@ pub struct Vars {
 #[derive(Clone)]
 pub struct Query<'a> {
     pub name: &'a str,
+    pub description: &'a str,
     pub ty: ast::LetType,
     // order: value -> fn_value
     pub value: Option<String>,

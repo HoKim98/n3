@@ -62,6 +62,7 @@ impl Graph {
                         id_old: Some(id),
                         name: v.name,
                         shortcut: v.shortcut,
+                        description: None,
                         ty: Some(v.ty),
                         value: v.value,
                     }

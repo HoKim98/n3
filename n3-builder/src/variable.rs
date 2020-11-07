@@ -140,6 +140,7 @@ impl Detach for ast::RefVariable {
             id_old: this.id,
             name: this.name.clone(),
             shortcut: this.shortcut.clone(),
+            description: this.description.clone(),
             ty: this.ty.clone(),
             value: this.value.clone(),
         };

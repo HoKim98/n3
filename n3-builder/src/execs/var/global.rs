@@ -15,12 +15,14 @@ pub struct GlobalVars {
 const QUERY: &[Query] = &[
     Query {
         name: N3_SOURCE_ROOT,
+        description: "The n3 standard library's path",
         ty: ast::LetType::String,
         value: None,
         fn_value: None,
     },
     Query {
         name: N3_ROOT,
+        description: "The n3 local path",
         ty: ast::LetType::String,
         value: None,
         fn_value: Some(GlobalVars::default_home_dir),
