@@ -1,17 +1,18 @@
+use std::mem::ManuallyDrop;
 use std::ops::{Deref, DerefMut};
 
 use pyo3::{GILGuard, Python};
 
 use n3_machine::{HostMachine as NativeHostMachine, Result};
-use n3_torch_ffi::{pyo3, ProcessMachine as ProcessMachineTrait};
+use n3_torch_ffi::{finalize_python, pyo3, ProcessMachine as ProcessMachineTrait};
 
-use crate::process::{exit_python, ProcessMachine};
+use crate::process::ProcessMachine;
 use crate::BUILTIN_MACHINES;
 
 pub struct HostMachine {
-    host: NativeHostMachine,
+    host: ManuallyDrop<NativeHostMachine>,
     // GILGuard is required to make Python GIL alive.
-    _py: GILGuard,
+    _py: ManuallyDrop<GILGuard>,
 }
 
 impl HostMachine {
@@ -25,7 +26,10 @@ impl HostMachine {
             host.add_generator(name, *generator)?;
         }
 
-        Ok(Self { host, _py })
+        Ok(Self {
+            host: ManuallyDrop::new(host),
+            _py: ManuallyDrop::new(_py),
+        })
     }
 
     pub fn add_process_generator<T>(&mut self, query: &str) -> Result<()>
@@ -33,12 +37,6 @@ impl HostMachine {
         T: ProcessMachineTrait<ProcessMachine> + 'static,
     {
         self.add_generator(query, ProcessMachine::try_new::<T>)
-    }
-
-    pub fn terminate(&mut self) {
-        unsafe {
-            exit_python();
-        }
     }
 }
 
@@ -58,6 +56,11 @@ impl DerefMut for HostMachine {
 
 impl Drop for HostMachine {
     fn drop(&mut self) {
-        self.terminate()
+        // drop order: GIL -> Python -> host
+        unsafe {
+            ManuallyDrop::drop(&mut self._py);
+            finalize_python();
+            ManuallyDrop::drop(&mut self.host);
+        }
     }
 }

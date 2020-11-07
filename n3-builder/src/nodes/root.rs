@@ -1,6 +1,9 @@
 use std::cell::UnsafeCell;
 use std::path::PathBuf;
 
+#[cfg(feature = "pip")]
+use n3_torch_ffi::{finalize_python, pyo3};
+
 use super::ir::NodeIR;
 use crate::cache::NodeCache;
 use crate::error::Result;
@@ -85,5 +88,12 @@ impl NodeRoot {
 
     pub(crate) fn get_extern(&self, name: &str) -> Result<PythonScript> {
         self.externs.get(name, self)
+    }
+}
+
+#[cfg(feature = "pip")]
+impl Drop for NodeRoot {
+    fn drop(&mut self) {
+        unsafe { finalize_python() }
     }
 }

@@ -30,6 +30,11 @@ class ExecWriter:
         tag = f'{self._exec_name}/{tag}'
         return EpochWriter(self._writer, tag, fn_dataset, 0, self._epoch)
 
+    def close(self):
+        if self._writer is not None:
+            self._writer.close()
+            self._writer = None
+
 
 def spawn_daemon(env):
     from tensorboard.main import run_main

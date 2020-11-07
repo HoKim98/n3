@@ -56,7 +56,7 @@ mod tests {
         Ok(())
     }
 
-    fn get_dummy_program() -> ProgramVec {
+    fn get_dummy_program() -> (ExecRoot, ProgramVec) {
         let envs = GlobalVars::default();
         envs.set(dirs::N3_ROOT, "../../n3-builder/tests/data/")
             .unwrap();
@@ -69,7 +69,8 @@ mod tests {
         args.set("epoch", "1").unwrap();
         args.set("batch size", "10").unwrap();
 
-        args.build_with_env().unwrap()
+        let program = args.build_with_env().unwrap();
+        (root, program)
     }
 
     #[test]
@@ -100,7 +101,7 @@ mod tests {
         }
 
         // spawn a job
-        let program = get_dummy_program();
+        let (root, program) = get_dummy_program();
         let command = "train";
         let machines = &["cuda"];
 
@@ -111,6 +112,9 @@ mod tests {
         alive_client.set(false);
 
         // stop the server
+        // note: the order is important to finalize Python interpreter safely.
+        // order: server (host) -> root (Python)
         server.join().unwrap();
+        drop(root);
     }
 }

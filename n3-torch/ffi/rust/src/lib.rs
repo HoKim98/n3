@@ -1,8 +1,10 @@
 mod handler;
 
-pub use pyo3;
+pub extern crate pyo3;
 
+use std::mem::ManuallyDrop;
 use std::ops::{Deref, DerefMut};
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use pyo3::PyResult;
 
@@ -56,4 +58,22 @@ where
     fn py_terminate(&mut self) -> PyResult<()> {
         self.deref_mut().py_terminate()
     }
+}
+
+/// # Safety
+///
+/// This function should be called when the Python interpreter is idle.
+pub unsafe fn finalize_python() {
+    static FINALIZED: AtomicBool = AtomicBool::new(false);
+    if FINALIZED.compare_and_swap(false, true, Ordering::SeqCst) {
+        return;
+    }
+
+    // The GILGuard is acquired to finalize the Python interpreter.
+    // Then, it should not be dropped normally, because the memory is already dropped.
+    //
+    // The GILGuard itself is under Stack, so it is unnecessary to manually drop the struct.
+    let gil = ManuallyDrop::new(pyo3::Python::acquire_gil());
+    pyo3::ffi::Py_FinalizeEx();
+    drop(gil);
 }

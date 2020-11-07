@@ -6,7 +6,6 @@ use n3_machine::{MachineId, Program, PORT};
 use n3_torch_ffi::{pyo3, SignalHandler};
 
 use crate::code::BuildCode;
-use crate::process::exit_python;
 
 pub fn n3_execute_wrapper(py: Python) -> PyResult<&PyCFunction> {
     wrap_pyfunction!(n3_execute)(py)
@@ -65,17 +64,13 @@ pub(self) fn n3_execute(
     let program = program.build(py, ())?.into_py(py);
 
     // Step 5. Do its own job
-    let command = command.to_string();
     handler.run(py, move |handler| {
-        pyo3::Python::with_gil::<_, PyResult<_>>(|py| {
-            program.call_method1(py, &command, (handler,))?;
+        pyo3::Python::with_gil(|py| {
+            // execute the command
+            program.call_method1(py, command, (handler,))?;
+            // finalize
+            program.call_method0(py, "close")?;
             Ok(())
         })
-    })?;
-
-    // Step 6. Exit interpreter
-    unsafe {
-        exit_python();
-    }
-    Ok(())
+    })
 }

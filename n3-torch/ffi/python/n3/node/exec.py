@@ -81,6 +81,9 @@ class ExecNode(metaclass=abc.ABCMeta):
             return [self.tensor_to(v) for v in value]
         return value.to(self._machine)
 
+    def close(self):
+        pass
+
 
 class Trainer(ExecNode, metaclass=abc.ABCMeta):
     data: DataNode
@@ -191,3 +194,7 @@ class Trainer(ExecNode, metaclass=abc.ABCMeta):
 
     def get_model_name(self) -> str:
         return self.model.get_name()
+
+    def close(self):
+        super().close()
+        self._writer.close()

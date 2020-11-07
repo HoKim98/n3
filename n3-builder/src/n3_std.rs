@@ -20,7 +20,7 @@ fn get_files(root: &Path, extension: &'static str) -> HashMap<String, String> {
         .collect();
 
     if result.is_empty() {
-        panic!("variable 'N3_DIR' is incorrect")
+        panic!("variable 'N3_ROOT' is incorrect")
     }
     result
 }
