@@ -1,8 +1,30 @@
-use clap::{crate_authors, crate_version, App, Arg};
+use std::collections::btree_map::Keys;
 
-use n3_builder::{ast, GlobalVars, RawVariables};
+use clap::{crate_authors, crate_version, App, Arg, ArgMatches};
 
-pub type FnExec = fn(GlobalVars, &clap::ArgMatches);
+use n3_builder::{ast, GlobalVars, RawVariables, Vars};
+
+pub type FnExec = fn(GlobalVars, &ArgMatches);
+
+pub fn get_matches(f: FnExec) {
+    let args = CommandArgs::default();
+    let matches = app(&args.vars).get_matches();
+
+    // update envs
+    apply(&matches, &args.env, args.vars.keys());
+
+    f(args.env, &matches)
+}
+
+pub fn apply<V>(matches: &ArgMatches, args: &Vars, keys: Keys<String, V>) {
+    let subcommmand_matches = matches.subcommand().1.unwrap();
+    for name in keys {
+        if let Some(value) = subcommmand_matches.value_of(name) {
+            let name = &name[3..]; // skip "n3_"
+            args.set(name, value).unwrap();
+        }
+    }
+}
 
 struct CommandArgs {
     env: GlobalVars,
@@ -15,12 +37,6 @@ impl Default for CommandArgs {
         let vars = env.to_n3_variables();
         Self { env, vars }
     }
-}
-
-pub fn get_matches(f: FnExec) {
-    let args = CommandArgs::default();
-    let matches = app(&args.vars).get_matches();
-    f(args.env, &matches)
 }
 
 fn subcommand_env<'a, 'b, 'c>(env: &'b RawVariables, mut app: App<'b, 'c>) -> App<'b, 'c>

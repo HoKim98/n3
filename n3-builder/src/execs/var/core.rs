@@ -34,6 +34,7 @@ impl Vars {
                 .into_iter()
                 .map(|x| {
                     let name = x.name.to_string();
+                    let desc = x.description.to_string();
                     let ty = x.ty;
                     let fn_value = x.fn_value;
                     let value = x
@@ -45,6 +46,7 @@ impl Vars {
                     let mut var = ast::Variable::with_name_value(name.clone(), value);
                     var.id = Some(0);
                     var.id_old = Some(0);
+                    var.description = Some(desc);
                     var.ty = Some(ty);
                     Ok((name, var.into()))
                 })

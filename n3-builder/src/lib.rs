@@ -19,7 +19,7 @@ pub use n3_parser::ast;
 
 pub use self::code::{Code, CodeData, CodeType};
 pub use self::error::{Error, Result};
-pub use self::execs::{dirs, ExecRoot, GlobalVars, Program};
+pub use self::execs::{dirs, ExecRoot, GlobalVars, Program, Vars};
 pub use self::externs::{ExternCode, PythonScripts};
 pub use self::graph::{RawVariables, ToValues};
 pub use self::nodes::NodeCode;
