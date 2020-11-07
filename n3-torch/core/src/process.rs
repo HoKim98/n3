@@ -59,14 +59,14 @@ impl PyMachine for ProcessMachine {
         let n3_execute = n3_execute_wrapper(py)?;
 
         // spawn to new process
+        self.process.spawn(
+            n3_execute,
+            (
+                id.primary, id.local, id.world, &machine, command, program, handler,
+            ),
+            None,
+        )?;
         py.import("threading")?.call0("_shutdown")?;
-        // self.process.spawn(
-        //     n3_execute,
-        //     (
-        //         id.primary, id.local, id.world, &machine, command, program, handler,
-        //     ),
-        //     None,
-        // )?;
         Ok(())
     }
 
