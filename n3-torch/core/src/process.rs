@@ -59,6 +59,7 @@ impl PyMachine for ProcessMachine {
         let n3_execute = n3_execute_wrapper(py)?;
 
         // spawn to new process
+        py.import("threading")?.call0("_shutdown")?;
         self.process.spawn(
             n3_execute,
             (

@@ -37,5 +37,6 @@ install:
   - pip3 install -r n3-torch/ffi/python/requirements.txt --quiet
 
 script:
+  - set RUST_BACKTRACE=1
   - cargo build --verbose --workspace
   - cargo test --verbose --workspace
