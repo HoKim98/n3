@@ -65,7 +65,12 @@ fn main() -> Result<()> {
    }
    // Step 3-3. show help message
    else {
-      app().get_matches();
+      let app = unsafe { subcommand_args(&env_vars, app()) };
+      let matches = app.get_matches_from(&["--help"]);
+
+      // drop order: app (=matches) -> args
+      drop(matches);
+      drop(env);
       Ok(())
    }
 }
