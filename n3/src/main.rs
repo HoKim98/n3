@@ -2,10 +2,10 @@ mod args;
 mod exec;
 mod monitor;
 
-use clap::{crate_authors, crate_version, App, AppSettings, Arg, ArgMatches};
+use clap::{crate_authors, crate_version, App, AppSettings, Arg, ArgMatches, Result as ClapResult};
 use inflector::Inflector;
 
-use n3_builder::{ast, inflector, ExecRoot, GlobalVars, Result, Vars, QUERY_SPLIT_1};
+use n3_builder::{ast, dirs, inflector, ExecRoot, GlobalVars, Result, Vars, QUERY_SPLIT_1};
 
 use crate::args::Command;
 
@@ -30,16 +30,20 @@ fn main() -> Result<()> {
       .flatten()
    {
       let args_set = [&env_vars];
-      let matches = unsafe { parse_args(&args_set) };
-
-      f(Command {
-         command: command.unwrap(),
-         env: &env,
-         args: None,
-      })?;
+      match unsafe { parse_args(&args_set) } {
+         Ok(_) => {
+            f(Command {
+               command: command.unwrap(),
+               env: &env,
+               args: None,
+            })?;
+         }
+         Err(e) => {
+            println!("{}", e);
+         }
+      }
 
       // drop order: app (=matches) -> args
-      drop(matches);
       drop(env);
       Ok(())
    }
@@ -49,16 +53,20 @@ fn main() -> Result<()> {
       let args = root.get(&exec.to_pascal_case())?;
 
       let args_set = [&env_vars, &args.to_exec_variables()];
-      let matches = unsafe { parse_args(&args_set) };
-
-      crate::exec::execute(Command {
-         command: command.unwrap(),
-         env: &env,
-         args: Some(args),
-      })?;
+      match unsafe { parse_args(&args_set) } {
+         Ok(_) => {
+            crate::exec::execute(Command {
+               command: command.unwrap(),
+               env: &env,
+               args: Some(args),
+            })?;
+         }
+         Err(e) => {
+            println!("{}", e);
+         }
+      }
 
       // drop order: app (=matches) -> args
-      drop(matches);
       drop(root);
       drop(env);
       Ok(())
@@ -75,7 +83,7 @@ fn main() -> Result<()> {
    }
 }
 
-unsafe fn parse_args<'a, 'b, 'c>(args: &[&'a Vars]) -> Result<ArgMatches<'b>>
+unsafe fn parse_args<'a, 'b, 'c>(args: &[&'a Vars]) -> ClapResult<Result<ArgMatches<'b>>>
 where
    'a: 'b,
    'b: 'c,
@@ -85,11 +93,13 @@ where
       app = subcommand_args(args, app);
    }
 
-   let matches = app.get_matches();
+   let matches = app.get_matches_safe()?;
    for args in args {
-      apply(&matches, args)?;
+      if let Err(e) = apply(&matches, args) {
+         return Ok(Err(e));
+      }
    }
-   Ok(matches)
+   Ok(Ok(matches))
 }
 
 fn apply(matches: &ArgMatches, args: &Vars) -> Result<()> {
@@ -110,6 +120,11 @@ where
    for (name, var) in &args.inner {
       // drop order: app -> args
       let var = var.try_borrow_unguarded().unwrap();
+
+      // hidden
+      if var.name == dirs::N3_SOURCE_ROOT {
+         continue;
+      }
 
       let mut arg = Arg::with_name(name).long(name).takes_value(true);
       if let Some(shortcut) = &var.shortcut {
