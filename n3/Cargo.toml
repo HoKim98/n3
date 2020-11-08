@@ -8,5 +8,6 @@ edition = "2018"
 
 [dependencies]
 n3-builder = { path = "../n3-builder" }
+n3-net-client = { path = "../n3-net/client" }
 
 clap = "~2.27.0"

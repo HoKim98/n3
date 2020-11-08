@@ -36,7 +36,7 @@ where
     fn verify_query(query: &Query) -> Vec<Query> {
         C::get_candidates()
             .into_iter()
-            .filter(|x| query.eq_weakly(x))
+            .filter(|x| query.eq_device(x))
             .collect()
     }
 }

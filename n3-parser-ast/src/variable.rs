@@ -388,6 +388,13 @@ impl Value {
         }
     }
 
+    pub fn unwrap_list(&self) -> Option<&[Value]> {
+        match self {
+            Self::List(value) => Some(value.as_slice()),
+            _ => None,
+        }
+    }
+
     pub fn try_as_dim(&self) -> Option<&RefVariable> {
         match self {
             Self::Variable(var) => {

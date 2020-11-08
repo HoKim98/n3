@@ -6,10 +6,11 @@ mod var;
 
 pub use n3_program::execs::dirs;
 
+pub use self::args::Args;
 pub use self::ir::ExecIR;
 pub use self::program::Program;
 pub use self::root::ExecRoot;
-pub use self::var::{GlobalVars, Vars};
+pub use self::var::{GlobalVars, Vars, QUERY_SPLIT_1};
 
 #[cfg(test)]
 mod tests {

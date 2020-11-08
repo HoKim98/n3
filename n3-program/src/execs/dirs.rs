@@ -6,3 +6,4 @@ pub const NODES_USER_DIR: &str = "__user__";
 
 pub const N3_SOURCE_ROOT: &str = "source_root";
 pub const N3_ROOT: &str = "root";
+pub const N3_MACHINES: &str = "machines";

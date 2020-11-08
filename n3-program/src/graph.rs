@@ -18,7 +18,6 @@ impl PartialEq for Table {
     }
 }
 
-pub type RawVariables = BTreeMap<String, ast::Variable>;
 pub type Variables = BTreeMap<String, ast::RefVariable>;
 pub type Values = BTreeMap<String, Option<ast::Value>>;
 

@@ -1,6 +1,8 @@
 #![cfg_attr(feature = "test-nightly", feature(is_sorted))]
 #![deny(clippy::all)]
 
+pub extern crate inflector;
+
 mod n3_std;
 
 mod cache;
@@ -19,9 +21,9 @@ pub use n3_parser::ast;
 
 pub use self::code::{Code, CodeData, CodeType};
 pub use self::error::{Error, Result};
-pub use self::execs::{dirs, ExecRoot, GlobalVars, Program, Vars};
+pub use self::execs::{dirs, Args, ExecRoot, GlobalVars, Program, Vars, QUERY_SPLIT_1};
 pub use self::externs::{ExternCode, PythonScripts};
-pub use self::graph::{RawVariables, ToValues};
+pub use self::graph::ToValues;
 pub use self::nodes::NodeCode;
 
 use n3_parser::Parser;

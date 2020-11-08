@@ -52,7 +52,11 @@ impl Query {
     {
         let query = query.as_ref();
 
-        let mut tokens = query.split(':').map(|x| x.to_string());
+        let mut tokens =
+            query
+                .split(':')
+                .map(|x| x.to_string())
+                .map(|x| if x.is_empty() { None } else { Some(x) });
 
         let mut provider = tokens.next();
         let mut domain = tokens.next();
@@ -79,29 +83,23 @@ impl Query {
         }
 
         Ok(Query {
-            provider,
-            domain,
-            device,
-            id,
+            provider: provider.flatten(),
+            domain: domain.flatten(),
+            device: device.flatten(),
+            id: id.flatten(),
         })
     }
 
     pub fn eq_weakly(&self, target: &Self) -> bool {
-        fn eq_field<T, F>(a: &Option<T>, b: &Option<T>, additional: F) -> bool
-        where
-            T: PartialEq + Eq,
-            F: FnOnce() -> bool,
-        {
-            if a.is_none() || a == b {
-                additional()
-            } else {
-                false
-            }
-        }
-
         let test_provider = || eq_field(&self.provider, &target.provider, || true);
         let test_domain = || eq_field(&self.domain, &target.domain, test_provider);
         let test_device = || eq_field(&self.device, &target.device, test_domain);
+        let test_id = || eq_field(&self.id, &target.id, test_device);
+        test_id()
+    }
+
+    pub fn eq_device(&self, target: &Self) -> bool {
+        let test_device = || eq_field(&self.device, &target.device, || true);
         let test_id = || eq_field(&self.id, &target.id, test_device);
         test_id()
     }
@@ -140,5 +138,17 @@ impl<'a> fmt::Display for LocalQuery<'a> {
             }
         }
         Ok(())
+    }
+}
+
+fn eq_field<T, F>(a: &Option<T>, b: &Option<T>, additional: F) -> bool
+where
+    T: PartialEq + Eq,
+    F: FnOnce() -> bool,
+{
+    if a.is_none() || a == b {
+        additional()
+    } else {
+        false
     }
 }

@@ -1,10 +1,12 @@
 use crate::ast;
 use crate::error::{GraphError, Result};
-use crate::graph::{RawVariables, ToValues, Values, Variables};
+use crate::graph::{ToValues, Values, Variables};
+
+use inflector::Inflector;
 
 #[derive(Clone, Default, Debug)]
 pub struct Vars {
-    inner: Variables,
+    pub inner: Variables,
 }
 
 #[derive(Clone)]
@@ -16,6 +18,8 @@ pub struct Query<'a> {
     pub value: Option<String>,
     pub fn_value: Option<fn() -> Option<String>>,
 }
+
+pub const QUERY_SPLIT_1: &str = "\x01";
 
 impl From<Variables> for Vars {
     fn from(inner: Variables) -> Self {
@@ -40,7 +44,7 @@ impl Vars {
                     let value = x
                         .value
                         .or_else(|| fn_value.map(|f| f()).flatten())
-                        .map(|v| Self::convert(&name, v, Some(&ty)))
+                        .map(|v| Self::encode(&name, v, Some(&ty)))
                         .transpose()?;
 
                     let mut var = ast::Variable::with_name_value(name.clone(), value);
@@ -109,6 +113,12 @@ impl Vars {
         })
     }
 
+    pub fn get_string_list(&self, name: &str) -> Result<Vec<String>> {
+        self.get_and_cast_list(name, ast::LetType::String, |x| {
+            x.unwrap_string().map(|x| x.to_string())
+        })
+    }
+
     fn get_and_cast<T>(
         &self,
         name: &str,
@@ -132,19 +142,21 @@ impl Vars {
         }
     }
 
-    pub unsafe fn add(&mut self, name: &str, value: impl Into<ast::Value>) -> Result<()> {
-        if self.inner.contains_key(name) {
-            self.set_as_value(name, value)
-        } else {
-            let var = ast::Variable::with_name_value(name.to_string(), Some(value.into()));
-            self.inner.insert(name.to_string(), var.into());
-            Ok(())
-        }
+    fn get_and_cast_list<T>(
+        &self,
+        name: &str,
+        expected: ast::LetType,
+        f: impl Fn(&ast::Value) -> Option<T>,
+    ) -> Result<Vec<T>> {
+        self.get_and_cast(name, ast::LetType::List(Box::new(expected)), |x| {
+            x.unwrap_list()
+                .map(|x| x.iter().map(|x| f(x)).flatten().collect())
+        })
     }
 
     pub fn set(&self, name: &str, value: &str) -> Result<()> {
         let mut var = self.get(name)?.borrow_mut();
-        var.value = Some(Self::convert(name, value.to_string(), var.ty.as_ref())?);
+        var.value = Some(Self::encode(name, value.to_string(), var.ty.as_ref())?);
         Ok(())
     }
 
@@ -168,7 +180,20 @@ impl Vars {
         Ok(())
     }
 
-    fn convert(name: &str, value: String, ty: Option<&ast::LetType>) -> Result<ast::Value> {
+    fn encode(name: &str, value: String, ty: Option<&ast::LetType>) -> Result<ast::Value> {
+        match ty {
+            Some(ast::LetType::List(ty)) => Ok(ast::Value::List(
+                value
+                    .split(QUERY_SPLIT_1)
+                    .filter(|x| !x.is_empty())
+                    .map(|x| Self::encode(name, x.to_string(), Some(ty)))
+                    .collect::<Result<_>>()?,
+            )),
+            _ => Self::encode_atomic(name, value, ty),
+        }
+    }
+
+    fn encode_atomic(name: &str, value: String, ty: Option<&ast::LetType>) -> Result<ast::Value> {
         match ty {
             Some(ast::LetType::Bool) => match value.to_lowercase().as_str() {
                 "yes" | "true" | "1" => Ok(true.into()),
@@ -188,16 +213,25 @@ impl Vars {
                 Err(_) => unparsable_string(name, value, ty),
             },
             Some(ast::LetType::String) => Ok(ast::Value::String(value)),
-            Some(ast::LetType::Node(_)) => Ok(ast::Value::Node(value)),
-            _ => todo!(),
+            Some(ast::LetType::Node(_)) => Ok(ast::Value::Node(value.to_pascal_case())),
+            _ => unparsable_string(name, value, ty),
         }
     }
 
-    pub fn to_n3_variables(&self) -> RawVariables {
+    pub fn to_n3_variables(&self) -> Self {
         self.inner
             .iter()
-            .map(|(k, v)| (format!("n3_{}", k), v.borrow().clone()))
-            .collect()
+            .map(|(k, v)| (format!("n3_{}", k), v.clone()))
+            .collect::<Variables>()
+            .into()
+    }
+
+    pub fn to_exec_variables(&self) -> Self {
+        self.inner
+            .iter()
+            .map(|(k, v)| (k.to_snake_case(), v.clone()))
+            .collect::<Variables>()
+            .into()
     }
 }
 
