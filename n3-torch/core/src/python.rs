@@ -1,5 +1,7 @@
+use pyo3::Python;
+
 use n3_machine::{Machine, MachineError, MachineIdSet, MachineResult, Program};
-use n3_torch_ffi::PyMachine;
+use n3_torch_ffi::{pyo3, PyMachine};
 
 pub struct PyMachineBase<T>(pub T)
 where
@@ -28,6 +30,12 @@ where
         Ok(self
             .0
             .py_spawn(id, program, command, handler.into())
+            .map_err(|e| {
+                Python::with_gil(|py| {
+                    e.print_and_set_sys_last_vars(py);
+                    e
+                })
+            })
             .map_err(|x| x.into())
             .map_err(MachineError::ExternalError)?)
     }
