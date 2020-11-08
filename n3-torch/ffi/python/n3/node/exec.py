@@ -71,7 +71,9 @@ class ExecNode(metaclass=abc.ABCMeta):
         if self._is_distributed and any((p.requires_grad for p in node.parameters())):
             device_ids = [self._gpu_id]  # GPU device id
             node = nn.parallel.DistributedDataParallel(node,
-                                                       device_ids=device_ids)
+                                                       device_ids=device_ids,
+                                                       find_unused_parameters=True,
+                                                       )
         return node
 
     def tensor_to(self, value) -> Node:

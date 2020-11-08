@@ -14,12 +14,8 @@ node Vgg:
     node Block:
         let R: repeat = int *
 
-        let C: channels = dim
-        let W: width = dim
-        let H: height = dim
-
         node ConvBlock:
-            1. Conv2D = C, W, H
+            1. Conv2D
             2. BatchNorm2D
             3. Relu
 
