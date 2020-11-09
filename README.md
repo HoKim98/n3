@@ -29,6 +29,88 @@ node LeNet5:
     5. Linear                   = 10
 ```
 
+# Milestone
+
+## Meaning
+
+### Progress
+
+* ❌ Not Yet
+* 🚧 Work In Progress
+* ✅ Done
+
+### Priority
+
+* ❗ High Priority - Design is complete
+* ❓ Medium Priority - Under design
+* ❌ Low Priority - Too early to design
+* 🚧 Low Priority - Already moderately implemented
+
+## ✅ Core
+
+* ✅ [Parser AST](n3-parser-ast) & [Parser](n3-parser)
+* ✅ [Program AST](n3-program-ast) & [Program](n3-program)
+* ✅ [Machine FFI](n3-machine-ffi) & [Machine](n3-machine)
+* ✅ [Program Builder](n3-builder)
+
+## ❌ ❓ Package Server & Client
+
+* ❌ ❓ Server
+* ❌ ❓ Client
+
+## 🚧 PyTorch FFI
+
+### ✅ [Core](n3-torch/ffi)
+
+* ✅ [PyTorch Python FFI](n3-torch/ffi/python)
+* ✅ [PyTorch Rust FFI](n3-torch/ffi/rust)
+
+### 🚧 [Standard Library](n3-torch/ffi/python)
+
+* 🚧 [Neural Networks (nn)](n3-torch/ffi/python/n3/std/nn)
+* 🚧 [Optimizers (optim)](n3-torch/ffi/python/n3/std/optim)
+* 🚧 [Datasets (data)](n3-torch/ffi/python/n3/std/data)
+* 🚧 [Executable Programs (data)](n3-torch/ffi/python/n3/std/exec)
+* 🚧 [Sample Models (models)](n3-torch/ffi/python/n3/std/models)
+
+### 🚧 ❗ [Commands](n3-torch/ffi/python/n3/std/exec)
+
+* 🚧 ❗ Train
+* ❌ ❗ Eval
+* ❌ ❗ Publish
+* ❌ ❗ Monitor
+
+## 🚧 Distributed Server & Client
+
+### ✅ [Common](n3-net)
+
+* ✅ [Common Protocol](n3-net/protocol)
+* ✅ [Common Server](n3-net/server)
+* ✅ [Common Client](n3-net/client)
+
+### 🚧 [PyTorch](n3-torch)
+
+* ✅ [PyTorch Core](n3-torch/core)
+* 🚧 [PyTorch Machines](n3-torch/core/src/device)
+* ✅ [PyTorch Server (n3-torchd)](n3-torch/server)
+
+## 🚧 ❗ Command-Line Interface
+
+* 🚧 ❗ [CLI (n3)](n3-torch/server)
+
+## ❌ Graphical User Interface
+
+### ❌ Core - Shared Library
+
+* ❌ Client
+* ❌ Monitor
+
+### ❌ Platforms
+
+* ❌ Desktop - Windows, Linux (x11), macOS
+* ❌ Web Browser via wasm
+* ❌ Mobile - Android, iOS
+
 # Usage
 
 ## Server
@@ -42,13 +124,13 @@ $ sudo systemctl start n3-torchd
 ### Training
 
 ``` bash
-$ n3 train image_classification --model LeNet5 --data MNIST --devices cuda:0 cpu
+$ n3 train image_classification --model LeNet5 --data MNIST --devices cuda
 ```
 
 ### Evaluating
 
 ``` bash
-$ n3 eval image_classification --model LeNet5 --data MNIST --devices cuda:0 cpu
+$ n3 eval image_classification --model LeNet5 --data MNIST --devices cuda
 ```
 
 ### Publishing
