@@ -4,12 +4,13 @@
 
 This project is WIP. Please be aware of using it.
 
-``` 
+```
 node LeNet5:
     let K: kernel size = int 5
 
-    let W: width = int 28
-    let H: height = int 28
+    let C: input channels = dim
+    let W: width = dim
+    let H: height = dim
 
     with Conv2D:
         set kernel size = K
@@ -17,17 +18,15 @@ node LeNet5:
         set stride = 2
 
     node MyConv:
-
         1. Conv2D
         2. Relu
 
-    0. Input                   =  1, W  , H
-    1. MyConv                  = 32, W/2, H/2
-    2. MyConv                  = 64, W/4, H/4
-    3. Transform               = 64* W/4* H/4
-    4. Linear + Relu + Dropout = 1024
-    5. Linear + Softmax(D=-1)  = 10
-
+    0. Input                    =  C, W  , H
+    1. MyConv                   = 32, W/2, H/2
+    2. MyConv                   = 64, W/4, H/4
+    3. ToLinear
+    4. Linear + Relu + Dropout  = 1024
+    5. Linear                   = 10
 ```
 
 # Usage
