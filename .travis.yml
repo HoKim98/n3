@@ -5,7 +5,6 @@ rust:
 
 os:
   - linux
-  - osx
 dist: focal
 
 addons:
@@ -13,9 +12,9 @@ addons:
     packages:
       - python3
       - python3-pip
-  homebrew:
-    packages:
-      - python3
+  # homebrew:
+  #   packages:
+  #     - python3
 
 jobs:
   allow_failures:
