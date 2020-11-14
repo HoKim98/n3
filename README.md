@@ -78,7 +78,7 @@ node LeNet5:
 * 🚧 ❗ Train
 * ❌ ❗ Eval
 * ❌ ❗ Publish
-* ❌ ❗ Monitor
+* 🚧 Monitor
 
 ## 🚧 Distributed Server & Client
 
