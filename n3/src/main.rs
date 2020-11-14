@@ -9,7 +9,7 @@ use n3_builder::{ast, dirs, inflector, ExecRoot, GlobalVars, Result, Vars, QUERY
 
 use crate::args::Command;
 
-pub const SWITCH_FN_1: &[(&str, FnExec)] = &[];
+pub const SWITCH_FN_1: &[(&str, FnExec)] = &[("monitor", self::monitor::f)];
 pub const SWITCH_FN_2: &[&str] = &["train", "eval", "publish"];
 
 pub type FnExec = fn(Command) -> Result<()>;

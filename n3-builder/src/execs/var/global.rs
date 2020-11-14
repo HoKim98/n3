@@ -62,7 +62,12 @@ impl GlobalVars {
     }
 
     pub(crate) fn default_home_dir() -> Option<String> {
-        Some(dirs::home_dir().unwrap().display().to_string())
+        dirs::home_dir()
+            .map(|mut dir| {
+                dir.push(".n3");
+                dir
+            })
+            .map(|x| x.display().to_string())
     }
 
     #[cfg(feature = "pip")]
