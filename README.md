@@ -1,3 +1,7 @@
+<div align="center">
+  <img src="https://github.com/kerryeon/n3/blob/master/assets/logo.png">
+</div>
+
 # N3: Neural Network Notation
 
 [![travis-ci](https://api.travis-ci.com/kerryeon/n3.svg)](https://travis-ci.com/kerryeon/n3)
