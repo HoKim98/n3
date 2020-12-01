@@ -63,7 +63,7 @@ pub(self) fn n3_execute(
     // Step 4. Define the node in REPL
     let program = program.build(py, ())?.into_py(py);
 
-    // Step 5. Do its own job
+    // Step 5. Do its own work
     handler.run(py, move |handler| {
         pyo3::Python::with_gil(|py| {
             // execute the command

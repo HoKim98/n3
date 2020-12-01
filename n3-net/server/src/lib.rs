@@ -22,21 +22,21 @@ where
 {
     fn handle(self, host: &mut H) -> Response {
         match self {
-            Self::Load { job, query } => host
-                .load(job, query)
+            Self::Load { work, query } => host
+                .load(work, query)
                 .map(|num_machines| Response::Load { num_machines }),
             Self::Spawn {
-                job,
+                work,
                 id_primaries,
                 id_local,
                 id_world,
                 program,
                 command,
             } => host
-                .spawn(job, id_primaries, id_local, id_world, &program, &command)
+                .spawn(work, id_primaries, id_local, id_world, &program, &command)
                 .map(|()| Response::Awk),
-            Self::Join { job } => host.join(job).map(|()| Response::Awk),
-            Self::Terminate { job } => host.terminate(job).map(|()| Response::Awk),
+            Self::Join { work } => host.join(work).map(|()| Response::Awk),
+            Self::Terminate { work } => host.terminate(work).map(|()| Response::Awk),
         }
         // error handler
         .map_or_else(

@@ -3,11 +3,11 @@ use std::net::ToSocketAddrs;
 
 use simple_socket::SocketClient;
 
-use n3_machine_ffi::{ExternalError as Error, JobId, MachineId, Program, Query, Result};
+use n3_machine_ffi::{ExternalError as Error, MachineId, Program, Query, Result, WorkId};
 use n3_net_protocol::{Request, Response, PORT};
 
-pub struct Job {
-    id: JobId,
+pub struct Work {
+    id: WorkId,
     machines: Vec<SocketClient<Request, Response>>,
 }
 
@@ -19,12 +19,12 @@ pub(crate) struct NetHost {
 
 type NetMachine = SocketClient<Request, Response>;
 
-impl Job {
+impl Work {
     pub fn spawn<R>(program: &Program, command: &str, query: &[R]) -> Result<Self>
     where
         R: AsRef<str>,
     {
-        let id = Self::create_job_id();
+        let id = Self::create_work_id();
         let (machines, num_machines) = Self::load(id, query)?;
 
         let id_world = num_machines.iter().sum();
@@ -36,7 +36,7 @@ impl Job {
             seed = id_end;
 
             let request = Request::Spawn {
-                job: id,
+                work: id,
                 id_primaries: id_machines,
                 id_local: id_local as u64,
                 id_world,
@@ -51,7 +51,7 @@ impl Job {
 
     pub fn join(&mut self) -> Result<()> {
         for machine in &self.machines {
-            let request = Request::Join { job: self.id };
+            let request = Request::Join { work: self.id };
             machine.request(&request).map_err(Error::from)?;
         }
         self.machines.clear();
@@ -60,14 +60,14 @@ impl Job {
 
     pub fn terminate(&mut self) -> Result<()> {
         for machine in &self.machines {
-            let request = Request::Terminate { job: self.id };
+            let request = Request::Terminate { work: self.id };
             machine.request(&request).map_err(Error::from)?;
         }
         self.machines.clear();
         Ok(())
     }
 
-    fn load<R>(id: JobId, query: &[R]) -> Result<(Vec<NetMachine>, Vec<MachineId>)>
+    fn load<R>(id: WorkId, query: &[R]) -> Result<(Vec<NetMachine>, Vec<MachineId>)>
     where
         R: AsRef<str>,
     {
@@ -104,7 +104,7 @@ impl Job {
 
             let socket = SocketClient::<Request, Response>::try_new(addr).map_err(Error::from)?;
 
-            let request = Request::Load { job: id, query };
+            let request = Request::Load { work: id, query };
             let response = socket
                 .request(&request)
                 .map_err(|x| Error::from(*x))?
@@ -117,7 +117,7 @@ impl Job {
         Ok((machines, num_machines))
     }
 
-    fn create_job_id() -> JobId {
+    fn create_work_id() -> WorkId {
         use std::time::SystemTime;
 
         SystemTime::now()
@@ -127,7 +127,7 @@ impl Job {
     }
 }
 
-impl Drop for Job {
+impl Drop for Work {
     fn drop(&mut self) {
         self.terminate().unwrap()
     }

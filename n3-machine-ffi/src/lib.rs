@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 pub use self::error::*;
 pub use self::handler::SignalHandler;
 
-pub type JobId = u128;
+pub type WorkId = u128;
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct MachineIdSet {

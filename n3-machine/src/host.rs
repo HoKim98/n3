@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 pub use n3_machine_ffi::Query;
-use n3_machine_ffi::{JobId, Machine, MachineId, MachineIdSet, Program, SignalHandler};
+use n3_machine_ffi::{Machine, MachineId, MachineIdSet, Program, SignalHandler, WorkId};
 
 use crate::error::{LoadError, Result};
 
@@ -11,7 +11,7 @@ pub type Generator = unsafe fn(&Query) -> Vec<Box<dyn Machine>>;
 pub struct HostMachine {
     pub handler: SignalHandler,
     generators: Vec<(Query, Generator)>,
-    jobs: BTreeMap<JobId, Vec<Box<dyn Machine>>>,
+    works: BTreeMap<WorkId, Vec<Box<dyn Machine>>>,
 }
 
 impl HostMachine {
@@ -24,7 +24,7 @@ impl HostMachine {
         Ok(())
     }
 
-    pub fn load(&mut self, job: JobId, query: Vec<Query>) -> Result<u64> {
+    pub fn load(&mut self, work: WorkId, query: Vec<Query>) -> Result<u64> {
         let mut machines = vec![];
         for query in query {
             if let Some(mut machine) = self.get_machines(&query) {
@@ -35,7 +35,7 @@ impl HostMachine {
         }
 
         let num_machines = machines.len();
-        self.jobs.insert(job, machines);
+        self.works.insert(work, machines);
         Ok(num_machines as u64)
     }
 
@@ -53,15 +53,15 @@ impl HostMachine {
 
     pub fn spawn(
         &mut self,
-        job: JobId,
+        work: WorkId,
         id_primaries: Vec<MachineId>,
         id_local: MachineId,
         id_world: MachineId,
         program: &Program,
         command: &str,
     ) -> Result<()> {
-        let job = self.jobs.get_mut(&job).unwrap();
-        for (id, machine) in id_primaries.into_iter().zip(job.iter_mut()) {
+        let work = self.works.get_mut(&work).unwrap();
+        for (id, machine) in id_primaries.into_iter().zip(work.iter_mut()) {
             let id = MachineIdSet {
                 primary: id,
                 local: id_local,
@@ -72,17 +72,17 @@ impl HostMachine {
         Ok(())
     }
 
-    pub fn join(&mut self, job: JobId) -> Result<()> {
-        let job = self.jobs.remove(&job).unwrap();
-        for mut machine in job {
+    pub fn join(&mut self, work: WorkId) -> Result<()> {
+        let work = self.works.remove(&work).unwrap();
+        for mut machine in work {
             machine.join()?;
         }
         Ok(())
     }
 
-    pub fn terminate(&mut self, job: JobId) -> Result<()> {
-        let job = self.jobs.remove(&job).unwrap();
-        for mut machine in job {
+    pub fn terminate(&mut self, work: WorkId) -> Result<()> {
+        let work = self.works.remove(&work).unwrap();
+        for mut machine in work {
             machine.terminate()?;
             drop(machine);
         }
@@ -92,8 +92,8 @@ impl HostMachine {
 
 impl Drop for HostMachine {
     fn drop(&mut self) {
-        for job in self.jobs.values_mut() {
-            for machine in job.iter_mut() {
+        for work in self.works.values_mut() {
+            for machine in work.iter_mut() {
                 machine.terminate().unwrap();
             }
         }

@@ -27,7 +27,7 @@ mod tests {
 
     use n3_builder::{dirs, ExecRoot, GlobalVars};
     use n3_machine_ffi::ProgramVec;
-    use n3_net_client::Job;
+    use n3_net_client::Work;
     use n3_torch_core::pyo3;
 
     use super::*;
@@ -100,15 +100,15 @@ mod tests {
             thread::yield_now();
         }
 
-        // spawn a job
+        // spawn a work
         let (root, program) = get_dummy_program();
         let command = "train";
         let machines = &["cpu"];
 
-        let job = Job::spawn(&program, command, machines).unwrap();
+        let work = Work::spawn(&program, command, machines).unwrap();
 
-        // wait the job
-        drop(job);
+        // wait the work
+        drop(work);
         alive_client.set(false);
 
         // stop the server
