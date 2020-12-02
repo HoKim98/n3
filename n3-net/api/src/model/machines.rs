@@ -1,7 +1,7 @@
 use diesel::prelude::*;
 
-use crate::schema::machines::{self, table};
 use super::table::TableId;
+use crate::schema::machines::{self, table};
 
 use self::machines as table_mod;
 

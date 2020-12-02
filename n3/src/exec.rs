@@ -22,9 +22,7 @@ pub fn execute(command: Command) -> Result<()> {
     let pb = ProgressBar::new(1000000); // 100.0000%
     pb.set_style(
         ProgressStyle::default_bar()
-            .template(
-                "{spinner:.green} {elapsed_precise} {eta} [{bar:40.cyan/blue}] {percent:>2}%",
-            )
+            .template("{spinner:.green} {elapsed_precise} {eta} [{bar:40.cyan/blue}] {percent:>2}%")
             .progress_chars("#>-"),
     );
 
