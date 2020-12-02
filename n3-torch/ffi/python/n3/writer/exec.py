@@ -1,6 +1,7 @@
 import glob
 import os
 import sys
+import time
 
 import inflection
 import tensorboardX
@@ -25,6 +26,13 @@ class ExecWriter:
             self._writer = None
 
         self._epoch = args['epoch']
+        self._rust_kwargs = None
+
+    def attach_rust_kwargs(self, kwargs):
+        self._rust_kwargs = kwargs
+
+    def is_running(self) -> bool:
+        return self._rust_kwargs['is_running']
 
     def do_epoch(self, tag, fn_dataset):
         tag = f'{self._exec_name}/{tag}'
@@ -34,6 +42,14 @@ class ExecWriter:
         if self._writer is not None:
             self._writer.close()
             self._writer = None
+        if self._rust_kwargs is not None:
+            # update rust writer
+            self._rust_kwargs['is_running'] = False
+            ts = time.time_ns()
+            ts_secs = ts // 1_000_000_000
+            ts_nsecs = ts % 1_000_000_000
+            self._rust_kwargs['date_end'] = (ts_secs, ts_nsecs)
+            self._rust_kwargs = None
 
 
 def spawn_daemon(env):

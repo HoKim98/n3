@@ -97,9 +97,9 @@ class Trainer(ExecNode, metaclass=abc.ABCMeta):
     epoch: int
     batch_size: int
 
-    def train(self, handler) -> None:
+    def train(self, kwargs) -> None:
         # Step 1. ready to train
-        self._train_begin()
+        self._train_begin(kwargs)
 
         # Step 2-1. peek the IO
         for writer, dataset in self._writer.do_epoch('train', self.data.get_train_dataset):
@@ -123,24 +123,25 @@ class Trainer(ExecNode, metaclass=abc.ABCMeta):
                 self.optimizer.step()
                 # Step 2-7. store result
                 self._train_iter_end(metrics, x, y, y_pred, loss)
-                if not handler.is_running():
+                if not self._writer.is_running():
                     break
 
             # Step 2-8. store log
             self._train_epoch_end(writer, metrics)
-            if not handler.is_running():
+            if not self._writer.is_running():
                 break
 
         # Step 3. clean up
         self._train_end()
 
-    def _train_begin(self) -> None:
+    def _train_begin(self, kwargs) -> None:
+        self._writer.attach_rust_kwargs(kwargs)
         self.optimizer._initialize(self.model)
         for name, node in self.nodes().items():
             setattr(self, name, self.to(node))
 
     def _train_end(self) -> None:
-        pass
+        self.close()
 
     def _train_epoch_begin(self, writer: EpochWriter, metrics: Metrics) -> None:
         self.model.train()
@@ -157,10 +158,10 @@ class Trainer(ExecNode, metaclass=abc.ABCMeta):
         metrics['loss'] += loss.item()
 
     @abc.abstractmethod
-    def eval(self, handler) -> None:
+    def eval(self, kwargs) -> None:
         raise NotImplementedError
 
-    def publish(self, handler, args: Args) -> None:
+    def publish(self, kwargs, args: Args) -> None:
         # Step 1. ready to publish
         self.model.eval()
 

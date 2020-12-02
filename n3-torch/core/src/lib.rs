@@ -6,7 +6,7 @@ mod process;
 mod python;
 
 pub use n3_machine::Result;
-pub use n3_torch_ffi::{self as ffi, pyo3, SignalHandler};
+pub use n3_torch_ffi::{self as ffi, pyo3};
 
 pub use self::host::HostMachine;
 

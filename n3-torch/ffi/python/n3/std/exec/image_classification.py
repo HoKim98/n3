@@ -15,5 +15,5 @@ class ImageClassification(Trainer):
         accuracy /= y.size(0)
         metrics['accuracy'] += accuracy
 
-    def eval(self):
+    def eval(self, handler, writer):
         raise NotImplementedError

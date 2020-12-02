@@ -16,6 +16,9 @@ pub enum Request {
         program: ProgramVec,
         command: String,
     },
+    Status {
+        work: WorkId,
+    },
     Join {
         work: WorkId,
     },

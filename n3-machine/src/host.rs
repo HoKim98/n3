@@ -1,9 +1,11 @@
 use std::collections::BTreeMap;
 
 pub use n3_machine_ffi::Query;
-use n3_machine_ffi::{Machine, MachineId, MachineIdSet, Program, SignalHandler, WorkId};
+use n3_machine_ffi::{
+    Machine, MachineId, MachineIdSet, Program, SignalHandler, WorkId, WorkStatus,
+};
 
-use crate::error::{LoadError, Result};
+use crate::error::{LoadError, Result, WorkError};
 
 pub type Generator = unsafe fn(&Query) -> Vec<Box<dyn Machine>>;
 
@@ -11,7 +13,8 @@ pub type Generator = unsafe fn(&Query) -> Vec<Box<dyn Machine>>;
 pub struct HostMachine {
     pub handler: SignalHandler,
     generators: Vec<(Query, Generator)>,
-    works: BTreeMap<WorkId, Vec<Box<dyn Machine>>>,
+    works_running: BTreeMap<WorkId, Vec<Box<dyn Machine>>>,
+    works_ended: BTreeMap<WorkId, WorkStatus>,
 }
 
 impl HostMachine {
@@ -35,7 +38,7 @@ impl HostMachine {
         }
 
         let num_machines = machines.len();
-        self.works.insert(work, machines);
+        self.works_running.insert(work, machines);
         Ok(num_machines as u64)
     }
 
@@ -53,17 +56,18 @@ impl HostMachine {
 
     pub fn spawn(
         &mut self,
-        work: WorkId,
+        id_work: WorkId,
         id_primaries: Vec<MachineId>,
         id_local: MachineId,
         id_world: MachineId,
         program: &Program,
         command: &str,
     ) -> Result<()> {
-        let work = self.works.get_mut(&work).unwrap();
-        for (id, machine) in id_primaries.into_iter().zip(work.iter_mut()) {
+        let work = self.works_running.get_mut(&id_work).unwrap();
+        for (id_primary, machine) in id_primaries.into_iter().zip(work.iter_mut()) {
             let id = MachineIdSet {
-                primary: id,
+                work: id_work,
+                primary: id_primary,
                 local: id_local,
                 world: id_world,
             };
@@ -72,27 +76,56 @@ impl HostMachine {
         Ok(())
     }
 
-    pub fn join(&mut self, work: WorkId) -> Result<()> {
-        let work = self.works.remove(&work).unwrap();
-        for mut machine in work {
-            machine.join()?;
+    pub fn status(&mut self, id: WorkId) -> Result<WorkStatus> {
+        match self.works_running.get_mut(&id) {
+            Some(work) => {
+                let machine = work.get_mut(0).unwrap();
+                Ok(machine.status()?)
+            }
+            None => match self.works_ended.get(&id) {
+                Some(status) => Ok(status.clone()),
+                None => WorkError::NoSuchWork { id }.into(),
+            },
         }
-        Ok(())
     }
 
-    pub fn terminate(&mut self, work: WorkId) -> Result<()> {
-        let work = self.works.remove(&work).unwrap();
-        for mut machine in work {
-            machine.terminate()?;
-            drop(machine);
+    pub fn join(&mut self, id: WorkId) -> Result<WorkStatus> {
+        if let Some(mut work) = self.works_running.remove(&id) {
+            for (id_primary, machine) in work.iter_mut().enumerate() {
+                let status = machine.join()?;
+
+                if id_primary == 0 {
+                    self.works_ended.insert(id, status);
+                }
+            }
+
+            Ok(self.works_ended[&id].clone())
+        } else {
+            self.status(id)
         }
-        Ok(())
+    }
+
+    pub fn terminate(&mut self, id: WorkId) -> Result<WorkStatus> {
+        if let Some(mut work) = self.works_running.remove(&id) {
+            for (id_primary, machine) in work.iter_mut().enumerate() {
+                let status = machine.terminate()?;
+
+                if id_primary == 0 {
+                    self.works_ended.insert(id, status);
+                }
+            }
+
+            drop(work);
+            Ok(self.works_ended[&id].clone())
+        } else {
+            self.status(id)
+        }
     }
 }
 
 impl Drop for HostMachine {
     fn drop(&mut self) {
-        for work in self.works.values_mut() {
+        for work in self.works_running.values_mut() {
             for machine in work.iter_mut() {
                 machine.terminate().unwrap();
             }

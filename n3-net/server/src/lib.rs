@@ -35,8 +35,11 @@ where
             } => host
                 .spawn(work, id_primaries, id_local, id_world, &program, &command)
                 .map(|()| Response::Awk),
-            Self::Join { work } => host.join(work).map(|()| Response::Awk),
-            Self::Terminate { work } => host.terminate(work).map(|()| Response::Awk),
+            Self::Status { work } => host.status(work).map(|status| Response::Status { status }),
+            Self::Join { work } => host.join(work).map(|status| Response::Status { status }),
+            Self::Terminate { work } => host
+                .terminate(work)
+                .map(|status| Response::Status { status }),
         }
         // error handler
         .map_or_else(

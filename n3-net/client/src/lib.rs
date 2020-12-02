@@ -3,12 +3,14 @@ use std::net::ToSocketAddrs;
 
 use simple_socket::SocketClient;
 
-use n3_machine_ffi::{ExternalError as Error, MachineId, Program, Query, Result, WorkId};
+use n3_machine_ffi::{
+    ExternalError as Error, MachineId, Program, Query, Result, WorkId, WorkStatus,
+};
 use n3_net_protocol::{Request, Response, PORT};
 
 pub struct Work {
     id: WorkId,
-    machines: Vec<SocketClient<Request, Response>>,
+    machines: Vec<NetMachine>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -20,6 +22,14 @@ pub(crate) struct NetHost {
 type NetMachine = SocketClient<Request, Response>;
 
 impl Work {
+    pub fn id(&self) -> WorkId {
+        self.id
+    }
+
+    fn master_machine(&self) -> Option<&NetMachine> {
+        self.machines.get(0)
+    }
+
     pub fn spawn<R>(program: &Program, command: &str, query: &[R]) -> Result<Self>
     where
         R: AsRef<str>,
@@ -54,7 +64,6 @@ impl Work {
             let request = Request::Join { work: self.id };
             machine.request(&request).map_err(Error::from)?;
         }
-        self.machines.clear();
         Ok(())
     }
 
@@ -63,8 +72,14 @@ impl Work {
             let request = Request::Terminate { work: self.id };
             machine.request(&request).map_err(Error::from)?;
         }
-        self.machines.clear();
         Ok(())
+    }
+
+    pub fn status(&self) -> Result<WorkStatus> {
+        let machine = self.master_machine().unwrap();
+        let request = Request::Status { work: self.id };
+        let response = machine.request(&request).map_err(Error::from)?;
+        Ok(response.status())
     }
 
     fn load<R>(id: WorkId, query: &[R]) -> Result<(Vec<NetMachine>, Vec<MachineId>)>

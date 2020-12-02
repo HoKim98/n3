@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
 
-use n3_machine::{Machine, Query};
+use n3_machine_ffi::{Machine, Query};
 use n3_torch_ffi::ProcessMachine;
 
 use crate::process::ProcessMachine as ProcessMachineImpl;

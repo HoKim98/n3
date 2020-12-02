@@ -1,16 +1,12 @@
-mod handler;
-
 pub extern crate pyo3;
 
 use std::mem::ManuallyDrop;
 use std::ops::{Deref, DerefMut};
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use pyo3::PyResult;
+use pyo3::{PyObject, PyResult};
 
 use n3_machine_ffi::{MachineIdSet, Program, Query};
-
-pub use self::handler::SignalHandler;
 
 pub trait PyMachine {
     fn is_running(&self) -> bool;
@@ -20,8 +16,8 @@ pub trait PyMachine {
         id: MachineIdSet,
         program: &Program,
         command: &str,
-        handler: SignalHandler,
-    ) -> PyResult<()>;
+    ) -> PyResult<PyObject>;
+
     fn py_terminate(&mut self) -> PyResult<()>;
 }
 
@@ -50,9 +46,8 @@ where
         id: MachineIdSet,
         program: &Program,
         command: &str,
-        handler: SignalHandler,
-    ) -> PyResult<()> {
-        self.deref_mut().py_spawn(id, program, command, handler)
+    ) -> PyResult<PyObject> {
+        self.deref_mut().py_spawn(id, program, command)
     }
 
     fn py_terminate(&mut self) -> PyResult<()> {

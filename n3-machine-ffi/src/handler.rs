@@ -3,7 +3,9 @@ use std::sync::{
     Arc,
 };
 
-#[derive(Clone)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Clone, Serialize, Deserialize)]
 pub struct SignalHandler {
     running: Arc<AtomicBool>,
 }

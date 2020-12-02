@@ -105,9 +105,20 @@ mod tests {
         let command = "train";
         let machines = &["cpu"];
 
-        let work = Work::spawn(&program, command, machines).unwrap();
+        let mut work = Work::spawn(&program, command, machines).unwrap();
 
         // wait the work
+        {
+            let status = work.status().unwrap();
+            assert_eq!(status.is_running, true);
+            assert_eq!(status.date_end.is_some(), false);
+
+            work.join().unwrap();
+
+            let status = work.status().unwrap();
+            assert_eq!(status.is_running, false);
+            assert_eq!(status.date_end.is_some(), true);
+        }
         drop(work);
         alive_client.set(false);
 

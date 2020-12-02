@@ -1,8 +1,11 @@
-use pyo3::{PyResult, Python};
+use pyo3::types::IntoPyDict;
+use pyo3::{IntoPy, PyObject, PyResult, Python};
 use pyo3_mp::Process;
 
-use n3_machine::{LocalQuery, Machine, MachineIdSet, Program, Query};
-use n3_torch_ffi::{pyo3, ProcessMachine as ProcessMachineTrait, PyMachine, SignalHandler};
+use chrono::prelude::*;
+
+use n3_machine_ffi::{LocalQuery, Machine, MachineIdSet, Program, Query};
+use n3_torch_ffi::{pyo3, ProcessMachine as ProcessMachineTrait, PyMachine};
 
 use crate::exec::n3_execute_wrapper;
 use crate::python::PyMachineBase;
@@ -22,7 +25,7 @@ impl ProcessMachine {
             .map(|x| ProcessMachine::_new(x))
             .flatten()
             .map(|x| T::try_new(x))
-            .map(PyMachineBase)
+            .map(PyMachineBase::new)
             .map(|x| x.into_box_trait())
             .collect()
     }
@@ -47,8 +50,7 @@ impl PyMachine for ProcessMachine {
         id: MachineIdSet,
         program: &Program,
         command: &str,
-        handler: SignalHandler,
-    ) -> PyResult<()> {
+    ) -> PyResult<PyObject> {
         // the GIL is acquired by HostMachine
         let py = unsafe { Python::assume_gil_acquired() };
 
@@ -58,15 +60,26 @@ impl PyMachine for ProcessMachine {
         // the function to execute the program
         let n3_execute = n3_execute_wrapper(py)?;
 
-        // spawn to new process
-        self.process.spawn(
-            n3_execute,
+        // the arguments passed to the program
+        let kwargs = [
+            ("work_id", id.work.into_py(py)),
+            ("is_running", true.into_py(py)),
             (
-                id.primary, id.local, id.world, &machine, command, program, handler,
+                "date_begin",
+                Some((Utc::now().timestamp(), Utc::now().nanosecond())).into_py(py),
             ),
-            None,
+            ("date_end", None::<(i64, u32)>.into_py(py)),
+        ]
+        .into_py_dict(py);
+
+        // spawn to new process
+        let (_, kwargs) = self.process.spawn_mut(
+            n3_execute,
+            (id.primary, id.local, id.world, &machine, command, program),
+            Some(kwargs),
         )?;
-        Ok(())
+
+        Ok(kwargs)
     }
 
     fn py_terminate(&mut self) -> PyResult<()> {

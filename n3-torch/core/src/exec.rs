@@ -2,16 +2,30 @@ use pyo3::prelude::*;
 use pyo3::types::PyCFunction;
 use pyo3::wrap_pyfunction;
 
-use n3_machine::{MachineId, Program, PORT};
-use n3_torch_ffi::{pyo3, SignalHandler};
+use n3_machine::PORT;
+use n3_machine_ffi::{MachineId, Program};
+use n3_torch_ffi::pyo3;
 
 use crate::code::BuildCode;
 
 pub fn n3_execute_wrapper(py: Python) -> PyResult<&PyCFunction> {
-    wrap_pyfunction!(n3_execute)(py)
+    wrap_pyfunction!(n3_execute_delegate)(py)
 }
 
 #[pyfunction]
+pub(self) fn n3_execute_delegate(py: Python, args: &PyAny, kwargs: &PyAny) -> PyResult<()> {
+    let id_primary: MachineId = args.get_item(0)?.extract()?;
+    let id_local: MachineId = args.get_item(1)?.extract()?;
+    let id_world: MachineId = args.get_item(2)?.extract()?;
+    let machine: &str = args.get_item(3)?.extract()?;
+    let command: &str = args.get_item(4)?.extract()?;
+    let program: &Program = args.get_item(5)?.extract()?;
+
+    n3_execute(
+        py, id_primary, id_local, id_world, machine, command, program, kwargs,
+    )
+}
+
 #[allow(clippy::too_many_arguments)]
 pub(self) fn n3_execute(
     py: Python,
@@ -21,7 +35,7 @@ pub(self) fn n3_execute(
     machine: &str,
     command: &str,
     program: &Program,
-    handler: SignalHandler,
+    kwargs: &PyAny,
 ) -> PyResult<()> {
     let is_root = id_primary == 0;
     let is_distributed = id_world > 1;
@@ -64,13 +78,6 @@ pub(self) fn n3_execute(
     let program = program.build(py, ())?.into_py(py);
 
     // Step 5. Do its own work
-    handler.run(py, move |handler| {
-        pyo3::Python::with_gil(|py| {
-            // execute the command
-            program.call_method1(py, command, (handler,))?;
-            // finalize
-            program.call_method0(py, "close")?;
-            Ok(())
-        })
-    })
+    program.call_method1(py, command, (kwargs,))?;
+    Ok(())
 }

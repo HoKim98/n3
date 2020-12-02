@@ -1,7 +1,7 @@
 use std::process::Command;
 use std::sync::atomic::{AtomicI64, Ordering};
 
-use n3_machine::Query;
+use n3_machine_ffi::Query;
 
 use super::base::CandidatesMachine;
 

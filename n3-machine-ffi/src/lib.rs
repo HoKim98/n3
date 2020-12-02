@@ -8,10 +8,21 @@ use serde::{Deserialize, Serialize};
 pub use self::error::*;
 pub use self::handler::SignalHandler;
 
+type DateTime = chrono::DateTime<chrono::Utc>;
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct WorkStatus {
+    pub id: WorkId,
+    pub is_running: bool,
+    pub date_begin: Option<DateTime>,
+    pub date_end: Option<DateTime>,
+}
+
 pub type WorkId = u128;
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct MachineIdSet {
+    pub work: WorkId,
     pub primary: MachineId,
     pub local: MachineId,
     pub world: MachineId,
@@ -31,8 +42,10 @@ pub trait Machine {
         handler: SignalHandler,
     ) -> Result<()>;
 
-    fn join(&mut self) -> Result<()>;
-    fn terminate(&mut self) -> Result<()>;
+    fn status(&mut self) -> Result<WorkStatus>;
+
+    fn join(&mut self) -> Result<WorkStatus>;
+    fn terminate(&mut self) -> Result<WorkStatus>;
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
