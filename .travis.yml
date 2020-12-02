@@ -29,4 +29,5 @@ install:
 
 script:
   - cargo build --verbose --workspace
-  - cargo test --verbose --workspace
+  # 'rocket' requires nightly
+  - cargo test --verbose --workspace --exclude n3-net-api
