@@ -2,9 +2,9 @@
 members = [
     "n3",
     "n3-builder",
-    "n3-gui/api",
     "n3-machine",
     "n3-machine-ffi",
+    "n3-net/api",
     "n3-net/client",
     "n3-net/protocol",
     "n3-net/server",
