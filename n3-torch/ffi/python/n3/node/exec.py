@@ -156,6 +156,7 @@ class Trainer(ExecNode, metaclass=abc.ABCMeta):
 
     def _train_iter_end(self, metrics: Metrics, x: Tensor, y: Tensor, y_pred: Tensor, loss: Tensor) -> None:
         metrics['loss'] += loss.item()
+        self._writer.update_rust_kwargs(metrics)
 
     @abc.abstractmethod
     def eval(self, kwargs) -> None:

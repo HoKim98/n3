@@ -1,4 +1,6 @@
-from tqdm import tqdm
+import time
+
+import tqdm
 
 
 class EpochIter:
@@ -62,6 +64,15 @@ class EpochWriter:
 
         self._bar = None
 
+    @property
+    def time_total_secs(self):
+        rate = self._bar.format_dict['rate']
+        total = self._bar.format_dict['total']
+        if rate is None:
+            return None
+
+        return int(total / rate)
+
     def __iter__(self):
         return self
 
@@ -77,7 +88,7 @@ class EpochWriter:
             self._num_batch = len(dataset)
             if self._writer is not None:
                 total = (self._end - self._start) * self._num_batch
-                self._bar = tqdm(total=total)
+                self._bar = tqdm.tqdm(total=total)
 
         epoch = Epoch(self._writer, self._head, self._num_batch, self._start)
         self._start += 1

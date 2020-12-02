@@ -25,6 +25,8 @@ class ExecWriter:
         else:
             self._writer = None
 
+        self._epoch_writer = None
+
         self._epoch = args['epoch']
         self._rust_kwargs = None
 
@@ -36,9 +38,21 @@ class ExecWriter:
 
     def do_epoch(self, tag, fn_dataset):
         tag = f'{self._exec_name}/{tag}'
-        return EpochWriter(self._writer, tag, fn_dataset, 0, self._epoch)
+        self._epoch_writer = EpochWriter(
+            self._writer, tag, fn_dataset, 0, self._epoch)
+        return self._epoch_writer
+
+    def update_rust_kwargs(self, metrics):
+        # update time
+        time_total_secs = self._epoch_writer.time_total_secs
+        if time_total_secs:
+            time_secs, _ = self._rust_kwargs['date_begin']
+            time_secs += time_total_secs
+            self._rust_kwargs['date_end'] = (time_secs, 0)
 
     def close(self):
+        self._epoch_writer = None
+
         if self._writer is not None:
             self._writer.close()
             self._writer = None

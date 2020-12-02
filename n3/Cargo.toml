@@ -10,4 +10,6 @@ edition = "2018"
 n3-builder = { path = "../n3-builder" }
 n3-net-client = { path = "../n3-net/client" }
 
+chrono = "0.4"
 clap = "~2.27.0"
+indicatif = "0.15"

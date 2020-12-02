@@ -111,7 +111,6 @@ mod tests {
         {
             let status = work.status().unwrap();
             assert_eq!(status.is_running, true);
-            assert_eq!(status.date_end.is_some(), false);
 
             work.join().unwrap();
 
