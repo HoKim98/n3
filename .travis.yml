@@ -28,6 +28,6 @@ install:
   - pip3 install -r n3-torch/ffi/python/requirements.txt --quiet
 
 script:
-  - cargo build --verbose --workspace
-  # 'rocket' requires nightly
+  # skip 'n3-net-api': dependency 'rocket' requires nightly
+  - cargo build --verbose --workspace --exclude n3-net-api
   - cargo test --verbose --workspace --exclude n3-net-api
