@@ -1,8 +1,12 @@
+use crate::model::TableId;
+
 pub type Result<T> = std::result::Result<T, Error>;
 
+#[derive(Debug)]
 pub enum Error {
     BuildError(n3_builder::Error),
     MachineError(n3_machine_ffi::Error),
+    NoSuchMachine { id: TableId },
 }
 
 impl From<n3_builder::Error> for Error {

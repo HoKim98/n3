@@ -17,7 +17,7 @@ pub type FnExec = fn(Command) -> Result<()>;
 fn main() -> Result<()> {
     // Step 1. parse envs
     let env = GlobalVars::default();
-    let env_vars = env.to_n3_variables();
+    let env_vars = env.to_variables();
 
     // Step 2. parse command & exec
     let cmd_args: Vec<_> = std::env::args().skip(1).collect();
@@ -52,7 +52,7 @@ fn main() -> Result<()> {
         let mut root = ExecRoot::try_new(env.clone())?;
         let args = root.get(&exec.to_pascal_case())?;
 
-        let args_set = [&env_vars, &args.to_exec_variables()];
+        let args_set = [&env_vars, &args.to_variables()];
         match unsafe { parse_args(&args_set) } {
             Ok(_) => {
                 crate::exec::execute(Command {

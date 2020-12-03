@@ -4,7 +4,7 @@ use std::net::ToSocketAddrs;
 use simple_socket::SocketClient;
 
 use n3_machine_ffi::{
-    ExternalError as Error, MachineId, Program, Query, Result, WorkId, WorkStatus,
+    Error, MachineId, NetError, Program, Query, QueryError, Result, WorkId, WorkStatus,
 };
 use n3_net_protocol::{Request, Response, PORT};
 
@@ -53,7 +53,7 @@ impl Work {
                 program: program.to_vec(),
                 command: command.to_string(),
             };
-            machine.request(&request).map_err(Error::from)?;
+            machine.request(&request).map_err(NetError::from)?;
         }
 
         Ok(Self { id, machines })
@@ -62,7 +62,7 @@ impl Work {
     pub fn join(&mut self) -> Result<()> {
         for machine in &self.machines {
             let request = Request::Join { work: self.id };
-            machine.request(&request).map_err(Error::from)?;
+            machine.request(&request).map_err(NetError::from)?;
         }
         Ok(())
     }
@@ -70,7 +70,7 @@ impl Work {
     pub fn terminate(&mut self) -> Result<()> {
         for machine in &self.machines {
             let request = Request::Terminate { work: self.id };
-            machine.request(&request).map_err(Error::from)?;
+            machine.request(&request).map_err(NetError::from)?;
         }
         Ok(())
     }
@@ -78,14 +78,18 @@ impl Work {
     pub fn status(&self) -> Result<WorkStatus> {
         let machine = self.master_machine().unwrap();
         let request = Request::Status { work: self.id };
-        let response = machine.request(&request).map_err(Error::from)?;
-        Ok(response.status())
+        let response = machine.request(&request).map_err(NetError::from)?;
+        response.status().map_err(Error::DeviceError)
     }
 
     fn load<R>(id: WorkId, query: &[R]) -> Result<(Vec<NetMachine>, Vec<MachineId>)>
     where
         R: AsRef<str>,
     {
+        if query.is_empty() {
+            return QueryError::EmptyMachines.into();
+        }
+
         let query: Vec<_> = query
             .iter()
             .map(|x| Query::parse(x).map_err(|x| x.into()))
@@ -112,18 +116,20 @@ impl Work {
             let addr = host.domain.unwrap_or_else(|| "localhost".to_string());
             let addr = format!("{}:{}", addr, PORT)
                 .to_socket_addrs()
-                .map_err(Error::from)?
+                .map_err(NetError::from)?
                 .into_iter()
                 .find(|x| x.is_ipv4()) // TODO: have we support IPv6?
                 .ok_or_else(|| Error::from("Failed to parse domain address"))?;
 
-            let socket = SocketClient::<Request, Response>::try_new(addr).map_err(Error::from)?;
+            let socket =
+                SocketClient::<Request, Response>::try_new(addr).map_err(NetError::from)?;
 
             let request = Request::Load { work: id, query };
             let response = socket
                 .request(&request)
-                .map_err(|x| Error::from(*x))?
-                .load();
+                .map_err(|x| NetError::from(*x))?
+                .load()
+                .map_err(Error::DeviceError)?;
 
             machines.push(socket);
             num_machines.push(response);

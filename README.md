@@ -46,13 +46,13 @@ $ sudo systemctl start n3-torchd
 ### Training
 
 ``` bash
-$ n3 train image_classification --model LeNet5 --data MNIST --devices cuda
+$ n3 train image_classification --model LeNet5 --data MNIST --machines cuda
 ```
 
 ### Evaluating
 
 ``` bash
-$ n3 eval image_classification --model LeNet5 --data MNIST --devices cuda
+$ n3 eval image_classification --model LeNet5 --data MNIST --machines cuda
 ```
 
 ### Publishing
@@ -74,9 +74,9 @@ $ n3 monitor # or, browse http://localhost::xxxx/
 ### Distributed Training
 
 ``` bash
-$ n3 train image_classification --model LeNet5 --data MNIST --devices w:180:cuda:0 w:192.168.0.181 cpu
+$ n3 train image_classification --model LeNet5 --data MNIST --machines w:180:cuda:0 w:192.168.0.181 cpu
 ```
 
-* "w:180:cuda:0": the "cuda:0" device in "xxx.xxx.xxx.180" (local)
-* "w:192.168.0.181": automatically choose devices in "192.168.0.181"
+* "w:180:cuda:0": the "cuda:0" machine in "xxx.xxx.xxx.180" (local)
+* "w:192.168.0.181": automatically choose machines in "192.168.0.181"
 * These can be defined as environment variables (N3_MACHINES)

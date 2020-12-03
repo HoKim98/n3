@@ -32,9 +32,9 @@ where
                 id_world,
                 program,
                 command,
-            } => host
-                .spawn(work, id_primaries, id_local, id_world, &program, &command)
-                .map(|()| Response::Awk),
+            } => Ok(Response::Status {
+                status: host.spawn(work, id_primaries, id_local, id_world, &program, &command),
+            }),
             Self::Status { work } => host.status(work).map(|status| Response::Status { status }),
             Self::Join { work } => host.join(work).map(|status| Response::Status { status }),
             Self::Terminate { work } => host

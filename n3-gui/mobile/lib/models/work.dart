@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:n3_mobile/models/base.dart';
+import 'package:n3_mobile/models/net.dart';
 
-class Work {
+class Work extends DBTable {
+  // 128-bits unsigned Integer
+  final BigInt id;
   final Command command;
   final String exec;
   final Map<String, String> variables;
 
   final WorkStatus status;
 
-  BigInt get id => this.status.id;
-
   const Work({
+    @required this.id,
     @required this.command,
     @required this.exec,
     @required this.variables,
@@ -18,15 +21,19 @@ class Work {
 
   static Work fromJson(Map<String, dynamic> source) {
     return Work(
+      // String -> BigInt
+      id: BigInt.parse(source['id']),
       command: CommandToString.commandFromString(source['command']),
       exec: source['exec'],
-      variables: source['variables'],
+      variables: Map<String, String>.from(source['variables']),
       status: WorkStatus.fromJson(source['status']),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
+      // BigInt -> String
+      'id': this.id.toString(),
       'command': this.command.commandToString(),
       'exec': this.exec,
       'variables': this.variables,
@@ -34,46 +41,28 @@ class Work {
     };
   }
 
-  static List<Work> sample() {
-    return [
-      Work(
-        command: CommandToString.commandFromString('train'),
-        exec: 'ImageClassification',
-        variables: {},
-        status: WorkStatus(
-          id: BigInt.from(123),
-          isRunning: false,
-          dateBegin: DateTime.now(),
-          dateEnd: DateTime.now(),
-        ),
-      ),
-      Work(
-        command: CommandToString.commandFromString('train'),
-        exec: 'ImageClassification',
-        variables: {},
-        status: WorkStatus(
-          id: BigInt.from(124),
-          isRunning: true,
-          dateBegin: DateTime.now(),
-        ),
-      ),
-      Work(
-        command: CommandToString.commandFromString('train'),
-        exec: 'ImageClassification',
-        variables: {},
-        status: WorkStatus(
-          id: BigInt.from(125),
-          isRunning: false,
-          errorMsg: 'ERROR!',
-          dateBegin: DateTime.now(),
-        ),
-      ),
-    ];
+  static Future<Work> get(BuildContext context, BigInt id) async {
+    return await Net().getOne(
+      context: context,
+      url: 'work/$id',
+      generator: fromJson,
+      onConnectionFailure: () async {},
+      onInternalFailure: () async {},
+    );
+  }
+
+  static Future<List<Work>> getList(BuildContext context) async {
+    return await Net().getList(
+      context: context,
+      url: 'work',
+      generator: fromJson,
+      onConnectionFailure: () async {},
+      onInternalFailure: () async {},
+    );
   }
 }
 
 class WorkStatus {
-  final BigInt id;
   final bool isRunning;
   final String errorMsg;
 
@@ -82,7 +71,6 @@ class WorkStatus {
   final DateTime dateEnd;
 
   const WorkStatus({
-    @required this.id,
     @required this.isRunning,
     this.errorMsg,
     @required this.dateBegin,
@@ -91,18 +79,23 @@ class WorkStatus {
 
   static WorkStatus fromJson(Map<String, dynamic> source) {
     return WorkStatus(
-      id: BigInt.from(source['id']),
       isRunning: source['is_running'],
       errorMsg: source['error_msg'],
       // UTC -> Local
-      dateBegin: DateTime.tryParse(source['date_begin'])?.toLocal(),
-      dateEnd: DateTime.tryParse(source['date_end'])?.toLocal(),
+      dateBegin: _tryParseDateTime(source['date_begin']),
+      dateEnd: _tryParseDateTime(source['date_end']),
     );
+  }
+
+  static DateTime _tryParseDateTime(dynamic dateTime) {
+    if (dateTime != null) {
+      return DateTime.tryParse(dateTime)?.toLocal();
+    }
+    return null;
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'command': this.id.toString(),
       'is_running': this.isRunning,
       'error_msg': this.errorMsg,
       // Local -> UTC

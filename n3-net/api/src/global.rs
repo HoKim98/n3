@@ -1,6 +1,10 @@
 use std::sync::Mutex;
 
 use lazy_static::lazy_static;
+use rocket_cors::AllowedOrigins;
+
+use crate::db::Database;
+use crate::error::Result;
 
 pub struct ExecRoot(Mutex<n3_builder::ExecRoot>);
 
@@ -18,6 +22,10 @@ impl ExecRoot {
 pub struct WorkRoot(Mutex<crate::model::WorkRoot>);
 
 impl WorkRoot {
+    pub fn insert(&self, conn: &Database, work: &crate::model::Work) -> Result<crate::model::Work> {
+        self.0.lock().unwrap().insert(conn, work)
+    }
+
     pub fn get(&self, id: n3_machine_ffi::WorkId) -> Option<crate::model::Work> {
         self.0.lock().unwrap().get(id)
     }
@@ -38,4 +46,8 @@ lazy_static! {
         ExecRoot(Mutex::new(root))
     };
     pub static ref WORK_ROOT: WorkRoot = Default::default();
+}
+
+pub fn allowed_origins() -> AllowedOrigins {
+    AllowedOrigins::all()
 }

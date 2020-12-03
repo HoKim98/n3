@@ -218,15 +218,7 @@ impl Vars {
         }
     }
 
-    pub fn to_n3_variables(&self) -> Self {
-        self.inner
-            .iter()
-            .map(|(k, v)| (format!("n3_{}", k), v.clone()))
-            .collect::<Variables>()
-            .into()
-    }
-
-    pub fn to_exec_variables(&self) -> Self {
+    pub fn to_variables(&self) -> Self {
         self.inner
             .iter()
             .map(|(k, v)| (k.to_snake_case(), v.clone()))

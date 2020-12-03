@@ -15,7 +15,7 @@ use glob::glob;
 
 pub struct ExecRoot {
     node_root: NodeRoot,
-    env: GlobalVars,
+    pub(super) env: GlobalVars,
 }
 
 impl Deref for ExecRoot {

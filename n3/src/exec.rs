@@ -26,7 +26,7 @@ pub fn execute(command: Command) -> Result<()> {
             .progress_chars("#>-"),
     );
 
-    'main: loop {
+    'pb: loop {
         for i in 0..10 {
             thread::sleep(Duration::from_millis(100));
 
@@ -41,7 +41,7 @@ pub fn execute(command: Command) -> Result<()> {
                 }
 
                 if !status.is_running {
-                    break 'main;
+                    break 'pb;
                 }
             } else {
                 pb.inc(0);

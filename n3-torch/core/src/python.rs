@@ -2,7 +2,7 @@ use pyo3::{PyErr, PyObject, Python};
 
 use chrono::prelude::*;
 
-use n3_machine_ffi::{Error, Machine, MachineIdSet, Program, Result, SignalHandler, WorkStatus};
+use n3_machine_ffi::{Machine, MachineIdSet, Program, SignalHandler, WorkStatus};
 use n3_torch_ffi::{pyo3, PyMachine};
 
 pub struct PyMachineBase<T>
@@ -11,6 +11,7 @@ where
 {
     inner: T,
     kwargs: Option<PyObject>,
+    cache: WorkStatus,
 }
 
 impl<T> PyMachineBase<T>
@@ -21,11 +22,25 @@ where
         Self {
             inner,
             kwargs: None,
+            cache: Default::default(),
         }
     }
 
     pub fn into_box_trait(self) -> Box<dyn Machine> {
         Box::new(self)
+    }
+}
+
+impl<T> PyMachineBase<T>
+where
+    T: PyMachine + 'static,
+{
+    fn store_py_error(&mut self, e: PyErr) {
+        self.cache.is_running = false;
+        self.cache.error_msg = Python::with_gil(|py| {
+            e.print_and_set_sys_last_vars(py);
+            Some(e.to_string())
+        });
     }
 }
 
@@ -39,64 +54,50 @@ where
         program: &Program,
         command: &str,
         _: SignalHandler,
-    ) -> Result<()> {
-        let kwargs = self
-            .inner
-            .py_spawn(id, program, command)
-            .map_err(|e| {
-                Python::with_gil(|py| {
-                    e.print_and_set_sys_last_vars(py);
-                    e
-                })
-            })
-            .map_err(|x| x.into())
-            .map_err(Error::ExternalError)?;
+    ) -> WorkStatus {
+        if self.cache.error_msg.is_some() {
+            return self.cache.clone();
+        }
 
-        self.kwargs = Some(kwargs);
-        Ok(())
+        match self.inner.py_spawn(id, program, command) {
+            Ok(kwargs) => {
+                self.kwargs = Some(kwargs);
+                self.cache.is_running = true;
+            }
+            Err(e) => self.store_py_error(e),
+        }
+        self.cache.clone()
     }
 
-    fn status(&mut self) -> Result<WorkStatus> {
+    fn status(&mut self) -> WorkStatus {
         Python::with_gil(|py| {
             let kwargs = self.kwargs.as_ref().unwrap().as_ref(py);
-            let id = kwargs.get_item("work_id")?.extract()?;
-            let is_running = kwargs.get_item("is_running")?.extract()?;
+            self.cache.is_running = kwargs.get_item("is_running")?.extract()?;
+            self.cache.error_msg = kwargs.get_item("error_msg")?.extract()?;
             let date_begin: Option<_> = kwargs.get_item("date_begin")?.extract()?;
             let date_end: Option<_> = kwargs.get_item("date_end")?.extract()?;
 
-            let date_begin = date_begin.map(|(secs, nsecs)| {
+            self.cache.date_begin = date_begin.map(|(secs, nsecs)| {
                 DateTime::from_utc(NaiveDateTime::from_timestamp(secs, nsecs), Utc)
             });
-            let date_end = date_end.map(|(secs, nsecs)| {
+            self.cache.date_end = date_end.map(|(secs, nsecs)| {
                 DateTime::from_utc(NaiveDateTime::from_timestamp(secs, nsecs), Utc)
             });
+            Ok(())
+        })
+        .unwrap_or_else(|e| self.store_py_error(e));
 
-            Ok(WorkStatus {
-                id,
-                is_running,
-                date_begin,
-                date_end,
-            })
-        })
-        .map_err(|e: PyErr| {
-            Python::with_gil(|py| {
-                e.print_and_set_sys_last_vars(py);
-                e
-            })
-        })
-        .map_err(|x| x.into())
-        .map_err(Error::ExternalError)
+        self.cache.clone()
     }
 
-    fn join(&mut self) -> Result<WorkStatus> {
+    fn join(&mut self) -> WorkStatus {
         self.terminate()
     }
 
-    fn terminate(&mut self) -> Result<WorkStatus> {
+    fn terminate(&mut self) -> WorkStatus {
         self.inner
             .py_terminate()
-            .map_err(|x| x.into())
-            .map_err(Error::ExternalError)?;
+            .unwrap_or_else(|e| self.store_py_error(e));
 
         self.status()
     }

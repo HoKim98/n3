@@ -62,8 +62,8 @@ impl PyMachine for ProcessMachine {
 
         // the arguments passed to the program
         let kwargs = [
-            ("work_id", id.work.into_py(py)),
             ("is_running", true.into_py(py)),
+            ("error_msg", py.None()),
             (
                 "date_begin",
                 Some((Utc::now().timestamp(), Utc::now().nanosecond())).into_py(py),

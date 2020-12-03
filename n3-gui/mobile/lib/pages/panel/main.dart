@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:n3_mobile/pages/panel/base.dart';
-import 'package:n3_mobile/pages/panel/jobs.dart';
 import 'package:n3_mobile/pages/panel/machines.dart';
 import 'package:n3_mobile/pages/panel/summnary.dart';
+import 'package:n3_mobile/pages/panel/works/panel.dart';
 
 class PanelMainPage extends StatefulWidget {
   @override
@@ -12,7 +12,7 @@ class PanelMainPage extends StatefulWidget {
 class _State extends State {
   final List<PanelItem> _items = [
     PanelSummary(),
-    PanelJobs(),
+    PanelWorks(),
     PanelMachines(),
   ];
 

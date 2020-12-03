@@ -62,7 +62,9 @@ impl HostMachine {
         id_world: MachineId,
         program: &Program,
         command: &str,
-    ) -> Result<()> {
+    ) -> WorkStatus {
+        let mut status = Default::default();
+
         let work = self.works_running.get_mut(&id_work).unwrap();
         for (id_primary, machine) in id_primaries.into_iter().zip(work.iter_mut()) {
             let id = MachineIdSet {
@@ -71,16 +73,20 @@ impl HostMachine {
                 local: id_local,
                 world: id_world,
             };
-            machine.spawn(id, program, command, self.handler.clone())?;
+
+            let s = machine.spawn(id, program, command, self.handler.clone());
+            if id_primary == 0 {
+                status = s;
+            }
         }
-        Ok(())
+        status
     }
 
     pub fn status(&mut self, id: WorkId) -> Result<WorkStatus> {
         match self.works_running.get_mut(&id) {
             Some(work) => {
                 let machine = work.get_mut(0).unwrap();
-                Ok(machine.status()?)
+                Ok(machine.status())
             }
             None => match self.works_ended.get(&id) {
                 Some(status) => Ok(status.clone()),
@@ -92,7 +98,7 @@ impl HostMachine {
     pub fn join(&mut self, id: WorkId) -> Result<WorkStatus> {
         if let Some(mut work) = self.works_running.remove(&id) {
             for (id_primary, machine) in work.iter_mut().enumerate() {
-                let status = machine.join()?;
+                let status = machine.join();
 
                 if id_primary == 0 {
                     self.works_ended.insert(id, status);
@@ -105,10 +111,19 @@ impl HostMachine {
         }
     }
 
+    pub fn join_all(&mut self) {
+        for work in self.works_running.values_mut() {
+            for machine in work.iter_mut() {
+                machine.join();
+            }
+        }
+        self.works_running.clear();
+    }
+
     pub fn terminate(&mut self, id: WorkId) -> Result<WorkStatus> {
         if let Some(mut work) = self.works_running.remove(&id) {
             for (id_primary, machine) in work.iter_mut().enumerate() {
-                let status = machine.terminate()?;
+                let status = machine.terminate();
 
                 if id_primary == 0 {
                     self.works_ended.insert(id, status);
@@ -127,7 +142,7 @@ impl Drop for HostMachine {
     fn drop(&mut self) {
         for work in self.works_running.values_mut() {
             for machine in work.iter_mut() {
-                machine.terminate().unwrap();
+                machine.terminate();
             }
         }
     }

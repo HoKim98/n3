@@ -1,4 +1,4 @@
-pub use n3_machine_ffi::{Error as MachineError, ParseError};
+pub use n3_machine_ffi::{Error as MachineError, QueryError};
 use n3_machine_ffi::{Query, WorkId};
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -32,8 +32,8 @@ impl From<WorkError> for Error {
     }
 }
 
-impl From<ParseError> for Error {
-    fn from(error: ParseError) -> Self {
+impl From<QueryError> for Error {
+    fn from(error: QueryError) -> Self {
         Self::MachineError(error.into())
     }
 }

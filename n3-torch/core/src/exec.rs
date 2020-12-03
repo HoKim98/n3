@@ -78,6 +78,10 @@ pub(self) fn n3_execute(
     let program = program.build(py, ())?.into_py(py);
 
     // Step 5. Do its own work
-    program.call_method1(py, command, (kwargs,))?;
+    if let Err(e) = program.call_method1(py, command, (kwargs,)) {
+        // manually stop & send the error message
+        kwargs.set_item("is_running", false.into_py(py))?;
+        kwargs.set_item("error_msg", e.to_string())?;
+    }
     Ok(())
 }

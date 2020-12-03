@@ -8,7 +8,7 @@ type Table = Work;
 
 #[post("/work", data = "<obj>")]
 pub fn insert(conn: crate::db::Database, obj: Json<Table>) -> Json<ObjResult<Table>> {
-    Json(obj.insert(&conn).into())
+    Json(WORK_ROOT.insert(&conn, &*obj).into())
 }
 
 #[get("/work/<id>")]

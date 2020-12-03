@@ -56,6 +56,7 @@ impl DerefMut for HostMachine {
 
 impl Drop for HostMachine {
     fn drop(&mut self) {
+        self.host.join_all();
         // drop order: GIL -> Python -> host
         unsafe {
             ManuallyDrop::drop(&mut self._py);

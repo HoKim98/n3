@@ -4,8 +4,8 @@ import 'package:intl/intl.dart';
 import 'package:n3_mobile/models/work.dart';
 import 'package:n3_mobile/pages/panel/base.dart';
 
-class PanelJobs extends StatefulWidget implements PanelItem {
-  String get label => 'jobs';
+class PanelWorks extends StatefulWidget implements PanelItem {
+  String get label => 'works';
   IconData get icon => Icons.rotate_right_outlined;
 
   @override
@@ -13,14 +13,20 @@ class PanelJobs extends StatefulWidget implements PanelItem {
 }
 
 class _State extends State {
-  List<Work> works = Work.sample();
+  static List<Work> works = [];
+
+  @override
+  void initState() {
+    super.initState();
+    this._update();
+  }
 
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
-      itemCount: this.works.length,
+      itemCount: _State.works.length,
       itemBuilder: (context, index) {
-        final work = works[index];
+        final work = _State.works[index];
 
         final command = work.command.commandToString().toUpperCase();
         final exec = work.exec;
@@ -40,14 +46,14 @@ class _State extends State {
               )
             : isRunning
                 ? CircleAvatar(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                    child: Icon(Icons.check),
-                  )
-                : CircleAvatar(
                     backgroundColor: Colors.orange,
                     foregroundColor: Colors.white,
                     child: Icon(Icons.model_training),
+                  )
+                : CircleAvatar(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    child: Icon(Icons.check),
                   );
 
         return Slidable(
@@ -67,14 +73,16 @@ class _State extends State {
               onTap: () => _onWorkDelete(work),
             ),
           ],
-          // dismissal: SlidableDismissal(
-          //   child: SlidableDrawerDismissal(),
-          //   onDismissed: (_) => _onWorkDelete(work),
-          // ),
           child: ListTile(
             leading: icon,
-            title: Text('[$command] $exec'),
-            subtitle: Text('ETA $dateEnd'),
+            title: Text(
+              '[$command] $exec',
+              overflow: TextOverflow.ellipsis,
+            ),
+            subtitle: Text(
+              isError ? work.status.errorMsg : 'ETA $dateEnd',
+              overflow: TextOverflow.ellipsis,
+            ),
             onTap: () => _onWorkMore(work),
           ),
         );
@@ -83,10 +91,24 @@ class _State extends State {
   }
 
   void _onWorkMore(final Work work) {
-    print(work.toJson());
+    Navigator.of(context).pushNamed(
+      '/panel/work',
+      arguments: work,
+    );
   }
 
   void _onWorkDelete(final Work work) {
     print(work.toJson());
+  }
+
+  Future<void> _update() async {
+    while (true) {
+      await Future.delayed(const Duration(seconds: 1));
+      if (!mounted) break;
+
+      final works = await Work.getList(context);
+      if (works == null || !mounted) break;
+      setState(() => _State.works = works);
+    }
   }
 }

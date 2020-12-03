@@ -10,9 +10,8 @@ pub use self::handler::SignalHandler;
 
 type DateTime = chrono::DateTime<chrono::Utc>;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct WorkStatus {
-    pub id: WorkId,
     pub is_running: bool,
     pub error_msg: Option<String>,
     pub date_begin: Option<DateTime>,
@@ -41,12 +40,12 @@ pub trait Machine {
         program: &Program,
         command: &str,
         handler: SignalHandler,
-    ) -> Result<()>;
+    ) -> WorkStatus;
 
-    fn status(&mut self) -> Result<WorkStatus>;
+    fn status(&mut self) -> WorkStatus;
 
-    fn join(&mut self) -> Result<WorkStatus>;
-    fn terminate(&mut self) -> Result<WorkStatus>;
+    fn join(&mut self) -> WorkStatus;
+    fn terminate(&mut self) -> WorkStatus;
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -60,7 +59,7 @@ pub struct Query {
 pub struct LocalQuery<'a>(pub &'a Query);
 
 impl Query {
-    pub fn parse<R>(query: R) -> std::result::Result<Self, ParseError>
+    pub fn parse<R>(query: R) -> std::result::Result<Self, QueryError>
     where
         R: AsRef<str>,
     {
@@ -78,7 +77,7 @@ impl Query {
         let mut id = tokens.next();
 
         if tokens.next().is_some() {
-            return Err(ParseError::UnexpectedTokens {
+            return Err(QueryError::UnexpectedTokens {
                 query: query.to_string(),
             });
         }
