@@ -20,7 +20,7 @@ class _State extends State {
   ];
   List<PanelItem> _items;
 
-  final ValueNotifier<Work> work;
+  ValueNotifier<Work> work;
 
   int _currentIndex = 0;
 
@@ -37,6 +37,7 @@ class _State extends State {
   void dispose() {
     super.dispose();
     this.work.dispose();
+    this.work = null;
   }
 
   @override
@@ -64,9 +65,11 @@ class _State extends State {
   void _update() async {
     while (true) {
       await Future.delayed(const Duration(seconds: 1));
-      if (!mounted) return;
+      if (!mounted || this.work == null) break;
 
-      this.work.value = await Work.get(context, this.work.value.id);
+      final work = await Work.get(context, this.work.value.id);
+      if (!mounted || this.work == null) break;
+      this.work.value = work;
     }
   }
 }
