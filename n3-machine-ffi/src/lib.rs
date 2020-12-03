@@ -14,6 +14,7 @@ type DateTime = chrono::DateTime<chrono::Utc>;
 pub struct WorkStatus {
     pub id: WorkId,
     pub is_running: bool,
+    pub error_msg: Option<String>,
     pub date_begin: Option<DateTime>,
     pub date_end: Option<DateTime>,
 }

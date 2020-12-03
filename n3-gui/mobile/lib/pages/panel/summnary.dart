@@ -22,7 +22,7 @@ class _State extends State {
             size: 120,
           ),
           Text(
-            'No problem.',
+            'No problems.',
             style: Theme.of(context).textTheme.headline4,
           ),
         ],
