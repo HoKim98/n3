@@ -70,6 +70,10 @@ where
     }
 
     fn status(&mut self) -> WorkStatus {
+        if self.kwargs.is_none() {
+            return self.cache.clone();
+        }
+
         Python::with_gil(|py| {
             let kwargs = self.kwargs.as_ref().unwrap().as_ref(py);
             self.cache.is_running = kwargs.get_item("is_running")?.extract()?;

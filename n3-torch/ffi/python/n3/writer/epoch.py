@@ -66,6 +66,8 @@ class EpochWriter:
 
     @property
     def time_total_secs(self):
+        # should be called on root
+        assert self._bar is not None
         rate = self._bar.format_dict['rate']
         total = self._bar.format_dict['total']
         if rate is None:

@@ -21,7 +21,6 @@ class ExecNode(metaclass=abc.ABCMeta):
     _machine: str
 
     _is_root: bool
-    _is_distributed: bool
 
     _gpu_id: int
 
@@ -40,12 +39,10 @@ class ExecNode(metaclass=abc.ABCMeta):
         self._machine = env['machine']
 
         self._is_root = env['is root']
-        self._is_distributed = env['is distributed']
 
         self._gpu_id = env['gpu id']
 
         # Distributed Training
-        if self._is_distributed:
             torch.distributed.init_process_group(backend='nccl')
 
         self._writer = ExecWriter(args,
@@ -68,10 +65,11 @@ class ExecNode(metaclass=abc.ABCMeta):
             return node
 
         node = node.to(self._machine)
-        if self._is_distributed and any((p.requires_grad for p in node.parameters())):
+        if any((p.requires_grad for p in node.parameters())):
             device_ids = [self._gpu_id]  # GPU device id
             node = nn.parallel.DistributedDataParallel(node,
                                                        device_ids=device_ids,
+                                                       output_device=self._gpu_id,
                                                        find_unused_parameters=True,
                                                        )
         return node
@@ -136,9 +134,9 @@ class Trainer(ExecNode, metaclass=abc.ABCMeta):
 
     def _train_begin(self, kwargs) -> None:
         self._writer.attach_rust_kwargs(kwargs)
-        self.optimizer._initialize(self.model)
         for name, node in self.nodes().items():
             setattr(self, name, self.to(node))
+        self.optimizer._initialize(self.model)
 
     def _train_end(self) -> None:
         self.close()

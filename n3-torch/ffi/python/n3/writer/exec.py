@@ -43,6 +43,8 @@ class ExecWriter:
         return self._epoch_writer
 
     def update_rust_kwargs(self, metrics):
+        # should be called on root
+        assert self._rust_kwargs is not None
         # update time
         time_total_secs = self._epoch_writer.time_total_secs
         if time_total_secs:

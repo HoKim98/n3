@@ -38,7 +38,6 @@ pub(self) fn n3_execute(
     kwargs: &PyAny,
 ) -> PyResult<()> {
     let is_root = id_primary == 0;
-    let is_distributed = id_world > 1;
 
     // Step 1. Load the program
     let mut program = n3_program::Program::load(program).unwrap();
@@ -52,7 +51,6 @@ pub(self) fn n3_execute(
     env.insert("machine".to_string(), Some(machine.to_string().into()));
 
     env.insert("is root".to_string(), Some(is_root.into()));
-    env.insert("is distributed".to_string(), Some(is_distributed.into()));
 
     let gpu_id = machine.split("cuda").nth(1).map(|x| {
         if x.is_empty() {
@@ -64,7 +62,7 @@ pub(self) fn n3_execute(
     env.insert("gpu id".to_string(), gpu_id.map(|x| x.into()));
 
     // Step 3. Ready for DDP
-    if is_distributed {
+    {
         let env = py.import("os")?.get("environ")?;
         env.set_item("MASTER_ADDR", "127.0.0.1")?; // TODO: to be implemented
         env.set_item("MASTER_PORT", format!("{}", PORT))?;
