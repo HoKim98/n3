@@ -76,7 +76,7 @@ impl Work {
                 Machine::get(conn, id)
                     .ok_or(Error::NoSuchMachine { id })
                     .map(Query::from)
-                    .map(|x| format!("{}", x))
+                    .map(|x| x.to_string())
             })
             .collect::<Result<_>>()?;
 

@@ -11,7 +11,6 @@ pub enum Request {
     Spawn {
         work: WorkId,
         id_primaries: Vec<MachineId>,
-        id_local: MachineId,
         id_world: MachineId,
         program: ProgramVec,
         command: String,

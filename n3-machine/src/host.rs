@@ -58,7 +58,6 @@ impl HostMachine {
         &mut self,
         id_work: WorkId,
         id_primaries: Vec<MachineId>,
-        id_local: MachineId,
         id_world: MachineId,
         program: &Program,
         command: &str,
@@ -66,11 +65,13 @@ impl HostMachine {
         let mut status = Default::default();
 
         let work = self.works_running.get_mut(&id_work).unwrap();
-        for (id_primary, machine) in id_primaries.into_iter().zip(work.iter_mut()) {
+        for (id_local, (id_primary, machine)) in
+            id_primaries.into_iter().zip(work.iter_mut()).enumerate()
+        {
             let id = MachineIdSet {
                 work: id_work,
                 primary: id_primary,
-                local: id_local,
+                local: id_local as MachineId,
                 world: id_world,
             };
 

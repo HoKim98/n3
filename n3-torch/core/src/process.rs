@@ -55,7 +55,7 @@ impl PyMachine for ProcessMachine {
         let py = unsafe { Python::assume_gil_acquired() };
 
         // the machine's name
-        let machine = format!("{}", LocalQuery(&self.query));
+        let machine = LocalQuery(&self.query).to_string();
 
         // the function to execute the program
         let n3_execute = n3_execute_wrapper(py)?;

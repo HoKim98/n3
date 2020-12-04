@@ -11,7 +11,7 @@ pub fn f(command: Command) -> Result<()> {
 
     let mut child = process::Command::new("tensorboard")
         .arg("--port")
-        .arg(format!("{}", PORT))
+        .arg(PORT.to_string())
         .arg("--logdir")
         .arg(format!("{}/{}", root, dirs::LOGS_DIR))
         // .arg("--bind_all")

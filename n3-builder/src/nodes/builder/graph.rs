@@ -414,7 +414,7 @@ impl<'a, 'b, 'c> GraphNodeBuilder<Concat> for GraphNodeEntry<'a, 'b, 'c> {
         let inputs = inputs
             .iter()
             .enumerate()
-            .map(|(i, x)| (format!("{}", i), x.as_ref().cloned()))
+            .map(|(i, x)| (i.to_string(), x.as_ref().cloned()))
             .collect();
         let inputs = ast::Shapes::new(inputs);
 

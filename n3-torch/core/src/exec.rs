@@ -64,12 +64,11 @@ pub(self) fn n3_execute(
     // Step 3. Ready for DDP
     {
         let env = py.import("os")?.get("environ")?;
-        env.set_item("MASTER_ADDR", "127.0.0.1")?; // TODO: to be implemented
-        env.set_item("MASTER_PORT", format!("{}", PORT))?;
+        env.set_item("MASTER_PORT", PORT.to_string())?;
 
-        env.set_item("RANK", format!("{}", id_primary))?;
-        env.set_item("LOCAL_RANK", format!("{}", id_local))?;
-        env.set_item("WORLD_SIZE", format!("{}", id_world))?;
+        env.set_item("RANK", id_primary.to_string())?;
+        env.set_item("LOCAL_RANK", id_local.to_string())?;
+        env.set_item("WORLD_SIZE", id_world.to_string())?;
     }
 
     // Step 4. Define the node in REPL
