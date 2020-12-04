@@ -22,8 +22,6 @@ class ExecNode(metaclass=abc.ABCMeta):
 
     _is_root: bool
 
-    _gpu_id: int
-
     _writer: ExecWriter
 
     def __init__(self, args: Args, nodes: Dict[str, Node] = {}) -> None:
@@ -39,8 +37,6 @@ class ExecNode(metaclass=abc.ABCMeta):
         self._machine = env['machine']
 
         self._is_root = env['is root']
-
-        self._gpu_id = env['gpu id']
 
         # Distributed Training
         torch.distributed.init_process_group(backend='nccl')
@@ -66,10 +62,9 @@ class ExecNode(metaclass=abc.ABCMeta):
 
         node = node.to(self._machine)
         if any((p.requires_grad for p in node.parameters())):
-            device_ids = [self._gpu_id]  # GPU device id
             node = nn.parallel.DistributedDataParallel(node,
-                                                       device_ids=device_ids,
-                                                       output_device=self._gpu_id,
+                                                       device_ids=[0],
+                                                       output_device=0,
                                                        find_unused_parameters=True,
                                                        )
         return node
@@ -150,7 +145,7 @@ class Trainer(ExecNode, metaclass=abc.ABCMeta):
         writer.flush()
 
     def _train_iter_begin(self, data: List[Tensor]) -> TensorDict:
-        return {'x': self.to(data[0])}, {'y': self.to(data[1])}
+        return {'x': data[0]}, {'y': data[1]}
 
     def _train_iter_end(self, metrics: Metrics, x: Tensor, y: Tensor, y_pred: Tensor, loss: Tensor) -> None:
         if self._is_root:

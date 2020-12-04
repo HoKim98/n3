@@ -146,9 +146,7 @@ impl<'a> fmt::Display for LocalQuery<'a> {
             write!(f, "{}", device)?;
         }
         if let Some(id) = &self.0.id {
-            if id != "0" {
-                write!(f, ":{}", id)?;
-            }
+            write!(f, ":{}", id)?;
         }
         Ok(())
     }

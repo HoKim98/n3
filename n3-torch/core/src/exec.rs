@@ -39,6 +39,8 @@ pub(self) fn n3_execute(
 ) -> PyResult<()> {
     let is_root = id_primary == 0;
 
+    let mut machine_token = machine.split(':');
+
     // Step 1. Load the program
     let mut program = n3_program::Program::load(program).unwrap();
 
@@ -48,27 +50,26 @@ pub(self) fn n3_execute(
     }
     let env = program.env.as_mut().unwrap();
     env.insert("id".to_string(), Some(id_local.into()));
-    env.insert("machine".to_string(), Some(machine.to_string().into()));
+    env.insert(
+        "machine".to_string(),
+        Some(machine_token.next().unwrap().to_string().into()),
+    );
 
     env.insert("is root".to_string(), Some(is_root.into()));
 
-    let gpu_id = machine.split("cuda").nth(1).map(|x| {
-        if x.is_empty() {
-            0 as MachineId
-        } else {
-            x[1..].parse().unwrap()
-        }
-    });
-    env.insert("gpu id".to_string(), gpu_id.map(|x| x.into()));
+    let device_id = machine_token.next().unwrap_or("0").to_string();
 
     // Step 3. Ready for DDP
     {
         let env = py.import("os")?.get("environ")?;
+        env.set_item("MASTER_ADDR", "localhost")?; // TODO: to be implemented
         env.set_item("MASTER_PORT", PORT.to_string())?;
 
         env.set_item("RANK", id_primary.to_string())?;
         env.set_item("LOCAL_RANK", id_local.to_string())?;
         env.set_item("WORLD_SIZE", id_world.to_string())?;
+
+        env.set_item("CUDA_VISIBLE_DEVICES", device_id)?;
     }
 
     // Step 4. Define the node in REPL
@@ -76,6 +77,7 @@ pub(self) fn n3_execute(
 
     // Step 5. Do its own work
     if let Err(e) = program.call_method1(py, command, (kwargs,)) {
+        e.print_and_set_sys_last_vars(py);
         // manually stop & send the error message
         kwargs.set_item("is_running", false.into_py(py))?;
         kwargs.set_item("error_msg", e.to_string())?;
