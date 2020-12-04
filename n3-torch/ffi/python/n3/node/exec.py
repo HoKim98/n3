@@ -43,7 +43,7 @@ class ExecNode(metaclass=abc.ABCMeta):
         self._gpu_id = env['gpu id']
 
         # Distributed Training
-            torch.distributed.init_process_group(backend='nccl')
+        torch.distributed.init_process_group(backend='nccl')
 
         self._writer = ExecWriter(args,
                                   exec=self.get_name(),
@@ -153,8 +153,9 @@ class Trainer(ExecNode, metaclass=abc.ABCMeta):
         return {'x': self.to(data[0])}, {'y': self.to(data[1])}
 
     def _train_iter_end(self, metrics: Metrics, x: Tensor, y: Tensor, y_pred: Tensor, loss: Tensor) -> None:
-        metrics['loss'] += loss.item()
-        self._writer.update_rust_kwargs(metrics)
+        if self._is_root:
+            metrics['loss'] += loss.item()
+            self._writer.update_rust_kwargs(metrics)
 
     @abc.abstractmethod
     def eval(self, kwargs) -> None:
