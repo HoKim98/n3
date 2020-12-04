@@ -122,13 +122,13 @@ impl fmt::Display for Query {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut write_colon = false;
 
-        for (prefix, field) in &[
-            (true, &self.provider),
-            (true, &self.domain),
-            (true, &self.device),
-            (false, &self.id),
+        for (postfix, field) in &[
+            (false, &self.provider),
+            (false, &self.domain),
+            (false, &self.device),
+            (true, &self.id),
         ] {
-            if write_colon && (*prefix || field.is_some()) {
+            if write_colon && (*postfix || field.is_some()) {
                 write!(f, ":")?;
             }
             if let Some(field) = field {
@@ -163,5 +163,60 @@ where
         additional()
     } else {
         false
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::Query;
+
+    fn test_parse_with(machine_struct: Query, query: &str) {
+        let machine_query = Query::parse(query).unwrap();
+        let query_recon = machine_query.to_string();
+        let machine_query_recon = Query::parse(&query_recon).unwrap();
+
+        assert_eq!(&machine_struct, &machine_query);
+        assert_eq!(&machine_struct, &machine_query_recon);
+    }
+
+    #[test]
+    fn test_parse_with_local() {
+        test_parse_with(Default::default(), "");
+        test_parse_with(
+            Query {
+                device: Some("cpu".to_string()),
+                ..Default::default()
+            },
+            "cpu",
+        );
+        test_parse_with(
+            Query {
+                device: Some("cpu".to_string()),
+                id: Some("0".to_string()),
+                ..Default::default()
+            },
+            "cpu:0",
+        );
+    }
+
+    #[test]
+    fn test_parse_with_domain() {
+        test_parse_with(
+            Query {
+                domain: Some("localhost".to_string()),
+                device: Some("cpu".to_string()),
+                ..Default::default()
+            },
+            "localhost:cpu:",
+        );
+        test_parse_with(
+            Query {
+                domain: Some("localhost".to_string()),
+                device: Some("cpu".to_string()),
+                id: Some("0".to_string()),
+                ..Default::default()
+            },
+            "localhost:cpu:0",
+        );
     }
 }
