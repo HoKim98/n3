@@ -17,12 +17,21 @@ pub(self) fn n3_execute_delegate(py: Python, args: &PyAny, kwargs: &PyAny) -> Py
     let id_primary: MachineId = args.get_item(0)?.extract()?;
     let id_local: MachineId = args.get_item(1)?.extract()?;
     let id_world: MachineId = args.get_item(2)?.extract()?;
-    let machine: &str = args.get_item(3)?.extract()?;
-    let command: &str = args.get_item(4)?.extract()?;
-    let program: &Program = args.get_item(5)?.extract()?;
+    let master_addr: &str = args.get_item(3)?.extract()?;
+    let machine: &str = args.get_item(4)?.extract()?;
+    let command: &str = args.get_item(5)?.extract()?;
+    let program: &Program = args.get_item(6)?.extract()?;
 
     n3_execute(
-        py, id_primary, id_local, id_world, machine, command, program, kwargs,
+        py,
+        id_primary,
+        id_local,
+        id_world,
+        master_addr,
+        machine,
+        command,
+        program,
+        kwargs,
     )
 }
 
@@ -32,12 +41,14 @@ pub(self) fn n3_execute(
     id_primary: MachineId,
     id_local: MachineId,
     id_world: MachineId,
+    master_addr: &str,
     machine: &str,
     command: &str,
     program: &Program,
     kwargs: &PyAny,
 ) -> PyResult<()> {
     let is_root = id_primary == 0;
+    let is_distributed = id_world > 1;
 
     let mut machine_token = machine.split(':');
 
@@ -56,13 +67,14 @@ pub(self) fn n3_execute(
     );
 
     env.insert("is root".to_string(), Some(is_root.into()));
+    env.insert("is distributed".to_string(), Some(is_distributed.into()));
 
     let device_id = machine_token.next().unwrap_or("0").to_string();
 
     // Step 3. Ready for DDP
     {
         let env = py.import("os")?.get("environ")?;
-        env.set_item("MASTER_ADDR", "localhost")?; // TODO: to be implemented
+        env.set_item("MASTER_ADDR", master_addr.to_string())?;
         env.set_item("MASTER_PORT", PORT.to_string())?;
 
         env.set_item("RANK", id_primary.to_string())?;

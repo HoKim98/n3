@@ -4,7 +4,7 @@ use n3_net_server::{PostServing, SocketServer};
 use n3_torch_core::HostMachine;
 
 pub fn run_server(post: impl Fn(&mut SocketServer) -> PostServing) {
-    const IP_V4: Ipv4Addr = Ipv4Addr::new(127, 0, 0, 1);
+    const IP_V4: Ipv4Addr = Ipv4Addr::new(0, 0, 0, 0);
     const IP: IpAddr = IpAddr::V4(IP_V4);
 
     let host = HostMachine::try_new().unwrap();

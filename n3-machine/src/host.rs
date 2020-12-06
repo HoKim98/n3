@@ -59,8 +59,9 @@ impl HostMachine {
         id_work: WorkId,
         id_primaries: Vec<MachineId>,
         id_world: MachineId,
+        master_addr: String,
         program: &Program,
-        command: &str,
+        command: String,
     ) -> WorkStatus {
         let mut status = Default::default();
 
@@ -73,9 +74,10 @@ impl HostMachine {
                 primary: id_primary,
                 local: id_local as MachineId,
                 world: id_world,
+                master_addr: master_addr.to_string(),
             };
 
-            let s = machine.spawn(id, program, command, self.handler.clone());
+            let s = machine.spawn(id, program, &command, self.handler.clone());
             if id_primary == 0 {
                 status = s;
             }

@@ -29,10 +29,11 @@ where
                 work,
                 id_primaries,
                 id_world,
+                master_addr,
                 program,
                 command,
             } => Ok(Response::Status {
-                status: host.spawn(work, id_primaries, id_world, &program, &command),
+                status: host.spawn(work, id_primaries, id_world, master_addr, &program, command),
             }),
             Self::Status { work } => host.status(work).map(|status| Response::Status { status }),
             Self::Join { work } => host.join(work).map(|status| Response::Status { status }),

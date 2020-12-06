@@ -21,6 +21,7 @@ class ExecNode(metaclass=abc.ABCMeta):
     _machine: str
 
     _is_root: bool
+    _is_distributed: bool
 
     _writer: ExecWriter
 
@@ -37,9 +38,11 @@ class ExecNode(metaclass=abc.ABCMeta):
         self._machine = env['machine']
 
         self._is_root = env['is root']
+        self._is_distributed = env['is distributed']
 
         # Distributed Training
-        torch.distributed.init_process_group(backend='nccl')
+        if self._is_distributed:
+            torch.distributed.init_process_group(backend='nccl')
 
         self._writer = ExecWriter(args,
                                   exec=self.get_name(),
@@ -61,7 +64,7 @@ class ExecNode(metaclass=abc.ABCMeta):
             return node
 
         node = node.to(self._machine)
-        if any((p.requires_grad for p in node.parameters())):
+        if self._is_distributed and any((p.requires_grad for p in node.parameters())):
             node = nn.parallel.DistributedDataParallel(node,
                                                        device_ids=[0],
                                                        output_device=0,

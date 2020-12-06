@@ -12,6 +12,7 @@ pub enum Request {
         work: WorkId,
         id_primaries: Vec<MachineId>,
         id_world: MachineId,
+        master_addr: String,
         program: ProgramVec,
         command: String,
     },

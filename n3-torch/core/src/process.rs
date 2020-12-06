@@ -75,7 +75,15 @@ impl PyMachine for ProcessMachine {
         // spawn to new process
         let (_, kwargs) = self.process.spawn_mut(
             n3_execute,
-            (id.primary, id.local, id.world, &machine, command, program),
+            (
+                id.primary,
+                id.local,
+                id.world,
+                &id.master_addr,
+                &machine,
+                command,
+                program,
+            ),
             Some(kwargs),
         )?;
 

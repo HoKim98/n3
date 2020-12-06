@@ -10,4 +10,5 @@ edition = "2018"
 n3-machine-ffi = { path = "../../n3-machine-ffi" }
 n3-net-protocol = { path = "../protocol" }
 
+get_if_addrs = "0.5"
 simple-socket = { version = "0.1", default-features = false }

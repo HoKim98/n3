@@ -26,6 +26,7 @@ pub struct MachineIdSet {
     pub primary: MachineId,
     pub local: MachineId,
     pub world: MachineId,
+    pub master_addr: String,
 }
 
 pub type MachineId = u64;

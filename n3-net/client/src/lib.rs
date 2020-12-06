@@ -1,5 +1,5 @@
 use std::collections::BTreeMap;
-use std::net::ToSocketAddrs;
+use std::net::{SocketAddr, ToSocketAddrs};
 
 use simple_socket::SocketClient;
 
@@ -19,6 +19,12 @@ pub(crate) struct NetHost {
     domain: Option<String>,
 }
 
+struct LoadInfo {
+    machines: Vec<NetMachine>,
+    num_machines: Vec<MachineId>,
+    master_addr: String,
+}
+
 type NetMachine = SocketClient<Request, Response>;
 
 impl Work {
@@ -35,7 +41,11 @@ impl Work {
         R: AsRef<str>,
     {
         let id = Self::create_work_id();
-        let (machines, num_machines) = Self::load(id, query)?;
+        let LoadInfo {
+            machines,
+            num_machines,
+            master_addr,
+        } = Self::load(id, query)?;
 
         let id_world = num_machines.iter().sum();
 
@@ -49,6 +59,7 @@ impl Work {
                 work: id,
                 id_primaries: id_machines,
                 id_world,
+                master_addr: master_addr.to_string(),
                 program: program.to_vec(),
                 command: command.to_string(),
             };
@@ -81,7 +92,7 @@ impl Work {
         response.status().map_err(Error::DeviceError)
     }
 
-    fn load<R>(id: WorkId, query: &[R]) -> Result<(Vec<NetMachine>, Vec<MachineId>)>
+    fn load<R>(id: WorkId, query: &[R]) -> Result<LoadInfo>
     where
         R: AsRef<str>,
     {
@@ -103,21 +114,29 @@ impl Work {
             let entry = hosts.entry(host).or_insert_with(Vec::new);
             entry.push(query);
         }
+        let num_hosts = hosts.len();
 
         let mut machines = vec![];
         let mut num_machines = vec![];
+        let mut master_addr = None;
         for (host, query) in hosts {
             if host.provider.is_some() {
                 // TODO: to be implemented
                 todo!();
             }
 
-            let addr = host.domain.unwrap_or_else(|| "localhost".to_string());
-            let addr = format!("{}:{}", addr, PORT)
-                .to_socket_addrs()
-                .map_err(NetError::from)?
-                .into_iter()
-                .find(|x| x.is_ipv4()) // TODO: have we support IPv6?
+            let addr = match host.domain {
+                Some(addr) => addr,
+                None => {
+                    let is_distributed = num_hosts > 1;
+                    if is_distributed {
+                        get_public_ip()?
+                    } else {
+                        get_local_ip()
+                    }
+                }
+            };
+            let addr = get_ipv4(format!("{}:{}", addr, PORT))?
                 .ok_or_else(|| Error::from("Failed to parse domain address"))?;
 
             let socket =
@@ -132,9 +151,16 @@ impl Work {
 
             machines.push(socket);
             num_machines.push(response);
+            if master_addr.is_none() {
+                master_addr = Some(addr.ip().to_string());
+            }
         }
 
-        Ok((machines, num_machines))
+        Ok(LoadInfo {
+            machines,
+            num_machines,
+            master_addr: master_addr.unwrap(),
+        })
     }
 
     fn create_work_id() -> WorkId {
@@ -151,4 +177,31 @@ impl Drop for Work {
     fn drop(&mut self) {
         self.terminate().unwrap()
     }
+}
+
+fn get_public_ip() -> Result<String> {
+    Ok(get_if_addrs::get_if_addrs()
+        .map_err(NetError::from)?
+        .into_iter()
+        .filter(|x| x.name != "lo")
+        .map(|x| x.addr.ip())
+        .find(|x| x.is_ipv4()) // TODO: have we support IPv6?
+        .map(|x| x.to_string())
+        .unwrap_or_else(get_local_ip))
+}
+
+fn get_local_ip() -> String {
+    "localhost".to_string()
+}
+
+fn get_ipv4<T>(addr: T) -> Result<Option<SocketAddr>>
+where
+    T: ToSocketAddrs,
+{
+    Ok(
+        addr.to_socket_addrs()
+            .map_err(NetError::from)?
+            .into_iter()
+            .find(|x| x.is_ipv4()), // TODO: have we support IPv6?
+    )
 }
