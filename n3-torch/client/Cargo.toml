@@ -1,8 +1,12 @@
 [package]
-name = "n3-torch-core"
+name = "n3-torch-client"
 version = "0.1.0"
-authors = ["h <ho.kim@gnu.ac.kr>"]
+authors = ["h"]
 edition = "2018"
+
+[[bin]]
+name = "n3-torchc"
+path = "src/main.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -10,11 +14,5 @@ edition = "2018"
 n3-machine = { path = "../../n3-machine" }
 n3-machine-ffi = { path = "../../n3-machine-ffi" }
 n3-program = { path = "../../n3-program" }
-n3-torch-ffi = { path = "../ffi/rust" }
 
-pyo3-mp = "0.1"
-
-chrono = "0.4"
-
-[dev-dependencies]
-n3-builder = { path = "../../n3-builder" }
+pyo3 = "0.12"

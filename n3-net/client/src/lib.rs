@@ -4,7 +4,8 @@ use std::net::{SocketAddr, ToSocketAddrs};
 use simple_socket::SocketClient;
 
 use n3_machine_ffi::{
-    Error, MachineId, NetError, Program, Query, QueryError, Result, WorkId, WorkStatus,
+    Error, MachineId, MachineIdSet, NetError, Program, ProgramText, Query, QueryError, Result,
+    WorkId, WorkStatus,
 };
 use n3_net_protocol::{Request, Response, PORT};
 
@@ -36,7 +37,7 @@ impl Work {
         self.machines.get(0)
     }
 
-    pub fn spawn<R>(program: &Program, command: &str, query: &[R]) -> Result<Self>
+    pub fn spawn<R>(program: &ProgramText, command: &str, query: &[R]) -> Result<Self>
     where
         R: AsRef<str>,
     {
@@ -56,14 +57,20 @@ impl Work {
             seed = id_end;
 
             let request = Request::Spawn {
-                work: id,
                 id_primaries: id_machines,
-                id_world,
-                master_addr: master_addr.to_string(),
-                program: program.to_vec(),
-                command: command.to_string(),
+                program: Program {
+                    id: MachineIdSet {
+                        work: id,
+                        world: id_world,
+                        master_addr: master_addr.to_string(),
+                        ..Default::default()
+                    },
+                    command: command.to_string(),
+                    text: program.to_vec(),
+                    ..Default::default()
+                },
             };
-            machine.request(&request).map_err(NetError::from)?;
+            machine.request(&request).map_err(|x| NetError(x))?;
         }
 
         Ok(Self { id, machines })
@@ -72,7 +79,7 @@ impl Work {
     pub fn join(&mut self) -> Result<()> {
         for machine in &self.machines {
             let request = Request::Join { work: self.id };
-            machine.request(&request).map_err(NetError::from)?;
+            machine.request(&request).map_err(|x| NetError(x))?;
         }
         Ok(())
     }
@@ -80,7 +87,7 @@ impl Work {
     pub fn terminate(&mut self) -> Result<()> {
         for machine in &self.machines {
             let request = Request::Terminate { work: self.id };
-            machine.request(&request).map_err(NetError::from)?;
+            machine.request(&request).map_err(|x| NetError(x))?;
         }
         Ok(())
     }
@@ -88,7 +95,7 @@ impl Work {
     pub fn status(&self) -> Result<WorkStatus> {
         let machine = self.master_machine().unwrap();
         let request = Request::Status { work: self.id };
-        let response = machine.request(&request).map_err(NetError::from)?;
+        let response = machine.request(&request).map_err(|x| NetError(x))?;
         response.status().map_err(Error::DeviceError)
     }
 
@@ -145,7 +152,7 @@ impl Work {
             let request = Request::Load { work: id, query };
             let response = socket
                 .request(&request)
-                .map_err(|x| NetError::from(*x))?
+                .map_err(|x| NetError(x))?
                 .load()
                 .map_err(Error::DeviceError)?;
 

@@ -2,7 +2,6 @@ use pyo3::prelude::*;
 use pyo3::types::{IntoPyDict, PyDict};
 
 use n3_program::ast;
-use n3_torch_ffi::pyo3;
 
 use super::value::TryToPyObject;
 

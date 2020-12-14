@@ -11,10 +11,11 @@ path = "src/main.rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+n3-machine = { path = "../../n3-machine" }
+n3-machine-ffi = { path = "../../n3-machine-ffi" }
 n3-net-server = { path = "../../n3-net/server" }
-n3-torch-core = { path = "../core" }
+n3-torch-ffi = { path = "../ffi/rust" }
 
 [dev-dependencies]
 n3-builder = { path = "../../n3-builder" }
-n3-machine-ffi = { path = "../../n3-machine-ffi" }
 n3-net-client = { path = "../../n3-net/client" }

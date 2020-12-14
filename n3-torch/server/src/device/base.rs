@@ -26,7 +26,7 @@ impl<C> ProcessMachine<ProcessMachineImpl> for CandidatesMachineImpl<C>
 where
     C: CandidatesMachine,
 {
-    unsafe fn try_new(inner: ProcessMachineImpl) -> Self {
+    fn new(inner: ProcessMachineImpl) -> Self {
         Self {
             _trait: PhantomData::default(),
             inner,

@@ -11,11 +11,10 @@ pub enum Error {
 impl PartialEq for Error {
     fn eq(&self, other: &Self) -> bool {
         // note: only test the types
-        match (self, other) {
-            (Self::IOError(_), Self::IOError(_)) => true,
-            (Self::BincodeError(_), Self::BincodeError(_)) => true,
-            _ => false,
-        }
+        matches!(
+            (self, other),
+            (Self::IOError(_), Self::IOError(_)) | (Self::BincodeError(_), Self::BincodeError(_)),
+        )
     }
 }
 

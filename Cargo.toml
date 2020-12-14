@@ -11,7 +11,7 @@ members = [
     "n3-parser",
     "n3-parser-ast",
     "n3-program",
-    "n3-torch/core",
+    "n3-torch/client",
     "n3-torch/ffi/rust",
     "n3-torch/server",
 ]

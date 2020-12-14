@@ -1,8 +1,6 @@
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
 
-use n3_torch_ffi::pyo3;
-
 #[derive(Debug)]
 pub struct BuildArgs<'a> {
     pub args: &'a PyDict,

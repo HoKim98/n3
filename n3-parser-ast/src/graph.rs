@@ -101,10 +101,8 @@ impl<'a> fmt::Debug for FmtGuard<'a, Shapes> {
         let borrowed = self.0.borrow();
 
         if borrowed.len() == 1 {
-            if let Some(shape) = borrowed.get("x") {
-                if let Some(shape) = shape {
-                    return writeln!(f, " = {:?}", shape);
-                }
+            if let Some(Some(shape)) = borrowed.get("x") {
+                return writeln!(f, " = {:?}", shape);
             }
         }
 

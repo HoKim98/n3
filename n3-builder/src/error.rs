@@ -198,7 +198,8 @@ impl PartialEq for Error {
 impl PartialEq for LinkError {
     fn eq(&self, other: &Self) -> bool {
         // note: only test the types
-        match (self, other) {
+        matches!(
+            (self, other),
             (
                 Self::MismatchedDim {
                     expected: _,
@@ -208,8 +209,7 @@ impl PartialEq for LinkError {
                     expected: _,
                     given: _,
                 },
-            ) => true,
-            (
+            ) | (
                 Self::MismatchedShape {
                     expected: _,
                     given: _,
@@ -218,21 +218,20 @@ impl PartialEq for LinkError {
                     expected: _,
                     given: _,
                 },
-            ) => true,
-            _ => false,
-        }
+            ),
+        )
     }
 }
 
 impl PartialEq for ExternalError {
     fn eq(&self, other: &Self) -> bool {
         // note: only test the types
-        match (self, other) {
-            (Self::IOError(_), Self::IOError(_)) => true,
-            (Self::GlobError(_), Self::GlobError(_)) => true,
-            (Self::PatternError(_), Self::PatternError(_)) => true,
-            _ => false,
-        }
+        matches!(
+            (self, other),
+            (Self::IOError(_), Self::IOError(_))
+                | (Self::GlobError(_), Self::GlobError(_))
+                | (Self::PatternError(_), Self::PatternError(_)),
+        )
     }
 }
 

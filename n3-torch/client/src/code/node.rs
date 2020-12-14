@@ -2,7 +2,6 @@ use pyo3::prelude::*;
 use pyo3::types::{IntoPyDict, PyList};
 
 use n3_program::CodeData;
-use n3_torch_ffi::pyo3;
 
 use super::base::{BuildArgs, BuildCode};
 use super::out::Outs;

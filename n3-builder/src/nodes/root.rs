@@ -59,10 +59,3 @@ impl NodeRoot {
         self.externs.get(name, self)
     }
 }
-
-#[cfg(feature = "pip")]
-impl Drop for NodeRoot {
-    fn drop(&mut self) {
-        unsafe { n3_torch_ffi::finalize_python() }
-    }
-}

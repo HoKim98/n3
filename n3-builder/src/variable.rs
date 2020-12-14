@@ -46,11 +46,15 @@ pub(crate) trait Hint {
         Self: Sized;
 }
 
+#[allow(clippy::suspicious_operation_groupings)]
 impl CloneValue for ast::RefVariable {
     fn clone_value(&self, variables: &[ast::RefVariable]) -> Self {
         let this = self.borrow();
         for var in variables {
             let var_ref = var.borrow();
+
+            // The older 'this' variable should be referred to 'id'.
+            // The newer 'var_ref' variable should be referred to 'id_old'.
             if var_ref.name == this.name && var_ref.id_old == this.id {
                 return var.clone();
             }

@@ -1,9 +1,7 @@
 use std::collections::BTreeMap;
 
 pub use n3_machine_ffi::Query;
-use n3_machine_ffi::{
-    Machine, MachineId, MachineIdSet, Program, SignalHandler, WorkId, WorkStatus,
-};
+use n3_machine_ffi::{Machine, MachineId, Program, SignalHandler, WorkId, WorkStatus};
 
 use crate::error::{LoadError, Result, WorkError};
 
@@ -54,30 +52,19 @@ impl HostMachine {
         None
     }
 
-    pub fn spawn(
-        &mut self,
-        id_work: WorkId,
-        id_primaries: Vec<MachineId>,
-        id_world: MachineId,
-        master_addr: String,
-        program: &Program,
-        command: String,
-    ) -> WorkStatus {
+    pub fn spawn(&mut self, id_primaries: Vec<MachineId>, mut program: Program) -> WorkStatus {
+        program.id.local_signal = self.handler.name().to_string();
+
         let mut status = Default::default();
 
-        let work = self.works_running.get_mut(&id_work).unwrap();
+        let work = self.works_running.get_mut(&program.id.work).unwrap();
         for (id_local, (id_primary, machine)) in
             id_primaries.into_iter().zip(work.iter_mut()).enumerate()
         {
-            let id = MachineIdSet {
-                work: id_work,
-                primary: id_primary,
-                local: id_local as MachineId,
-                world: id_world,
-                master_addr: master_addr.to_string(),
-            };
+            program.id.primary = id_primary;
+            program.id.local = id_local as MachineId;
 
-            let s = machine.spawn(id, program, &command, self.handler.clone());
+            let s = machine.spawn(&mut program, &self.handler);
             if id_primary == 0 {
                 status = s;
             }

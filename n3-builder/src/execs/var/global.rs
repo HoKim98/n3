@@ -72,7 +72,7 @@ impl GlobalVars {
 
     #[cfg(feature = "pip")]
     pub(crate) fn get_n3_source_root() -> PathBuf {
-        use n3_torch_ffi::pyo3::prelude::*;
+        use pyo3::prelude::*;
         Python::with_gil(|py| {
             py.run("import n3", None, None)
                 .and_then(|()| py.eval("n3.__file__", None, None))

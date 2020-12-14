@@ -36,16 +36,19 @@ impl NumDevices {
         }
 
         let value = {
-            let nvidia_smi = Command::new("nvidia-smi")
+            if let Ok(nvidia_smi) = Command::new("nvidia-smi")
                 .args(&["--query-gpu=name", "--format=csv,noheader"])
                 .output()
-                .unwrap();
-
-            String::from_utf8(nvidia_smi.stdout)
-                .unwrap()
-                .split('\n')
-                .count() as i64
-                - 1
+            {
+                String::from_utf8(nvidia_smi.stdout)
+                    .unwrap()
+                    .split('\n')
+                    .count() as i64
+                    - 1
+            } else {
+                // nvidia-smi is not working -> no cuda devices
+                0
+            }
         };
 
         self.0.store(value, Ordering::SeqCst);

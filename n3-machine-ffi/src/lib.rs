@@ -1,14 +1,35 @@
 mod error;
 mod handler;
+mod smp;
 
+use std::env;
 use std::fmt;
+use std::fs::{self, File};
+use std::path::PathBuf;
 
+use chrono::{Duration, Utc};
 use serde::{Deserialize, Serialize};
+
+use self::smp::SMPool;
 
 pub use self::error::*;
 pub use self::handler::SignalHandler;
 
-type DateTime = chrono::DateTime<chrono::Utc>;
+type DateTime = chrono::DateTime<Utc>;
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub struct Program {
+    pub id: MachineIdSet,
+    pub machine: String,
+    pub command: String,
+    pub text: ProgramTextVec,
+}
+
+#[derive(Clone)]
+pub struct WorkHandler {
+    signal: SignalHandler,
+    status: SMPool<WorkStatus>,
+}
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct WorkStatus {
@@ -26,22 +47,18 @@ pub struct MachineIdSet {
     pub primary: MachineId,
     pub local: MachineId,
     pub world: MachineId,
+
     pub master_addr: String,
+    pub local_signal: String,
 }
 
 pub type MachineId = u64;
 
-pub type ProgramVec = Vec<u8>;
-pub type Program = [u8];
+pub type ProgramTextVec = Vec<u8>;
+pub type ProgramText = [u8];
 
 pub trait Machine {
-    fn spawn(
-        &mut self,
-        id: MachineIdSet,
-        program: &Program,
-        command: &str,
-        handler: SignalHandler,
-    ) -> WorkStatus;
+    fn spawn(&mut self, program: &mut Program, handler: &SignalHandler) -> WorkStatus;
 
     fn status(&mut self) -> WorkStatus;
 
@@ -58,6 +75,91 @@ pub struct Query {
 }
 
 pub struct LocalQuery<'a>(pub &'a Query);
+
+impl Program {
+    pub fn load(id: &MachineIdSet) -> Result<Self> {
+        let path = Self::path(id);
+        let file = File::open(&path).map_err(NetError::from)?;
+        let this = bincode::deserialize_from(file).map_err(NetError::from)?;
+
+        // remove unneeded file
+        fs::remove_file(path).map_err(NetError::from)?;
+        Ok(this)
+    }
+
+    pub fn save(&self) -> Result<()> {
+        let path = Self::path(&self.id);
+        let file = File::create(path).map_err(NetError::from)?;
+        bincode::serialize_into(file, self).map_err(NetError::from)?;
+        Ok(())
+    }
+
+    fn path(id: &MachineIdSet) -> PathBuf {
+        let mut path = env::temp_dir();
+        path.push(format!("n3-program-{}-{}.bin", id.work, id.primary));
+        path
+    }
+}
+
+unsafe impl Send for WorkHandler {}
+
+impl WorkHandler {
+    pub fn new(id: &MachineIdSet) -> Result<Self> {
+        Ok(Self {
+            signal: SignalHandler::load(&id.local_signal),
+            status: SMPool::create_or_open(Self::id_to_name(id))?,
+        })
+    }
+
+    pub fn new_with_signal(id: &MachineIdSet, signal: &SignalHandler) -> Result<Self> {
+        Ok(Self {
+            signal: signal.clone(),
+            status: SMPool::create_or_open(Self::id_to_name(id))?,
+        })
+    }
+
+    fn id_to_name(id: &MachineIdSet) -> String {
+        format!("work-{}", id.work)
+    }
+
+    pub fn is_running(&self) -> Result<bool> {
+        self.status.with_inner(|x| x.is_running)
+    }
+
+    pub fn status(&self) -> Result<WorkStatus> {
+        self.status.with_inner(|x| x.clone())
+    }
+
+    pub fn update_time(&self, total_secs: i64) -> Result<()> {
+        self.status.with_inner(|x| {
+            let date_begin = x.date_begin.unwrap();
+            let date_end = date_begin + Duration::seconds(total_secs);
+            x.date_end = Some(date_end);
+        })
+    }
+
+    pub fn start(&self) -> Result<()> {
+        self.status.with_inner(|x| {
+            x.is_running = true;
+            x.date_begin = Some(Utc::now());
+        })
+    }
+
+    pub fn end_ok(&self) -> Result<()> {
+        self.status.with_inner(|x| {
+            x.is_running = false;
+            x.date_end = Some(Utc::now());
+        })
+    }
+
+    pub fn end_err<S: AsRef<str>>(&self, msg: S) -> Result<()> {
+        self.status.with_inner(|x| {
+            x.is_running = false;
+            x.error_msg = Some(msg.as_ref().to_string());
+            x.date_end = Some(Utc::now());
+        })
+    }
+}
 
 impl Query {
     pub fn parse<R>(query: R) -> std::result::Result<Self, QueryError>

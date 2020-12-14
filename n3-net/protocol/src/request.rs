@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use n3_machine_ffi::{MachineId, ProgramVec, Query, WorkId};
+use n3_machine_ffi::{MachineId, Program, Query, WorkId};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum Request {
@@ -9,12 +9,8 @@ pub enum Request {
         query: Vec<Query>,
     },
     Spawn {
-        work: WorkId,
         id_primaries: Vec<MachineId>,
-        id_world: MachineId,
-        master_addr: String,
-        program: ProgramVec,
-        command: String,
+        program: Program,
     },
     Status {
         work: WorkId,

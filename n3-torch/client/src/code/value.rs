@@ -4,7 +4,6 @@ use pyo3::prelude::*;
 use pyo3::types::IntoPyDict;
 
 use n3_program::{ast, BuildValue};
-use n3_torch_ffi::pyo3;
 
 pub trait TryToPyObject {
     fn try_to_object(&self, py: Python) -> Option<PyObject>;

@@ -1,8 +1,6 @@
 use pyo3::prelude::*;
 use pyo3::types::IntoPyDict;
 
-use n3_torch_ffi::pyo3;
-
 use super::base::{BuildArgs, BuildCode};
 use super::graph::Args;
 

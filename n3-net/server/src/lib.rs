@@ -26,14 +26,10 @@ where
                 .load(work, query)
                 .map(|num_machines| Response::Load { num_machines }),
             Self::Spawn {
-                work,
                 id_primaries,
-                id_world,
-                master_addr,
                 program,
-                command,
             } => Ok(Response::Status {
-                status: host.spawn(work, id_primaries, id_world, master_addr, &program, command),
+                status: host.spawn(id_primaries, program),
             }),
             Self::Status { work } => host.status(work).map(|status| Response::Status { status }),
             Self::Join { work } => host.join(work).map(|status| Response::Status { status }),
@@ -62,14 +58,14 @@ where
     let server = SocketServer::try_new(socket, backlog).unwrap();
 
     let handler = host.handler.clone();
-    set_handler(move || handler.set(false)).unwrap();
+    set_handler(move || handler.set_running(false)).unwrap();
 
     let handler = host.handler.clone();
     server
         .run(
             |x| Handle::<H>::handle(x, &mut host),
             |s| {
-                if handler.is_running() {
+                if handler.get_running() {
                     post(s)
                 } else {
                     PostServing::Stop

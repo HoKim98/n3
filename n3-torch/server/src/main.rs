@@ -1,7 +1,20 @@
+mod device;
+mod host;
+mod process;
+mod python;
+
+use self::device::CandidatesMachine;
+use self::host::HostMachine;
+
+/// Define built-in machine generators here.
+pub(crate) const BUILTIN_MACHINES: &[(&str, n3_machine::Generator)] = &[
+    ("cpu", self::device::CpuMachine::try_new),
+    ("cuda", self::device::CudaMachine::try_new),
+];
+
 use std::net::{IpAddr, Ipv4Addr};
 
 use n3_net_server::{PostServing, SocketServer};
-use n3_torch_core::HostMachine;
 
 pub fn run_server(post: impl Fn(&mut SocketServer) -> PostServing) {
     const IP_V4: Ipv4Addr = Ipv4Addr::new(0, 0, 0, 0);
@@ -23,12 +36,9 @@ mod tests {
     };
     use std::thread;
 
-    use pyo3::{PyResult, Python};
-
     use n3_builder::{dirs, ExecRoot, GlobalVars};
-    use n3_machine_ffi::ProgramVec;
+    use n3_machine_ffi::ProgramTextVec;
     use n3_net_client::Work;
-    use n3_torch_core::pyo3;
 
     use super::*;
 
@@ -49,14 +59,7 @@ mod tests {
         }
     }
 
-    fn load_n3(py: Python) -> PyResult<()> {
-        let sys = py.import("sys")?;
-        sys.get("path")?
-            .call_method1("insert", (0, "../ffi/python"))?;
-        Ok(())
-    }
-
-    fn get_dummy_program() -> (ExecRoot, ProgramVec) {
+    fn get_dummy_program() -> (ExecRoot, ProgramTextVec) {
         let envs = GlobalVars::default();
         envs.set(dirs::N3_ROOT, "../../n3-builder/tests/data/")
             .unwrap();
@@ -77,9 +80,6 @@ mod tests {
     fn test_simple() {
         let alive_client = BooleanFlag::new(true);
         let alive_server = BooleanFlag::new(false);
-
-        // load n3
-        Python::with_gil(load_n3).unwrap();
 
         // spawn a server
         let alive_client_t = alive_client.clone();
@@ -116,6 +116,7 @@ mod tests {
 
             let status = work.status().unwrap();
             assert_eq!(status.is_running, false);
+            assert_eq!(status.error_msg, None);
             assert_eq!(status.date_end.is_some(), true);
         }
         drop(work);
