@@ -22,6 +22,7 @@ Cargo.lock
 
 # Editor
 **/.vscode/
+**/.*.bat
 
 # Asset Templates
 /assets/*.xcf
