@@ -38,7 +38,7 @@ install:
   - pip3 install torch===1.7.0 torchvision===0.8.1 -f https://download.pytorch.org/whl/torch_stable.html --quiet
   - pip3 install --upgrade --ignore-installed --quiet pip setuptools
   - pip3 install -r n3-torch/ffi/python/requirements.txt --quiet
-  - cd n3-torch/ffi/python && python setup.py install --user
+  - cd n3-torch/ffi/python && python3 setup.py install --user
 
 script:
   # skip 'n3-net-api': dependency 'rocket' requires nightly
