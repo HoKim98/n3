@@ -64,7 +64,6 @@ impl PyMachine for ProcessMachine {
         match self.process.take() {
             Some(process) => {
                 let result = process.wait_with_output().map_err(NetError::from)?;
-                dbg!(&result);
                 if !result.status.success() {
                     let handler = self.handler.as_ref().unwrap();
 

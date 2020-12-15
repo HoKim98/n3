@@ -30,4 +30,4 @@ install:
 script:
   # skip 'n3-net-api': dependency 'rocket' requires nightly
   - cargo build --verbose --workspace --exclude n3-net-api
-  - PATH=$PATH:`pwd`/target/debug cargo test --verbose --workspace --exclude n3-net-api
+  - PATH=$PATH:`pwd`/target/debug PYTHONPATH=$PYTHONPATH:`pwd`/n3-torch/ffi/python N3_SOURCE_ROOT=`pwd`/n3-torch/ffi/python/n3 cargo test --verbose --workspace --exclude n3-net-api

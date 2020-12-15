@@ -11,9 +11,13 @@ class DummyImageClassification(Trainer):
         self.optimizer._initialize(self.model)
 
         data = iter(self.data.get_train_dataset())
-        _x, _classes = next(data)
+        x, y = next(data)
 
-        time.sleep(1)
+        self.optimizer.zero_grad()
+        y_pred = self.model(x=x)
+        loss = self.loss(**y_pred, y=y)['x']
+        loss.backward()
+
         self._train_end()
 
     def eval(self, kwargs):
