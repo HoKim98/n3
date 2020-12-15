@@ -23,12 +23,10 @@ jobs:
   fast_finish: true
   include:
     - os: windows
-      env: PATH=/c/Python38:/c/Python38/Scripts:$PATH
+      env: PATH=/c/Python38:/c/Python38/Scripts:$PATH:$TRAVIS_BUILD_DIR/target/debug PYTHONPATH=$PYTHONPATH:$TRAVIS_BUILD_DIR/n3-torch/ffi/python N3_SOURCE_ROOT=$TRAVIS_BUILD_DIR/n3-torch/ffi/python/n3
 
 env:
-  - PATH=$PATH:$TRAVIS_BUILD_DIR/target/debug
-  - PYTHONPATH=$PYTHONPATH:$TRAVIS_BUILD_DIR/n3-torch/ffi/python
-  - N3_SOURCE_ROOT=$TRAVIS_BUILD_DIR/n3-torch/ffi/python/n3
+  - PATH=$PATH:$TRAVIS_BUILD_DIR/target/debug PYTHONPATH=$PYTHONPATH:$TRAVIS_BUILD_DIR/n3-torch/ffi/python N3_SOURCE_ROOT=$TRAVIS_BUILD_DIR/n3-torch/ffi/python/n3
 
 # install python for Windows
 before_install:
