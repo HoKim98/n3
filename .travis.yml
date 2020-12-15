@@ -23,10 +23,10 @@ jobs:
   fast_finish: true
   include:
     - os: windows
-      env: PATH=/c/Python38:/c/Python38/Scripts:$PATH:$TRAVIS_BUILD_DIR/target/debug PYTHONPATH=$PYTHONPATH:$TRAVIS_BUILD_DIR/n3-torch/ffi/python N3_SOURCE_ROOT=$TRAVIS_BUILD_DIR/n3-torch/ffi/python/n3
+      env: PATH=/c/Python38:/c/Python38/Scripts:$PATH:$TRAVIS_BUILD_DIR/target/debug
 
 env:
-  - PATH=$PATH:$TRAVIS_BUILD_DIR/target/debug PYTHONPATH=$PYTHONPATH:$TRAVIS_BUILD_DIR/n3-torch/ffi/python N3_SOURCE_ROOT=$TRAVIS_BUILD_DIR/n3-torch/ffi/python/n3
+  - PATH=$PATH:$TRAVIS_BUILD_DIR/target/debug
 
 # install python for Windows
 before_install:
@@ -38,6 +38,7 @@ install:
   - pip3 install torch===1.7.0 torchvision===0.8.1 -f https://download.pytorch.org/whl/torch_stable.html --quiet
   - pip3 install --upgrade --ignore-installed --quiet pip setuptools
   - pip3 install -r n3-torch/ffi/python/requirements.txt --quiet
+  - cd n3-torch/ffi/python && python setup.py install
 
 script:
   # skip 'n3-net-api': dependency 'rocket' requires nightly
