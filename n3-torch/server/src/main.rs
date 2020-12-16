@@ -3,6 +3,8 @@ mod host;
 mod process;
 mod python;
 
+use std::time::Duration;
+
 use self::device::CandidatesMachine;
 use self::host::HostMachine;
 
@@ -25,7 +27,7 @@ pub fn run_server(post: impl Fn(&mut SocketServer) -> PostServing) {
 }
 
 fn main() {
-    run_server(|_| PostServing::Continue);
+    run_server(|_| PostServing::Wait(Duration::from_millis(10)));
 }
 
 #[cfg(test)]
