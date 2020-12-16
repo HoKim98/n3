@@ -3,6 +3,7 @@ use crate::error::Result;
 #[derive(Serialize, Deserialize)]
 pub struct BoolResult {
     pub success: bool,
+    pub error_msg: Option<String>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -14,16 +15,24 @@ pub struct ObjResult<T> {
 
 impl From<bool> for BoolResult {
     fn from(success: bool) -> Self {
-        Self { success }
+        Self {
+            success,
+            error_msg: None,
+        }
     }
 }
 
-impl<T> From<Option<T>> for ObjResult<T> {
-    fn from(data: Option<T>) -> Self {
-        Self {
-            success: data.is_some(),
-            data,
-            error_msg: None,
+impl From<Result<()>> for BoolResult {
+    fn from(error: Result<()>) -> Self {
+        match error {
+            Ok(()) => Self {
+                success: true,
+                error_msg: None,
+            },
+            Err(error) => Self {
+                success: false,
+                error_msg: Some(format!("{:?}", error)),
+            },
         }
     }
 }

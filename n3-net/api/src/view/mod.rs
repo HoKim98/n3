@@ -1,8 +1,5 @@
 pub mod catchers;
 
-mod nodes;
-mod sessions;
-
 macro_rules! impl_routes {
     [
         ref=[$($name_r:ident),*,],

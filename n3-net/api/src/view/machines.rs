@@ -17,7 +17,7 @@ pub fn get(conn: crate::db::Database, id: Id) -> Json<ObjResult<Table>> {
 
 #[get("/machine")]
 pub fn get_all(conn: crate::db::Database) -> Json<ObjResult<Vec<Table>>> {
-    Json(Some(Table::get_all(&conn)).into())
+    Json(Table::get_all(&conn).into())
 }
 
 #[put("/machine/<id>", data = "<obj>")]

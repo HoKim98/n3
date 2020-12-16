@@ -39,24 +39,27 @@ impl WorkRoot {
         Ok(info)
     }
 
-    pub fn get(&mut self, id: WorkId) -> Option<Work> {
-        Self::update_status(self.0.get_mut(&id)?)
+    pub fn get(&mut self, id: WorkId) -> Result<Work> {
+        match self.0.get_mut(&id) {
+            Some(entry) => Self::update_status(entry),
+            None => Err(Error::NoSuchWork { id }),
+        }
     }
 
-    pub fn get_all(&mut self) -> Vec<Work> {
-        self.0
-            .values_mut()
-            .filter_map(Self::update_status)
-            .collect()
+    pub fn get_all(&mut self) -> Result<Vec<Work>> {
+        self.0.values_mut().map(Self::update_status).collect()
     }
 
-    fn update_status(entry: &mut WorkEntry) -> Option<Work> {
-        entry.info.status = Some(entry.inner.status().ok()?);
-        Some(entry.info.clone())
+    fn update_status(entry: &mut WorkEntry) -> Result<Work> {
+        entry.info.status = Some(entry.inner.status()?);
+        Ok(entry.info.clone())
     }
 
-    pub fn delete(&self, id: WorkId) -> bool {
-        todo!()
+    pub fn delete(&mut self, id: WorkId) -> Result<()> {
+        match self.0.remove(&id) {
+            Some(mut entry) => entry.inner.terminate().map_err(|e| e.into()),
+            None => Err(Error::NoSuchWork { id }),
+        }
     }
 }
 
@@ -74,7 +77,6 @@ impl Work {
             .iter()
             .map(|&id| {
                 Machine::get(conn, id)
-                    .ok_or(Error::NoSuchMachine { id })
                     .map(Query::from)
                     .map(|x| x.to_string())
             })

@@ -26,15 +26,15 @@ impl WorkRoot {
         self.0.lock().unwrap().insert(conn, work)
     }
 
-    pub fn get(&self, id: n3_machine_ffi::WorkId) -> Option<crate::model::Work> {
+    pub fn get(&self, id: n3_machine_ffi::WorkId) -> Result<crate::model::Work> {
         self.0.lock().unwrap().get(id)
     }
 
-    pub fn get_all(&self) -> Vec<crate::model::Work> {
+    pub fn get_all(&self) -> Result<Vec<crate::model::Work>> {
         self.0.lock().unwrap().get_all()
     }
 
-    pub fn delete(&self, id: n3_machine_ffi::WorkId) -> bool {
+    pub fn delete(&self, id: n3_machine_ffi::WorkId) -> Result<()> {
         self.0.lock().unwrap().delete(id)
     }
 }

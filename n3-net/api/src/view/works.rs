@@ -18,7 +18,7 @@ pub fn get(id: Id) -> Json<ObjResult<Table>> {
 
 #[get("/work")]
 pub fn get_all() -> Json<ObjResult<Vec<Table>>> {
-    Json(Some(WORK_ROOT.get_all()).into())
+    Json(WORK_ROOT.get_all().into())
 }
 
 #[delete("/work/<id>")]
