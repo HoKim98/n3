@@ -1,0 +1,35 @@
+name: Rust
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Test on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix: 
+        include:
+          - os: ubuntu-latest # Linux
+          - os: macos-latest # Mac
+          - os: windows-latest # Windows
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Chocolatey Action
+      uses: crazy-max/ghaction-chocolatey@v1
+      with:
+        args: -h
+
+    - name: Build
+      run: cargo build --verbose --workspace --exclude n3-net-api
+
+    - name: Run tests
+      run: cargo test --verbose --workspace --exclude n3-net-api
