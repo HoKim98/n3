@@ -4,7 +4,7 @@
 
 # N3: Neural Network Notation
 
-[![travis-ci](https://api.travis-ci.com/kerryeon/n3.svg)](https://travis-ci.com/kerryeon/n3)
+[![Rust](https://github.com/kerryeon/n3/workflows/Rust/badge.svg)](https://travis-ci.com/kerryeon/n3)
 
 This project is WIP. Please be aware of using it.
 
