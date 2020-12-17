@@ -8,7 +8,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  PATH: $PATH:$GITHUB_WORKSPACE/target/debug
+  GITHUB_PATH: $GITHUB_PATH:$GITHUB_WORKSPACE/target/debug
 
 jobs:
   build:
@@ -16,10 +16,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix: 
-        include:
-          - os: ubuntu-latest # Linux
-          - os: macos-latest # Mac
-          - os: windows-latest # Windows
+        os: [ubuntu-latest, windows-latest, macOS-latest]
         python-version: [3.8]
 
     steps:
