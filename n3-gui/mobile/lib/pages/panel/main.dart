@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:n3_mobile/pages/panel/base.dart';
 import 'package:n3_mobile/pages/panel/machines.dart';
-import 'package:n3_mobile/pages/panel/summnary.dart';
+import 'package:n3_mobile/pages/panel/summary.dart';
 import 'package:n3_mobile/pages/panel/works/panel.dart';
 
 class PanelMainPage extends StatefulWidget {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:n3_mobile/models/work.dart';
 import 'package:n3_mobile/pages/panel/base.dart';
+import 'package:n3_mobile/pages/panel/works/detail.dart';
 
 class WorkDetailSummary extends StatefulWidget implements PanelItem {
   String get label => 'summary';
@@ -14,16 +15,8 @@ class WorkDetailSummary extends StatefulWidget implements PanelItem {
   State createState() => _State(work);
 }
 
-class _State extends State {
-  final ValueNotifier<Work> work;
-
-  _State(this.work);
-
-  @override
-  void initState() {
-    super.initState();
-    this.work.addListener(() => setState(() {}));
-  }
+class _State extends WorkDetailState {
+  _State(ValueNotifier<Work> work) : super(work);
 
   @override
   Widget build(BuildContext context) {

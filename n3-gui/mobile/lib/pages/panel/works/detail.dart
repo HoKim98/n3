@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:n3_mobile/models/work.dart';
 import 'package:n3_mobile/pages/panel/base.dart';
+import 'package:n3_mobile/pages/panel/works/log.dart';
 import 'package:n3_mobile/pages/panel/works/summary.dart';
 
 class WorkDetailPage extends StatefulWidget {
@@ -15,8 +16,7 @@ class WorkDetailPage extends StatefulWidget {
 class _State extends State {
   final List<PanelItem Function(ValueNotifier<Work>)> _itemsRaw = [
     (work) => WorkDetailSummary(work),
-    (work) => WorkDetailSummary(work),
-    // WorkDetailLog(),
+    (work) => WorkDetailLog(work),
   ];
   List<PanelItem> _items;
 
@@ -71,5 +71,22 @@ class _State extends State {
       if (!mounted || this.work == null) break;
       this.work.value = work;
     }
+  }
+}
+
+abstract class WorkDetailState extends State {
+  final ValueNotifier<Work> work;
+
+  WorkDetailState(this.work);
+
+  @override
+  void initState() {
+    super.initState();
+    this.work.addListener(_updateWork);
+  }
+
+  void _updateWork() {
+    if (!mounted || this.work == null) return;
+    setState(() {});
   }
 }

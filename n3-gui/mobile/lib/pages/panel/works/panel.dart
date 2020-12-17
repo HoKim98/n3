@@ -83,6 +83,7 @@ class _State extends State {
               isError ? work.status.errorMsg : 'ETA $dateEnd',
               overflow: TextOverflow.ellipsis,
             ),
+            trailing: Icon(Icons.keyboard_arrow_right),
             onTap: () => _onWorkMore(work),
           ),
         );

@@ -87,7 +87,7 @@ class WorkStatus {
     );
   }
 
-  static DateTime _tryParseDateTime(dynamic dateTime) {
+  static DateTime _tryParseDateTime(String dateTime) {
     if (dateTime != null) {
       return DateTime.tryParse(dateTime)?.toLocal();
     }
