@@ -8,14 +8,14 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  GITHUB_PATH: $GITHUB_PATH:$GITHUB_WORKSPACE/target/debug
 
 jobs:
   build:
     name: Test on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
-      matrix: 
+      fail-fast: false
+      matrix:
         os: [ubuntu-latest, windows-latest, macOS-latest]
         python-version: [3.8]
 
@@ -32,6 +32,9 @@ jobs:
         pip install torch===1.7.0 torchvision===0.8.1 -f https://download.pytorch.org/whl/torch_stable.html --quiet
         pip install -r n3-torch/ffi/python/requirements.txt --quiet
         pip install -e n3-torch/ffi/python
+        
+    - name: Add PATH
+      run: echo "$GITHUB_WORKSPACE/target/debug" >> $GITHUB_PATH
 
     # skip 'n3-net-api': dependency 'rocket' requires nightly
     - name: Rust. Build
