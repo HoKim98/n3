@@ -5,6 +5,7 @@ use pyo3::prelude::*;
 use n3_machine::PORT;
 use n3_machine_ffi::Program;
 
+use crate::args::parse_python_path;
 use crate::code::BuildCode;
 use crate::handler::PyHandler;
 
@@ -44,6 +45,10 @@ pub fn n3_execute(py: Python, program: &Program, handler: PyHandler) -> PyResult
         env.set_item("WORLD_SIZE", program.id.world.to_string())?;
 
         env.set_item("CUDA_VISIBLE_DEVICES", device_id)?;
+
+        // set python path to spawn the processes (workers)
+        py.import("multiprocessing")?
+            .call1("set_executable", (parse_python_path(),))?;
     }
 
     // Step 4. Define the node in REPL

@@ -1,27 +1,16 @@
+mod args;
 mod code;
 mod exec;
 mod handler;
 
-use std::env;
-
-use n3_machine_ffi::{MachineId, MachineIdSet, Program, WorkHandler, WorkId};
+use n3_machine_ffi::{Program, WorkHandler};
 
 use self::exec::{finalize_python, n3_execute};
 use self::handler::PyHandler;
 
 fn main() {
     // load the arguments
-    let id = {
-        let mut args = env::args().skip(1);
-        let work: WorkId = args.next().unwrap().parse().unwrap();
-        let primary: MachineId = args.next().unwrap().parse().unwrap();
-
-        MachineIdSet {
-            work,
-            primary,
-            ..Default::default()
-        }
-    };
+    let id = self::args::parse_ids().expect("usage: n3-torchc id_work id_primary");
 
     // load the program & handler
     let program = Program::load(&id).unwrap();

@@ -17,6 +17,7 @@ class Mnist(DataNode):
                                         download=True)
             self._train_loader = DataLoader(dataset=self._train_dataset,
                                             batch_size=self.batch_size,
+                                            num_workers=4,
                                             shuffle=True)
         return self._train_loader
 

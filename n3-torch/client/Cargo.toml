@@ -16,3 +16,4 @@ n3-machine-ffi = { path = "../../n3-machine-ffi" }
 n3-program = { path = "../../n3-program" }
 
 pyo3 = "0.12"
+which = "4.0"
