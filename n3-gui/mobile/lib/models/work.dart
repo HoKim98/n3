@@ -77,6 +77,18 @@ class WorkStatus {
     this.dateEnd,
   });
 
+  double get percent {
+    if (dateEnd == null) return 0;
+
+    final dateNow = DateTime.now();
+
+    final timeTotal = dateEnd.difference(dateBegin).inMilliseconds;
+    final timePassed = dateNow.difference(dateBegin).inMilliseconds;
+    final percent = timePassed / timeTotal;
+
+    return percent < 1 ? percent : 1;
+  }
+
   static WorkStatus fromJson(Map<String, dynamic> source) {
     return WorkStatus(
       isRunning: source['is_running'],
