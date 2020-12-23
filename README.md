@@ -84,6 +84,6 @@ $ n3 train image_classification --model LeNet5 --data MNIST --machines w:180:cud
 ## Docker
 
 ```bash
-docker build --tag n3:1.0 .
-docker run -it --rm n3:1.0 bash -c "n3-torchd & n3-net-api"
+$ docker build --tag n3:1.0 .
+$ docker run -it --rm n3:1.0 bash -c "n3-torchd & n3-net-api"
 ```

@@ -72,23 +72,22 @@ impl GlobalVars {
 
     #[cfg(feature = "pip")]
     pub(crate) fn get_n3_source_root() -> PathBuf {
-        use pyo3::prelude::*;
-        Python::with_gil(|py| {
-            py.run("import n3", None, None)
-                .and_then(|()| py.eval("n3.__file__", None, None))
-                .map(|x| x.str().unwrap())
-                .map(|x| x.to_string())
-                .map(PathBuf::from)
-                .map(|mut x| {
-                    x.pop(); // remove __init__.py
-                    x
-                })
-                .map_err(|e| {
-                    e.print_and_set_sys_last_vars(py);
-                })
-                .expect("variable 'N3_SOURCE_ROOT' is incorrect")
-        })
+        let output = std::process::Command::new("python")
+            .arg("-c")
+            .arg("import n3; print(n3.__file__)")
+            .output()
+            .expect("failed to execute python");
+
+        if !output.stderr.is_empty() {
+            panic!("variable 'N3_SOURCE_ROOT' is incorrect");
+        }
+
+        let path = String::from_utf8(output.stdout).unwrap();
+        let mut path = PathBuf::from(path.trim_end());
+        path.pop();
+        path
     }
+
     #[cfg(not(feature = "pip"))]
     pub(crate) fn get_n3_source_root() -> PathBuf {
         panic!(
