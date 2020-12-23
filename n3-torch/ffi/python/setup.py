@@ -36,12 +36,6 @@ setup(
     install_requires=read_requirements(),
     packages=find_packages(),
 
-    entry_points={
-        'console_scripts': [
-            'n3=n3.exec:route',
-        ],
-    },
-
     include_package_data=True,
     zip_safe=False,
 )
