@@ -9,7 +9,7 @@ pub use n3_program::execs::dirs;
 pub use self::args::Args;
 pub use self::ir::ExecIR;
 pub use self::program::Program;
-pub use self::root::ExecRoot;
+pub use self::root::{ExecRoot, ExecRootConfig};
 pub use self::var::{GlobalVars, Vars, QUERY_SPLIT_1};
 
 #[cfg(test)]
@@ -22,7 +22,7 @@ mod tests {
         envs.set(dirs::N3_ROOT, "tests/data/").unwrap();
         envs.set(dirs::N3_SOURCE_ROOT, "../n3-torch/ffi/python/n3")
             .unwrap();
-        let mut root = ExecRoot::try_new(envs).unwrap();
+        let mut root = ExecRoot::try_new(envs, Default::default()).unwrap();
 
         let args = root.get("DummyImageClassification").unwrap();
         args.set("data", "Mnist").unwrap();

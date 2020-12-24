@@ -66,7 +66,7 @@ mod tests {
         envs.set(dirs::N3_ROOT, "../../n3-builder/tests/data/")
             .unwrap();
         envs.set(dirs::N3_SOURCE_ROOT, "../ffi/python/n3").unwrap();
-        let mut root = ExecRoot::try_new(envs).unwrap();
+        let mut root = ExecRoot::try_new(envs, Default::default()).unwrap();
 
         let args = root.get("DummyImageClassification").unwrap();
         args.set("data", "Mnist").unwrap();
@@ -125,8 +125,6 @@ mod tests {
         alive_client.set(false);
 
         // stop the server
-        // note: the order is important to finalize Python interpreter safely.
-        // order: server (host) -> root (Python)
         server.join().unwrap();
         drop(root);
     }

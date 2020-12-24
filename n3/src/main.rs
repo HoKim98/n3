@@ -49,7 +49,7 @@ fn main() -> Result<()> {
     }
     // Step 3-2. execute commands with a root
     else if let Some(exec) = exec {
-        let mut root = ExecRoot::try_new(env.clone())?;
+        let mut root = ExecRoot::try_new(env.clone(), Default::default())?;
         let args = root.get(&exec.to_pascal_case())?;
 
         let args_set = [&env_vars, &args.to_variables()];

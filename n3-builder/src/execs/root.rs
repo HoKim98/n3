@@ -13,6 +13,19 @@ use crate::nodes::NodeRoot;
 
 use glob::glob;
 
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+pub struct ExecRootConfig {
+    pub create_root_dir: Option<bool>,
+}
+
+impl Default for ExecRootConfig {
+    fn default() -> Self {
+        Self {
+            create_root_dir: None,
+        }
+    }
+}
+
 pub struct ExecRoot {
     node_root: NodeRoot,
     pub(super) env: GlobalVars,
@@ -27,7 +40,7 @@ impl Deref for ExecRoot {
 }
 
 impl ExecRoot {
-    pub fn try_new(env: GlobalVars) -> Result<Self> {
+    pub fn try_new(env: GlobalVars, config: ExecRootConfig) -> Result<Self> {
         let n3_source_root = env.get_string(N3_SOURCE_ROOT).ok();
 
         let root = Self {
@@ -35,7 +48,7 @@ impl ExecRoot {
             env,
         };
 
-        root.create_root_dir()?;
+        root.assert_root_dir(&config)?;
         root.load_local_nodes()?;
 
         Ok(root)
@@ -56,7 +69,7 @@ impl ExecRoot {
         program.env = Some(self.env.to_values());
     }
 
-    fn create_root_dir(&self) -> Result<()> {
+    fn assert_root_dir(&self, config: &ExecRootConfig) -> Result<()> {
         let path = self.env.root_dir();
 
         if path.exists() {
@@ -66,7 +79,11 @@ impl ExecRoot {
                 ExecError::NotDirectory { path }.into()
             }
         } else {
-            Self::make_root_dir(&path)
+            match config.create_root_dir {
+                Some(true) => Self::create_root_dir(&path),
+                Some(false) => no_such_directory(&path),
+                None => Self::ask_to_create_root_dir(&path),
+            }
         }
     }
 
@@ -91,7 +108,7 @@ impl ExecRoot {
     }
 
     #[cfg(feature = "cli")]
-    fn make_root_dir(path: &Path) -> Result<()> {
+    fn ask_to_create_root_dir(path: &Path) -> Result<()> {
         if dialoguer::Confirm::new()
             .default(false)
             .with_prompt(format!(
@@ -101,25 +118,29 @@ impl ExecRoot {
             ))
             .interact()?
         {
-            fs::create_dir_all(path)?;
-            for name in &[
-                Path::new(DATA_DIR),
-                Path::new(LOGS_DIR),
-                Path::new(MODELS_DIR),
-                Path::new(NODES_DIR),
-                &Path::new(NODES_DIR).join(NODES_USER_DIR),
-            ] {
-                fs::create_dir(path.join(name))?;
-            }
-            Ok(())
+            Self::create_root_dir(path)
         } else {
             no_such_directory(path)
         }
     }
 
     #[cfg(not(feature = "cli"))]
-    fn make_root_dir(path: &Path) -> Result<()> {
-        no_such_directory()
+    fn ask_to_create_root_dir(path: &Path) -> Result<()> {
+        no_such_directory(path)
+    }
+
+    fn create_root_dir(path: &Path) -> Result<()> {
+        fs::create_dir_all(path)?;
+        for name in &[
+            Path::new(DATA_DIR),
+            Path::new(LOGS_DIR),
+            Path::new(MODELS_DIR),
+            Path::new(NODES_DIR),
+            &Path::new(NODES_DIR).join(NODES_USER_DIR),
+        ] {
+            fs::create_dir(path.join(name))?;
+        }
+        Ok(())
     }
 }
 

@@ -58,7 +58,7 @@ impl Deref for GlobalVars {
 
 impl GlobalVars {
     pub fn root_dir(&self) -> PathBuf {
-        PathBuf::from(self.get_string("root").unwrap())
+        PathBuf::from(self.get_string(N3_ROOT).unwrap())
     }
 
     pub(crate) fn default_home_dir() -> Option<String> {

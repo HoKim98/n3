@@ -41,8 +41,12 @@ impl WorkRoot {
 
 lazy_static! {
     pub static ref EXEC_ROOT: ExecRoot = {
+        let config = n3_builder::ExecRootConfig {
+            create_root_dir: Some(true),
+        };
+
         let envs = n3_builder::GlobalVars::default();
-        let root = n3_builder::ExecRoot::try_new(envs).unwrap();
+        let root = n3_builder::ExecRoot::try_new(envs, config).unwrap();
         ExecRoot(Mutex::new(root))
     };
     pub static ref WORK_ROOT: WorkRoot = Default::default();

@@ -48,10 +48,14 @@ RUN pacman -Sc --noconfirm
 
 ### Get sources
 
-RUN cd /root && git clone https://github.com/kerryeon/n3.git
+WORKDIR /root
+ADD . n3
 WORKDIR /root/n3
 
-RUN mkdir /root/worker
+RUN mkdir /workspace
+ENV N3_ROOT=/workspace/n3
+ENV N3_SOURCE_ROOT=/workspace/python/n3
+ENV PYTHONPATH=/workspace/python
 
 ### Add PATH of binaries
 
@@ -62,8 +66,8 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 RUN cargo install diesel_cli --no-default-features --features sqlite
 RUN cargo install --path n3-net/api
 
-RUN cp -r n3-net/api/Rocket.toml /root/worker
-RUN diesel setup --database-url /root/worker/n3_net_api.sqlite --migration-dir n3-net/api/migrations
+RUN cp -r n3-net/api/Rocket.toml /workspace
+RUN diesel setup --database-url /workspace/n3_net_api.sqlite --migration-dir n3-net/api/migrations
 
 ### n3-torch-server
 
@@ -72,9 +76,7 @@ RUN cargo install --path n3-torch/server
 
 ### Cleanup
 
-RUN mv n3-torch/ffi/python /root/worker
-ENV N3_SOURCE_ROOT=/root/worker/python/n3
-ENV PYTHONPATH=/root/worker/python
+RUN mv n3-torch/ffi/python /workspace
 
-WORKDIR /root/worker
+WORKDIR /workspace
 RUN rm -r /root/n3
