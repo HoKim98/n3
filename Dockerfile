@@ -1,73 +1,68 @@
-# Setup for ArchLinux Docker
+# Setup for Docker
 
-FROM archlinux:latest
+FROM rust:1-buster as rust_builder
 
 ## Dependencies
 
 ### Update system
 
-RUN pacman -Syu --noconfirm
+RUN apt-get update && apt-get upgrade -y
 
 ### Base
 
-RUN pacman -S --noconfirm --needed gcc git rustup
+RUN apt-get install -y gcc git
 
 RUN rustup default nightly  # 'rocket' requires nightly
+RUN echo 'alias python=python3' >> ~/.bashrc
 
 ### n3-net-api
 
-RUN pacman -S --noconfirm --needed sqlite
+RUN apt-get install -y sqlite
 
 ### n3-torch-server
 
-#### archlinuxcn repo
-# see: https://github.com/archlinuxcn/repo
+FROM continuumio/miniconda as conda_builder
 
-RUN printf "[archlinuxcn]\nServer = https://repo.archlinuxcn.org/\$arch" >> /etc/pacman.conf
-RUN rm -rf /etc/pacman.d/gnupg && pacman-key --init
-RUN pacman-key --populate archlinux # && pacman-key --populate archlinuxcn
-RUN pacman -Syy && pacman -S --noconfirm --needed archlinuxcn-keyring
+RUN conda install python=3 inflection tensorboard tqdm
+RUN conda install tensorboardx -c conda-forge
 
-#### Base
+ENV N3_CONDA_DEVICE=cpuonly
+# ENV N3_CONDA_DEVICE=cudatoolkit=10.2
+RUN conda install pytorch torchvision $N3_CONDA_DEVICE -c pytorch
 
-RUN pacman -S --noconfirm --needed python python-pip python-inflection tensorboard python-tensorboardx python-tqdm
+#### Cleanup
 
-#### Only CPUs
+RUN conda clean -ya
 
-RUN pacman -S --noconfirm --needed python-pytorch python-torchvision
+FROM rust_builder
+COPY --from=conda_builder /opt/conda /opt/conda
 
-#### GPUs (nvidia CUDA) Support
-
-# RUN pacman -S --noconfirm --needed python-torch-cuda python-torchvision-cuda
-
-### Cleanup
-
-RUN pacman -Sc --noconfirm
+ENV PATH /opt/conda/bin:$PATH
+ENV LD_LIBRARY_PATH /opt/conda/lib:$LD_LIBRARY_PATH
 
 ## Build
 
 ### Get sources
 
-WORKDIR /root
-ADD . n3
-WORKDIR /root/n3
+ENV N3_SRC /usr/src/n3
+WORKDIR $N3_SRC
+ADD . .
 
-RUN mkdir /workspace
-ENV N3_ROOT=/workspace/n3
-ENV N3_SOURCE_ROOT=/workspace/python/n3
-ENV PYTHONPATH=/workspace/python
+ENV N3_ROOT=/workspace
+ENV N3_SOURCE_ROOT=$N3_ROOT/python/n3
+ENV PYTHONPATH=$N3_ROOT/python
+RUN mkdir $N3_ROOT
 
-### Add PATH of binaries
-
-ENV PATH="/root/.cargo/bin:${PATH}"
+RUN mkdir $N3_ROOT/bin
+ENV PATH $N3_ROOT/bin:$PATH
 
 ### n3-net-api
 
 RUN cargo install diesel_cli --no-default-features --features sqlite
 RUN cargo install --path n3-net/api
 
-RUN cp -r n3-net/api/Rocket.toml /workspace
-RUN diesel setup --database-url /workspace/n3_net_api.sqlite --migration-dir n3-net/api/migrations
+RUN cp n3-net/api/Rocket.toml $N3_ROOT
+RUN diesel setup --database-url $N3_ROOT/n3_net_api.sqlite --migration-dir n3-net/api/migrations
 
 ### n3-torch-server
 
@@ -76,7 +71,11 @@ RUN cargo install --path n3-torch/server
 
 ### Cleanup
 
-RUN mv n3-torch/ffi/python /workspace
+RUN mv /usr/local/cargo/bin/n3* $N3_ROOT/bin
 
-WORKDIR /workspace
-RUN rm -r /root/n3
+RUN mv n3-torch/ffi/python $N3_ROOT
+
+WORKDIR $N3_ROOT
+RUN rm -r $N3_SRC
+
+CMD ["n3-apid", "n3-torchd"]
