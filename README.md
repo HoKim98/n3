@@ -36,10 +36,19 @@ node LeNet5:
 # Quick Start
 
 ```bash
-# create an conda environment (can vary on your machines)
-conda create -n n3 python pip \
+# install dependencies (apt)
+sudo apt update
+sudo apt install -y \
+    gcc git
+    sqlite3 libsqlite3-dev
+
+# create an conda environment (can vary on your settings)
+conda create -n n3 -c pytorch -c nvidia \
+    python=3 pip \
     pytorch torchvision torchaudio cudatoolkit=11.1 \
-    -c pytorch -c nvidia
+    tqdm
+conda install -n n3 -c conda-forge \
+    inflection tensorboard tensorboardx
 conda activate n3
 
 # build
@@ -47,16 +56,25 @@ cargo b --all
 
 # set environment variables
 export N3_SOURCE_ROOT=$PWD/n3-torch/ffi/python/n3/
-export PYTHONPATH=$PYTHONPATH:$N3_SOURCE_ROOT
+export PYTHONPATH=$PYTHONPATH:$N3_SOURCE_ROOT/../
 export PATH=$PATH:$PWD/target/debug/
+
+# set environment variables (by manual)
+export PATH=$PATH:$(dirname $(which python)/../bin/)
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(dirname $(which python)/../lib/)
+
+# set environment variables (can vary on your settings)
+export N3_MACHINES=cuda
 
 # spawn a daemon (in the seperated tty)
 n3-torchd
 
 # train a model (in the seperated tty)
-export N3_MACHINES=cuda
 n3 train image_classification --model LeNet5 --data MNIST \
     --epoch 1 --batch_size 50
+
+# monitor the progress (in the seperated tty)
+n3 monitor
 ```
 
 # Usage

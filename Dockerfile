@@ -17,7 +17,7 @@ RUN echo 'alias python=python3' >> ~/.bashrc
 
 ### n3-net-api
 
-RUN apt-get install -y sqlite
+RUN apt-get install -y sqlite3 libsqlite3-dev
 
 ### n3-torch-server
 
