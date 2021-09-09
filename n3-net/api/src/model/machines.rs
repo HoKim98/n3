@@ -5,8 +5,8 @@ use crate::schema::machines::{self, table};
 
 use self::machines as table_mod;
 
-#[table_name = "machines"]
 #[derive(AsChangeset, Serialize, Deserialize, Queryable, Insertable)]
+#[table_name = "machines"]
 pub struct Machine {
     pub id: Option<TableId>,
     pub provider: Option<String>,

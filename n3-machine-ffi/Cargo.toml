@@ -12,4 +12,4 @@ chrono = { version = "0.4", features = ["serde"] }
 serde = { version = "1.0", features = ["derive", "rc"] }
 
 raw_sync = "0.1"
-shared_memory = "0.11"
+shared_memory = "0.12"

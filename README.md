@@ -33,11 +33,37 @@ node LeNet5:
     5. Linear                   = 10
 ```
 
+# Quick Start
+
+```bash
+# create an conda environment (can vary on your machines)
+conda create -n n3 python pip \
+    pytorch torchvision torchaudio cudatoolkit=11.1 \
+    -c pytorch -c nvidia
+conda activate n3
+
+# build
+cargo b --all
+
+# set environment variables
+export N3_SOURCE_ROOT=$PWD/n3-torch/ffi/python/n3/
+export PYTHONPATH=$PYTHONPATH:$N3_SOURCE_ROOT
+export PATH=$PATH:$PWD/target/debug/
+
+# spawn a daemon (in the seperated tty)
+n3-torchd
+
+# train a model (in the seperated tty)
+export N3_MACHINES=cuda
+n3 train image_classification --model LeNet5 --data MNIST \
+    --epoch 1 --batch_size 50
+```
+
 # Usage
 
 ## Server
 
-``` bash
+```bash
 $ sudo systemctl start n3-torchd
 ```
 
@@ -45,19 +71,19 @@ $ sudo systemctl start n3-torchd
 
 ### Training
 
-``` bash
+```bash
 $ n3 train image_classification --model LeNet5 --data MNIST --machines cuda
 ```
 
 ### Evaluating
 
-``` bash
+```bash
 $ n3 eval image_classification --model LeNet5 --data MNIST --machines cuda
 ```
 
 ### Publishing
 
-``` bash
+```bash
 $ n3 publish image_classification --model LeNet5 --target android:java
 ```
 
@@ -67,13 +93,13 @@ $ n3 publish image_classification --model LeNet5 --target android:java
 
 ### Monitoring using Tensorboard
 
-``` bash
+```bash
 $ n3 monitor # or, browse http://localhost::xxxx/
 ```
 
 ### Distributed Training
 
-``` bash
+```bash
 $ n3 train image_classification --model LeNet5 --data MNIST --machines w:180:cuda:0 w:192.168.0.181 cpu
 ```
 
